@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>RutaVisitas SUBE</title>
+<title>Verificaciones SUBE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -159,7 +159,7 @@ textarea.pli{resize:vertical;min-height:60px}
 <body>
 <div class="app">
   <div class="hdr">
-    <div class="logo">Ruta<span>Visitas</span></div>
+    <div class="logo">Verific.<span>SUBE</span></div>
     <select class="csel" id="csel" onchange="onCity()">
       <option value="">Todas</option>
       <option value="ROSARIO" selected>Rosario</option>
@@ -289,8 +289,9 @@ textarea.pli{resize:vertical;min-height:60px}
       <button class="plbt plgo" onclick="dlPlanilla()">📥 Descargar</button>
       <button class="plbt plcl" onclick="backEdit()">✏️ Editar</button>
     </div>
-    <div style="padding:0 15px;margin-top:6px">
-      <button class="plbt plgo" style="width:100%;background:#10b981" id="btnDlDirecto" onclick="dlPlanilla()">📥 Descargar planilla y foto</button>
+    <div style="padding:0 15px;margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      <button class="plbt plgo" style="background:#10b981" id="btnDlDirecto" onclick="dlPlanilla()">📥 Descargar</button>
+      <button class="plbt plgo" style="background:#1a73e8" id="btnDrive" onclick="subirDrive()">☁️ Drive</button>
     </div>
   </div>
 </div>
@@ -302,6 +303,7 @@ textarea.pli{resize:vertical;min-height:60px}
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // ── PLANILLA COORDS
+const DRIVE_URL="https://script.google.com/macros/s/AKfycby6XhurQN8qMrHkncuhvSvfKK0PV_LIBK4WjRig9TiH9cMZYBFcmOOs53kNl-0qkB4Y/exec";
 const CN=["DOMICILIO INEXISTENTE","COMERCIO CERRADO","NO COMERCIALIZA SUBE","SIN SERVICIO DE CARGA","COBRO ADICIONAL","NO ENTREGA TICKET","TICKET CON OTRA DIRECCIÓN","SIN SEÑALÉTICA"];
 const VN=["COBRO ADICIONAL EN LA VENTA","SIN STOCK DE TARJETAS"];
 const PW=595.44,PH=841.92,EX=195,CX=480.5;
@@ -836,6 +838,42 @@ async function dlPlanilla(){
     const b=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
     if(b){b.textContent='📥 Descargar planilla y foto';b.disabled=false;}
   }
+}
+
+async function subirDrive(){
+  if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
+  const btn=document.getElementById('btnDrive');
+  btn.textContent='⏳ Subiendo...';btn.disabled=true;
+  try{
+    const dir=(document.getElementById('plD').value||'visita').substring(0,25);
+    const fec=document.getElementById('plF').value.replace(/\//g,'-');
+    const fotoActual=fotoData;
+
+    // Renderizar planilla a base64
+    const wc=await renderCv(3);
+    const planillaB64=wc.toDataURL('image/jpeg',0.92);
+
+    // Enviar a Google Drive
+    const resp=await fetch(DRIVE_URL,{
+      method:'POST',
+      body:JSON.stringify({
+        planilla:planillaB64,
+        foto:fotoActual||null,
+        fecha:document.getElementById('plF').value,
+        hora:document.getElementById('plH').value,
+        direccion:dir,
+      })
+    });
+    const result=await resp.json();
+    if(result.ok){
+      savePl();
+      toast('☁️ Guardado en Drive correctamente');
+      setTimeout(closeOv,800);
+    } else {
+      toast('Error Drive: '+result.error,true);
+    }
+  }catch(e){toast('Error: '+e.message,true);}
+  btn.textContent='☁️ Drive';btn.disabled=false;
 }
 
 function saveOnly(){savePl();closeOv();toast('Guardado ✓');}
