@@ -182,7 +182,10 @@ textarea.pli{resize:vertical;min-height:60px}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
       <div class="stit" style="margin:0">Puntos de verificación</div>
-      <span id="badge" style="font-size:10px;background:rgba(59,130,246,.15);color:var(--a2);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace">40</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span id="badge" style="font-size:10px;background:rgba(59,130,246,.15);color:var(--a2);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace">40</span>
+        <button class="sm" style="font-size:10px;background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:3px 9px" onclick="limpiarLista()">🗑️ Limpiar</button>
+      </div>
     </div>
     <div class="sb2"><span class="si2">🔍</span><input type="text" id="qin" placeholder="Buscar nombre, dirección, ID..." oninput="renderP()"/></div>
     <div id="plist"></div>
@@ -191,14 +194,14 @@ textarea.pli{resize:vertical;min-height:60px}
 
   <!-- MAPA -->
   <div class="mpw" id="p1">
-    <div id="map"></div>
+    <div id="map" style="flex:1"></div>
     <div class="mbar">
       <span style="font-size:11px;color:var(--t2);flex:1">
         <strong id="mcnt" style="color:var(--a2);font-family:'JetBrains Mono',monospace">0</strong>
-        <span id="mst"> puntos · Abrí el mapa para cargar</span>
+        <span id="mst"> puntos cargados</span>
       </span>
-      <button class="sm sma" onclick="fitMap()">⊕ Todos</button>
-      <button class="sm smg" id="btnGps" onclick="toggleGPS()">📍 Mi ubicación</button>
+      <button class="sm sma" onclick="fitMap()">⊕ Ver todos</button>
+      <button class="sm smg" id="btnGps" onclick="toggleGPS()">🔴 Mi ubicación</button>
     </div>
   </div>
 
@@ -410,6 +413,23 @@ function renderP() {
       +'</div>'
     +'</div>';
   }).join('');
+}
+
+function limpiarLista(){
+  if(!confirm('¿Borrar todos los puntos de la lista? Esta acción no se puede deshacer.')) return;
+  puntos=[];
+  sel=new Set();
+  visits={};
+  renderP();
+  updStats();
+  // Limpiar marcadores del mapa
+  if(lmap){
+    Object.values(mkrs).forEach(m=>lmap.removeLayer(m));
+    mkrs={}; gcache={}; gcing=false;
+    const el=document.getElementById('mcnt');
+    if(el) el.textContent='0';
+  }
+  toast('Lista limpiada ✓');
 }
 
 function toggleSel(id){
@@ -646,7 +666,7 @@ function openPl(id){
   document.getElementById('plI').value=p.id||'';
   document.getElementById('plD').value=p.dir||'';
   document.getElementById('plR').value=(v.planilla&&v.planilla.rubro)||p.tipo||'';
-  document.getElementById('plO').value=(v.planilla&&v.planilla.obs)||p.obs||'';
+  document.getElementById('plO').value=(v.planilla&&v.planilla.obs)||'';
   if(v.planilla&&v.planilla.chC) CN.forEach((_,i)=>{if(v.planilla.chC[i]){plC['c'+i]=true;document.querySelectorAll('#plCarga .plr')[i]&&document.querySelectorAll('#plCarga .plr')[i].classList.add('on');}});
   if(v.planilla&&v.planilla.chV) VN.forEach((_,i)=>{if(v.planilla.chV[i]){plC['v'+i]=true;document.querySelectorAll('#plVenta .plr')[i]&&document.querySelectorAll('#plVenta .plr')[i].classList.add('on');}});
   document.getElementById('upSec').style.display=pdfB?'none':'block';
@@ -785,71 +805,32 @@ async function dlPlanilla(){
   try{
     const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
     const fec=document.getElementById('plF').value.replace(/\//g,'-');
-    
-    // Renderizar planilla
-    const planillaCanvas = await renderCv(3);
-    
-    // Capturar fotoData AHORA (puede cambiar si se resetea)
-    const fotoActual = fotoData;
-    
+    const fotoActual=fotoData;
+
+    // 1. Descargar planilla
+    const wc=await renderCv(3);
+    const urlPl=wc.toDataURL('image/jpeg',0.95);
+    const a=document.createElement('a');
+    a.href=urlPl;
+    a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+
+    // 2. Descargar foto por separado si existe (Chrome lo permite)
     if(fotoActual){
-      // Combinar planilla + foto en UN solo canvas → UN solo archivo
-      const fotoImg = new Image();
-      await new Promise(res => { fotoImg.onload=res; fotoImg.src=fotoActual; });
-      
-      const PW = planillaCanvas.width;
-      const PH = planillaCanvas.height;
-      
-      // Calcular tamaño de foto manteniendo proporción
-      const fRatio = fotoImg.width / fotoImg.height;
-      const fW = PW;
-      const fH = Math.round(PW / fRatio);
-      
-      // Canvas combinado: planilla arriba + separador + foto abajo
-      const sep = 20; // separador entre planilla y foto
-      const combined = document.createElement('canvas');
-      combined.width = PW;
-      combined.height = PH + sep + fH;
-      const ctx = combined.getContext('2d');
-      
-      // Fondo blanco
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, combined.width, combined.height);
-      
-      // Dibujar planilla
-      ctx.drawImage(planillaCanvas, 0, 0);
-      
-      // Línea separadora
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(0, PH, PW, sep);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 28px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('FOTO DE LA VISITA', PW/2, PH + sep/2 + 10);
-      
-      // Dibujar foto
-      ctx.drawImage(fotoImg, 0, PH + sep, fW, fH);
-      
-      // Descargar imagen combinada
-      const url = combined.toDataURL('image/jpeg', 0.92);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Planilla_SUBE_'+dir+'_'+fec+'.jpg';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      toast('✅ Planilla + foto descargadas en un archivo');
+      await new Promise(r=>setTimeout(r,800));
+      const ext=fotoActual.startsWith('data:image/png')?'png':'jpg';
+      const b=document.createElement('a');
+      b.href=fotoActual;
+      b.download='Foto_visita_'+dir+'_'+fec+'.'+ext;
+      document.body.appendChild(b);b.click();document.body.removeChild(b);
+      toast('✅ Planilla y foto descargadas');
     } else {
-      // Sin foto — descargar solo planilla
-      const url = planillaCanvas.toDataURL('image/jpeg', 0.95);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Planilla_SUBE_'+dir+'_'+fec+'.jpg';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       toast('✅ Planilla descargada');
     }
-    
+
     savePl();
-    setTimeout(closeOv, 800);
-  }catch(e){ toast('Error: '+e.message, true); }
+    setTimeout(closeOv,1000);
+  }catch(e){toast('Error: '+e.message,true);}
   finally{
     const b=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
     if(b){b.textContent='📥 Descargar planilla y foto';b.disabled=false;}
