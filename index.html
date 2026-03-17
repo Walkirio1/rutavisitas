@@ -484,7 +484,8 @@ function addMkr(p){
   const color=sel.has(p.id)?'#10b981':'#3b82f6';
   const icon=L.divIcon({html:'<div style="background:'+color+';width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',className:'',iconSize:[13,13],iconAnchor:[6,6]});
   const m=L.marker(co,{icon}).addTo(lmap);
-  m.bindPopup('<div style="min-width:150px"><b>'+p.nombre+'</b><br><span style="opacity:.8">📍 '+p.dir+'</span><br><span style="opacity:.6;font-size:11px">ID: '+p.id+'</span>'+(p.obs?'<br><span style="opacity:.6;font-size:11px">ℹ️ '+p.obs+'</span>':'')+'</div>');
+  const mapsUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.dir+', Rosario, Santa Fe, Argentina')+'&travelmode=driving';
+  m.bindPopup('<div style="min-width:160px"><b style="font-size:13px">'+p.nombre+'</b><br><span style="opacity:.8;font-size:11px">📍 '+p.dir+'</span><br><span style="opacity:.6;font-size:11px">ID: '+p.id+'</span>'+(p.obs?'<br><span style="opacity:.6;font-size:11px">ℹ️ '+p.obs+'</span>':'')+'<br><br><a href="'+mapsUrl+'" target="_blank" style="display:block;background:#1d6fa4;color:#fff;text-align:center;padding:7px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none">🗺️ Navegar con Google Maps</a></div>');
   mkrs[p.id]=m;
 }
 
@@ -754,30 +755,52 @@ async function genPrev(){
 }
 
 async function dlDirecto(){
-  // Descarga directa sin mostrar preview
   if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
   const btn=document.querySelector('[onclick="dlDirecto()"]');
   if(btn){btn.textContent='⏳ Descargando...';btn.disabled=true;}
   try{
-    await _descargarArchivos();
+    const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
+    const fec=document.getElementById('plF').value.replace(/\//g,'-');
+    // Descargar planilla
+    const wc=await renderCv(3);
+    const urlPl=wc.toDataURL('image/jpeg',.95);
+    const a=document.createElement('a');
+    a.href=urlPl;a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    // Descargar foto si existe
+    if(fotoData){
+      await new Promise(r=>setTimeout(r,600));
+      const ext=fotoData.startsWith('data:image/png')?'png':'jpg';
+      const b=document.createElement('a');
+      b.href=fotoData;b.download='Foto_'+dir+'_'+fec+'.'+ext;
+      document.body.appendChild(b);b.click();document.body.removeChild(b);
+    }
     savePl();
     toast('✅ Planilla'+(fotoData?' y foto':'')+' descargadas');
-    setTimeout(closeOv,700);
+    setTimeout(closeOv,800);
   }catch(e){toast('Error: '+e.message,true);}
   if(btn){btn.textContent='📥 Descargar directamente';btn.disabled=false;}
 }
 
 async function dlPlanilla(){
   try{
+    const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
+    const fec=document.getElementById('plF').value.replace(/\//g,'-');
     const wc=await renderCv(3);
     const url=wc.toDataURL('image/jpeg',.95);
     const a=document.createElement('a');
-    const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
-    const fec=document.getElementById('plF').value.replace(/\//g,'-');
     a.href=url;a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
     document.body.appendChild(a);a.click();document.body.removeChild(a);
-    savePl();toast('✅ Planilla descargada');
-    setTimeout(closeOv,700);
+    if(fotoData){
+      await new Promise(r=>setTimeout(r,600));
+      const ext=fotoData.startsWith('data:image/png')?'png':'jpg';
+      const b=document.createElement('a');
+      b.href=fotoData;b.download='Foto_'+dir+'_'+fec+'.'+ext;
+      document.body.appendChild(b);b.click();document.body.removeChild(b);
+    }
+    savePl();
+    toast('✅ Planilla'+(fotoData?' y foto':'')+' descargadas');
+    setTimeout(closeOv,800);
   }catch(e){toast('Error: '+e.message,true);}
 }
 
