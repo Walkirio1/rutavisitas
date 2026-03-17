@@ -287,7 +287,7 @@ textarea.pli{resize:vertical;min-height:60px}
       <button class="plbt plcl" onclick="backEdit()">✏️ Editar</button>
     </div>
     <div style="padding:0 15px;margin-top:6px">
-      <button class="plbt plgo" style="width:100%;background:#10b981" onclick="dlPlanilla()">📥 Descargar planilla y foto</button>
+      <button class="plbt plgo" style="width:100%;background:#10b981" id="btnDlDirecto" onclick="dlPlanilla()">📥 Descargar planilla y foto</button>
     </div>
   </div>
 </div>
@@ -780,6 +780,8 @@ async function dlDirecto(){
 }
 
 async function dlPlanilla(){
+  const btn=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
+  if(btn){btn.textContent='⏳ Generando...';btn.disabled=true;}
   try{
     const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
     const fec=document.getElementById('plF').value.replace(/\//g,'-');
@@ -787,10 +789,13 @@ async function dlPlanilla(){
     // Renderizar planilla
     const planillaCanvas = await renderCv(3);
     
-    if(fotoData){
+    // Capturar fotoData AHORA (puede cambiar si se resetea)
+    const fotoActual = fotoData;
+    
+    if(fotoActual){
       // Combinar planilla + foto en UN solo canvas → UN solo archivo
       const fotoImg = new Image();
-      await new Promise(res => { fotoImg.onload=res; fotoImg.src=fotoData; });
+      await new Promise(res => { fotoImg.onload=res; fotoImg.src=fotoActual; });
       
       const PW = planillaCanvas.width;
       const PH = planillaCanvas.height;
@@ -845,6 +850,10 @@ async function dlPlanilla(){
     savePl();
     setTimeout(closeOv, 800);
   }catch(e){ toast('Error: '+e.message, true); }
+  finally{
+    const b=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
+    if(b){b.textContent='📥 Descargar planilla y foto';b.disabled=false;}
+  }
 }
 
 function saveOnly(){savePl();closeOv();toast('Guardado ✓');}
@@ -860,6 +869,7 @@ function savePl(){
     chC:chC,chV:chV,ti:ti,
     fecha:document.getElementById('plF').value,
     hora:document.getElementById('plH').value,
+    foto:fotoData,
   };
   visits[curId].done=true;
   renderV();updStats();
