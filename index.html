@@ -198,6 +198,7 @@ textarea.pli{resize:vertical;min-height:60px}
         <span id="mst"> puntos · Abrí el mapa para cargar</span>
       </span>
       <button class="sm sma" onclick="fitMap()">⊕ Todos</button>
+      <button class="sm smg" id="btnGps" onclick="toggleGPS()">📍 Mi ubicación</button>
     </div>
   </div>
 
@@ -224,16 +225,14 @@ textarea.pli{resize:vertical;min-height:60px}
     </div>
     <div class="stit">Resumen</div>
     <div class="card" id="scard"><div class="empty" style="padding:14px 0"><p>Completá visitas para ver el resumen.</p></div></div>
-    <button class="btn bg" onclick="dlTodo()" style="margin-bottom:4px">📥 Descargar todo el día</button>
-    <div id="dlStatus" style="display:none;font-size:11px;color:var(--a2);text-align:center;padding:6px;margin-bottom:4px"></div>
-    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px;margin-bottom:8px;font-size:11px;color:var(--t2);line-height:1.6">
-      💡 <strong style="color:var(--tx)">Cómo enviar por WhatsApp:</strong><br>
-      1. Tocá "Descargar todo el día"<br>
-      2. Los PDFs y fotos se guardan en tu teléfono<br>
-      3. Abrí WhatsApp → adjuntá los archivos desde Descargas
+    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--t2);line-height:1.7">
+      💡 <strong style="color:var(--tx)">Para enviar las planillas y fotos:</strong><br>
+      1. Completá cada visita → descargá planilla y foto<br>
+      2. Todos los archivos quedan en <strong style="color:var(--a2)">Descargas</strong> del teléfono<br>
+      3. Abrí WhatsApp → adjuntá desde Descargas
     </div>
-    <button class="btn bw" onclick="sendWA()">💬 WhatsApp (solo resumen de texto)</button>
-    <button class="btn bh" onclick="sendEmail()" style="margin-top:6px">📧 Email (solo resumen de texto)</button>
+    <button class="btn bw" onclick="sendWA()">💬 Enviar resumen por WhatsApp</button>
+    <button class="btn bh" onclick="sendEmail()" style="margin-top:6px">📧 Enviar resumen por email</button>
   </div>
 </div>
 
@@ -283,12 +282,14 @@ textarea.pli{resize:vertical;min-height:60px}
       <button class="plbt plgo" id="btnPv" onclick="genPrev()">👁️ Ver cómo queda</button>
       <button class="plbt plcl" onclick="closeOv()">✕ Cancelar</button>
     </div>
-    <div class="plbr" id="brB" style="display:none">
-      <button class="plbt plgo" onclick="dlPlanilla()">📥 Descargar PDF</button>
-      <button class="plbt plcl" onclick="backEdit()">✏️ Editar</button>
-    </div>
     <div style="padding:0 15px;margin-top:6px">
-      <button class="plbt plcl" style="width:100%" onclick="saveOnly()">✓ Guardar sin descargar</button>
+      <button class="plbt plgo" style="width:100%;background:#10b981" onclick="dlDirecto()">📥 Descargar directamente</button>
+    </div>
+    <div id="brB" style="display:none;padding:0 15px">
+      <button class="plbt plgo" style="width:100%;margin-bottom:7px" onclick="dlPlanilla()">📄 Descargar planilla SUBE</button>
+      <button class="plbt" id="btnFoto" style="width:100%;margin-bottom:7px;background:#10b981;color:#fff" onclick="dlFoto()">📷 Descargar foto</button>
+      <button class="plbt plcl" style="width:100%;margin-bottom:7px" onclick="backEdit()">✏️ Editar</button>
+      <button class="plbt plcl" style="width:100%" onclick="guardarYCerrar()">✓ Guardar y cerrar</button>
     </div>
   </div>
 </div>
@@ -354,7 +355,7 @@ const DATA=[
 // ── STATE
 let puntos=[...DATA], sel=new Set(), visits={}, emails=[];
 let plC={}, curId=null, pdfB=null, fotoData=null;
-let lmap=null, mkrs={}, gcache={}, gcing=false;
+let lmap=null, mkrs={}, gcache={}, gcing=false, gpsMarker=null, gpsCircle=null, gpsWatch=null, gpsActive=false;
 
 // ── INIT — render puntos immediately on load
 window.addEventListener('DOMContentLoaded', function() {
@@ -491,6 +492,82 @@ function fitMap(){
   const ms=Object.values(mkrs);
   if(!ms.length||!lmap) return;
   lmap.fitBounds(L.featureGroup(ms).getBounds().pad(.08));
+}
+
+// ── GPS / MI UBICACIÓN
+function toggleGPS(){
+  if(gpsActive) stopGPS(); else startGPS();
+}
+
+function startGPS(){
+  if(!navigator.geolocation){toast('GPS no disponible en este dispositivo',true);return;}
+  const btn=document.getElementById('btnGps');
+  btn.textContent='📍 Buscando...';
+  btn.style.background='var(--or)';
+  
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      showMyPos(pos);
+      // Seguimiento continuo
+      gpsWatch = navigator.geolocation.watchPosition(showMyPos, gpsError, {
+        enableHighAccuracy:true, maximumAge:5000, timeout:10000
+      });
+      gpsActive=true;
+      btn.textContent='📍 Siguiendo';
+      btn.style.background='var(--gn)';
+      toast('📍 Ubicación activada');
+    },
+    gpsError,
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+
+function showMyPos(pos){
+  if(!lmap) return;
+  const lat=pos.coords.latitude, lon=pos.coords.longitude;
+  const acc=pos.coords.accuracy;
+  
+  // Remover markers anteriores
+  if(gpsMarker) lmap.removeLayer(gpsMarker);
+  if(gpsCircle) lmap.removeLayer(gpsCircle);
+  
+  // Círculo de precisión
+  gpsCircle = L.circle([lat,lon], {
+    radius: acc,
+    color:'#3b82f6', fillColor:'#3b82f6',
+    fillOpacity:0.1, weight:1
+  }).addTo(lmap);
+  
+  // Puntito azul de ubicación
+  const myIcon = L.divIcon({
+    html:'<div style="background:#3b82f6;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(59,130,246,.6)"></div>',
+    className:'', iconSize:[16,16], iconAnchor:[8,8]
+  });
+  gpsMarker = L.marker([lat,lon], {icon:myIcon, zIndexOffset:1000}).addTo(lmap);
+  gpsMarker.bindPopup('<b>📍 Tu ubicación</b><br><span style="opacity:.7;font-size:11px">Precisión: '+Math.round(acc)+'m</span>');
+  
+  // Centrar mapa en mi posición
+  lmap.setView([lat,lon], lmap.getZoom()<13?14:lmap.getZoom());
+}
+
+function gpsError(err){
+  const btn=document.getElementById('btnGps');
+  btn.textContent='📍 Mi ubicación';
+  btn.style.background='';
+  gpsActive=false;
+  if(err.code===1) toast('Permiso de GPS denegado. Activalo en ajustes.',true);
+  else toast('No se pudo obtener la ubicación',true);
+}
+
+function stopGPS(){
+  if(gpsWatch) navigator.geolocation.clearWatch(gpsWatch);
+  if(gpsMarker) lmap.removeLayer(gpsMarker);
+  if(gpsCircle) lmap.removeLayer(gpsCircle);
+  gpsMarker=null; gpsCircle=null; gpsWatch=null; gpsActive=false;
+  const btn=document.getElementById('btnGps');
+  btn.textContent='📍 Mi ubicación';
+  btn.style.background='';
+  toast('GPS desactivado');
 }
 
 async function verMapa(id){
@@ -667,10 +744,27 @@ async function genPrev(){
     pc.getContext('2d').drawImage(wc,0,0);
     document.getElementById('pvb').style.display='block';
     document.getElementById('brA').style.display='none';
-    document.getElementById('brB').style.display='grid';
+    document.getElementById('brB').style.display='block';
     document.getElementById('pvb').scrollIntoView({behavior:'smooth',block:'start'});
+    // Show/hide foto button based on whether foto exists
+    const btnF=document.getElementById('btnFoto');
+    if(btnF) btnF.style.display=fotoData?'block':'none';
   }catch(e){toast(e.message,true);}
   btn.textContent='👁️ Ver cómo queda';btn.disabled=false;
+}
+
+async function dlDirecto(){
+  // Descarga directa sin mostrar preview
+  if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
+  const btn=document.querySelector('[onclick="dlDirecto()"]');
+  if(btn){btn.textContent='⏳ Descargando...';btn.disabled=true;}
+  try{
+    await _descargarArchivos();
+    savePl();
+    toast('✅ Planilla'+(fotoData?' y foto':'')+' descargadas');
+    setTimeout(closeOv,700);
+  }catch(e){toast('Error: '+e.message,true);}
+  if(btn){btn.textContent='📥 Descargar directamente';btn.disabled=false;}
 }
 
 async function dlPlanilla(){
@@ -768,76 +862,6 @@ function renderSum(){
         +'</div>';
     }).join('');
 }
-async function dlTodo(){
-  const s=[...sel];
-  const conPlanilla=s.filter(id=>visits[id]&&visits[id].planilla&&visits[id].done);
-  if(!conPlanilla.length){toast('No hay planillas completadas todavía',true);return;}
-  if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
-  
-  const status=document.getElementById('dlStatus');
-  status.style.display='block';
-  let count=0;
-  const total=conPlanilla.length;
-  
-  for(const id of conPlanilla){
-    const p=puntos.find(x=>x.id===id)||{};
-    const v=visits[id];
-    const pl=v.planilla;
-    const dir=(p.dir||id).replace(/\s/g,'_').substring(0,20);
-    const fec=(pl.fecha||new Date().toLocaleDateString('es-AR')).replace(/\//g,'-');
-    const nombre=`${count+1}_${dir}`;
-    
-    status.textContent=`Descargando ${count+1}/${total}: ${p.nombre||id}...`;
-    
-    // Reconstruir planilla con datos guardados
-    // Temporalmente setear los valores
-    const savedId=curId, savedC={...plC};
-    curId=id;
-    plC={};
-    CN.forEach((_,i)=>{if(pl.chC&&pl.chC[i])plC['c'+i]=true;});
-    VN.forEach((_,i)=>{if(pl.chV&&pl.chV[i])plC['v'+i]=true;});
-    document.getElementById('plF').value=pl.fecha||'';
-    document.getElementById('plH').value=pl.hora||'';
-    document.getElementById('plI').value=p.id||'';
-    document.getElementById('plD').value=p.dir||'';
-    document.getElementById('plR').value=pl.rubro||'';
-    document.getElementById('plO').value=pl.obs||'';
-    
-    try{
-      // Descargar planilla PDF
-      const wc=await renderCv(3);
-      const urlPl=wc.toDataURL('image/jpeg',.95);
-      const a=document.createElement('a');
-      a.href=urlPl;a.download=`Planilla_SUBE_${nombre}_${fec}.jpg`;
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-      await new Promise(r=>setTimeout(r,500));
-      
-      // Descargar foto si existe
-      if(pl.foto){
-        const ext=pl.foto.startsWith('data:image/png')?'png':'jpg';
-        const b=document.createElement('a');
-        b.href=pl.foto;b.download=`Foto_${nombre}_${fec}.${ext}`;
-        document.body.appendChild(b);b.click();document.body.removeChild(b);
-        await new Promise(r=>setTimeout(r,500));
-      }
-    }catch(e){console.error('Error descargando',id,e);}
-    
-    // Restaurar
-    curId=savedId;plC=savedC;
-    count++;
-  }
-  
-  // Restaurar campos del overlay al estado anterior
-  if(curId){
-    const pAct=puntos.find(x=>x.id===curId)||{};
-    document.getElementById('plI').value=pAct.id||'';
-    document.getElementById('plD').value=pAct.dir||'';
-  }
-  
-  status.textContent=`✅ ${count} planillas descargadas${count<total?' (algunas fallaron)':''}`;
-  toast(`✅ ${count} planillas y fotos descargadas`);
-}
-
 function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank');}
 function sendEmail(){
   if(!emails.length){toast('Agregá destinatarios',true);return;}
