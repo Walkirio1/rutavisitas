@@ -783,22 +783,68 @@ async function dlPlanilla(){
   try{
     const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
     const fec=document.getElementById('plF').value.replace(/\//g,'-');
-    const wc=await renderCv(3);
-    const url=wc.toDataURL('image/jpeg',.95);
-    const a=document.createElement('a');
-    a.href=url;a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    
+    // Renderizar planilla
+    const planillaCanvas = await renderCv(3);
+    
     if(fotoData){
-      await new Promise(r=>setTimeout(r,600));
-      const ext=fotoData.startsWith('data:image/png')?'png':'jpg';
-      const b=document.createElement('a');
-      b.href=fotoData;b.download='Foto_'+dir+'_'+fec+'.'+ext;
-      document.body.appendChild(b);b.click();document.body.removeChild(b);
+      // Combinar planilla + foto en UN solo canvas → UN solo archivo
+      const fotoImg = new Image();
+      await new Promise(res => { fotoImg.onload=res; fotoImg.src=fotoData; });
+      
+      const PW = planillaCanvas.width;
+      const PH = planillaCanvas.height;
+      
+      // Calcular tamaño de foto manteniendo proporción
+      const fRatio = fotoImg.width / fotoImg.height;
+      const fW = PW;
+      const fH = Math.round(PW / fRatio);
+      
+      // Canvas combinado: planilla arriba + separador + foto abajo
+      const sep = 20; // separador entre planilla y foto
+      const combined = document.createElement('canvas');
+      combined.width = PW;
+      combined.height = PH + sep + fH;
+      const ctx = combined.getContext('2d');
+      
+      // Fondo blanco
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, combined.width, combined.height);
+      
+      // Dibujar planilla
+      ctx.drawImage(planillaCanvas, 0, 0);
+      
+      // Línea separadora
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(0, PH, PW, sep);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('FOTO DE LA VISITA', PW/2, PH + sep/2 + 10);
+      
+      // Dibujar foto
+      ctx.drawImage(fotoImg, 0, PH + sep, fW, fH);
+      
+      // Descargar imagen combinada
+      const url = combined.toDataURL('image/jpeg', 0.92);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Planilla_SUBE_'+dir+'_'+fec+'.jpg';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast('✅ Planilla + foto descargadas en un archivo');
+    } else {
+      // Sin foto — descargar solo planilla
+      const url = planillaCanvas.toDataURL('image/jpeg', 0.95);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Planilla_SUBE_'+dir+'_'+fec+'.jpg';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast('✅ Planilla descargada');
     }
+    
     savePl();
-    toast('✅ Planilla'+(fotoData?' y foto':'')+' descargadas');
-    setTimeout(closeOv,800);
-  }catch(e){toast('Error: '+e.message,true);}
+    setTimeout(closeOv, 800);
+  }catch(e){ toast('Error: '+e.message, true); }
 }
 
 function saveOnly(){savePl();closeOv();toast('Guardado ✓');}
