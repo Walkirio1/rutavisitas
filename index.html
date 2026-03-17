@@ -282,14 +282,12 @@ textarea.pli{resize:vertical;min-height:60px}
       <button class="plbt plgo" id="btnPv" onclick="genPrev()">👁️ Ver cómo queda</button>
       <button class="plbt plcl" onclick="closeOv()">✕ Cancelar</button>
     </div>
-    <div style="padding:0 15px;margin-top:6px">
-      <button class="plbt plgo" style="width:100%;background:#10b981" onclick="dlDirecto()">📥 Descargar directamente</button>
+    <div class="plbr" id="brB" style="display:none">
+      <button class="plbt plgo" onclick="dlPlanilla()">📥 Descargar</button>
+      <button class="plbt plcl" onclick="backEdit()">✏️ Editar</button>
     </div>
-    <div id="brB" style="display:none;padding:0 15px">
-      <button class="plbt plgo" style="width:100%;margin-bottom:7px" onclick="dlPlanilla()">📄 Descargar planilla SUBE</button>
-      <button class="plbt" id="btnFoto" style="width:100%;margin-bottom:7px;background:#10b981;color:#fff" onclick="dlFoto()">📷 Descargar foto</button>
-      <button class="plbt plcl" style="width:100%;margin-bottom:7px" onclick="backEdit()">✏️ Editar</button>
-      <button class="plbt plcl" style="width:100%" onclick="guardarYCerrar()">✓ Guardar y cerrar</button>
+    <div style="padding:0 15px;margin-top:6px">
+      <button class="plbt plgo" style="width:100%;background:#10b981" onclick="dlPlanilla()">📥 Descargar planilla y foto</button>
     </div>
   </div>
 </div>
@@ -535,17 +533,17 @@ function showMyPos(pos){
   // Círculo de precisión
   gpsCircle = L.circle([lat,lon], {
     radius: acc,
-    color:'#3b82f6', fillColor:'#3b82f6',
+    color:'#ef4444', fillColor:'#ef4444',
     fillOpacity:0.1, weight:1
   }).addTo(lmap);
   
   // Puntito azul de ubicación
   const myIcon = L.divIcon({
-    html:'<div style="background:#3b82f6;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(59,130,246,.6)"></div>',
+    html:'<div style="background:#ef4444;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(239,68,68,.8)"></div>',
     className:'', iconSize:[16,16], iconAnchor:[8,8]
   });
   gpsMarker = L.marker([lat,lon], {icon:myIcon, zIndexOffset:1000}).addTo(lmap);
-  gpsMarker.bindPopup('<b>📍 Tu ubicación</b><br><span style="opacity:.7;font-size:11px">Precisión: '+Math.round(acc)+'m</span>');
+  gpsMarker.bindPopup('<b style="color:#ef4444">🔴 Tu ubicación</b><br><span style="opacity:.7;font-size:11px">Precisión: '+Math.round(acc)+'m</span>');
   
   // Centrar mapa en mi posición
   lmap.setView([lat,lon], lmap.getZoom()<13?14:lmap.getZoom());
@@ -748,8 +746,7 @@ async function genPrev(){
     document.getElementById('brB').style.display='block';
     document.getElementById('pvb').scrollIntoView({behavior:'smooth',block:'start'});
     // Show/hide foto button based on whether foto exists
-    const btnF=document.getElementById('btnFoto');
-    if(btnF) btnF.style.display=fotoData?'block':'none';
+    // foto button removed
   }catch(e){toast(e.message,true);}
   btn.textContent='👁️ Ver cómo queda';btn.disabled=false;
 }
