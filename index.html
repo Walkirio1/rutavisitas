@@ -443,7 +443,7 @@ function toggleSel(id){
 function initMap(){
   if(lmap) return;
   lmap=L.map('map',{zoomControl:true}).setView([-32.9468,-60.6393],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(lmap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19,subdomains:'abcd'}).addTo(lmap);
   document.getElementById('mst').textContent=' puntos · Geocodificando...';
   geoAll();
 }
@@ -521,20 +521,20 @@ function toggleGPS(){
 function startGPS(){
   if(!navigator.geolocation){toast('GPS no disponible en este dispositivo',true);return;}
   const btn=document.getElementById('btnGps');
-  btn.textContent='📍 Buscando...';
+  btn.textContent='⏳ Buscando...'; btn.style.background='var(--or)';
   btn.style.background='var(--or)';
   
   navigator.geolocation.getCurrentPosition(
     pos => {
+      gpsActive=true;
       showMyPos(pos);
       // Seguimiento continuo
       gpsWatch = navigator.geolocation.watchPosition(showMyPos, gpsError, {
-        enableHighAccuracy:true, maximumAge:5000, timeout:10000
+        enableHighAccuracy:true, maximumAge:3000, timeout:10000
       });
-      gpsActive=true;
-      btn.textContent='📍 Siguiendo';
-      btn.style.background='var(--gn)';
-      toast('📍 Ubicación activada');
+      btn.textContent='🔴 Siguiendo';
+      btn.style.background='#ef4444';
+      toast('🔴 Tu ubicación activada');
     },
     gpsError,
     {enableHighAccuracy:true, timeout:10000}
@@ -565,13 +565,14 @@ function showMyPos(pos){
   gpsMarker = L.marker([lat,lon], {icon:myIcon, zIndexOffset:1000}).addTo(lmap);
   gpsMarker.bindPopup('<b style="color:#ef4444">🔴 Tu ubicación</b><br><span style="opacity:.7;font-size:11px">Precisión: '+Math.round(acc)+'m</span>');
   
-  // Centrar mapa en mi posición
-  lmap.setView([lat,lon], lmap.getZoom()<13?14:lmap.getZoom());
+  // Centrar mapa en mi posición la primera vez
+  if(!gpsActive) lmap.setView([lat,lon], 15);
+  else lmap.panTo([lat,lon]);
 }
 
 function gpsError(err){
   const btn=document.getElementById('btnGps');
-  btn.textContent='📍 Mi ubicación';
+  btn.textContent='🔴 Mi ubicación';
   btn.style.background='';
   gpsActive=false;
   if(err.code===1) toast('Permiso de GPS denegado. Activalo en ajustes.',true);
@@ -584,7 +585,7 @@ function stopGPS(){
   if(gpsCircle) lmap.removeLayer(gpsCircle);
   gpsMarker=null; gpsCircle=null; gpsWatch=null; gpsActive=false;
   const btn=document.getElementById('btnGps');
-  btn.textContent='📍 Mi ubicación';
+  btn.textContent='🔴 Mi ubicación';
   btn.style.background='';
   toast('GPS desactivado');
 }
