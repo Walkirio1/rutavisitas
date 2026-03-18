@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Verificaciones SUBE</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB2yPk1pwHeXyVPgl4qzRqVAUQHZpV8dQs&libraries=places&language=es"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -38,9 +37,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);font-s
 .mpw.active{display:flex}
 #map{flex:1;min-height:0}
 .mbar{flex-shrink:0;background:var(--s1);border-top:1px solid var(--bd);padding:9px 13px;display:flex;align-items:center;gap:10px}
-.leaflet-popup-content-wrapper{background:#0f1520!important;border:1px solid rgba(255,255,255,.12)!important;color:#e8edf5!important;border-radius:10px!important;box-shadow:0 4px 20px rgba(0,0,0,.5)!important}
-.leaflet-popup-tip{background:#0f1520!important}
-.leaflet-popup-content{margin:10px 12px!important;font-family:'Outfit',sans-serif!important;font-size:12px!important}
+
 .card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:13px;margin-bottom:9px}
 .stit{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px}
 input[type=text],select,textarea{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r2);color:var(--tx);font-family:'Outfit',sans-serif;font-size:13px;padding:9px 11px;outline:none;transition:border .2s}
@@ -360,9 +357,52 @@ let puntos=[...DATA], sel=new Set(), visits={}, emails=[];
 let plC={}, curId=null, pdfB=null, fotoData=null;
 let lmap=null, mkrs={}, gcache={}, gcing=false, gpsMarker=null, gpsCircle=null, gpsWatch=null, gpsActive=false;
 
+// ── HISTORIAL: guardar y restaurar estado
+function guardarEstado(){
+  try{
+    localStorage.setItem('vsube_sel', JSON.stringify([...sel]));
+    localStorage.setItem('vsube_visits', JSON.stringify(visits));
+    localStorage.setItem('vsube_emails', JSON.stringify(emails));
+    // Guardar puntos extra (importados por el usuario, no los del DATA)
+    const extras=puntos.filter(p=>!DATA.find(d=>d.id===p.id));
+    localStorage.setItem('vsube_extras', JSON.stringify(extras));
+  }catch(e){}
+}
+
+function restaurarEstado(){
+  try{
+    const savedSel=localStorage.getItem('vsube_sel');
+    if(savedSel) sel=new Set(JSON.parse(savedSel));
+    const savedVisits=localStorage.getItem('vsube_visits');
+    if(savedVisits) visits=JSON.parse(savedVisits);
+    const savedEmails=localStorage.getItem('vsube_emails');
+    if(savedEmails) emails=JSON.parse(savedEmails);
+    const savedExtras=localStorage.getItem('vsube_extras');
+    if(savedExtras){
+      const extras=JSON.parse(savedExtras);
+      puntos=[...DATA,...extras];
+    }
+  }catch(e){}
+}
+
+function limpiarHistorial(){
+  if(!confirm('¿Borrar el historial del día? Se perderán todas las visitas guardadas.')) return;
+  localStorage.removeItem('vsube_sel');
+  localStorage.removeItem('vsube_visits');
+  localStorage.removeItem('vsube_emails');
+  localStorage.removeItem('vsube_extras');
+  sel=new Set(); visits={}; emails=[];
+  puntos=[...DATA];
+  renderP(); updStats(); renderChips();
+  toast('Historial del día borrado ✓');
+}
+
 // ── INIT — render puntos immediately on load
 window.addEventListener('DOMContentLoaded', function() {
+  restaurarEstado();
   renderP();
+  if(emails.length) renderChips();
+  if([...sel].length) updStats();
 });
 
 // ── TABS
@@ -441,18 +481,27 @@ function toggleSel(id){
   toast(sel.has(id)?'Agregado ✓':'Quitado');
 }
 
-// ── MAP
+// ── GOOGLE MAPS
+let geocoder=null;
+
 function initMap(){
   if(lmap) return;
-  lmap=L.map('map',{zoomControl:true}).setView([-32.9468,-60.6393],12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19,subdomains:'abcd'}).addTo(lmap);
+  lmap = new google.maps.Map(document.getElementById('map'),{
+    center:{lat:-32.9468,lng:-60.6393},
+    zoom:12,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:false,
+    styles:[{featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]}]
+  });
+  geocoder = new google.maps.Geocoder();
   document.getElementById('mst').textContent=' puntos · Geocodificando...';
   geoAll();
 }
 
 function reloadMkrs(){
   if(!lmap) return;
-  Object.values(mkrs).forEach(m=>lmap.removeLayer(m));
+  Object.values(mkrs).forEach(m=>m.setMap(null));
   mkrs={}; gcache={}; gcing=false;
   document.getElementById('mcnt').textContent='0';
   geoAll();
@@ -467,7 +516,7 @@ async function geoAll(){
     if(!gcache[p.id]){
       const c=await geoFetch(p);
       if(c) gcache[p.id]=c;
-      await new Promise(r=>setTimeout(r,1100));
+      await new Promise(r=>setTimeout(r,200));
     }
     if(gcache[p.id]){addMkr(p);n++;document.getElementById('mcnt').textContent=n;}
   }
@@ -476,43 +525,67 @@ async function geoAll(){
   if(n) fitMap();
 }
 
-async function geoFetch(p){
-  // Photon — CORS OK, sin rate limit
-  try{
-    const q=encodeURIComponent(p.dir+' Rosario Argentina');
-    const r=await fetch('https://photon.komoot.io/api/?q='+q+'&limit=3');
-    const d=await r.json();
-    if(d.features) for(const f of d.features){
-      const [lo,la]=f.geometry.coordinates;
-      if(la>-33.05&&la<-32.85&&lo>-60.8&&lo<-60.5) return [la,lo];
-    }
-  }catch(e){}
-  // Nominatim fallback
-  try{
-    const q=encodeURIComponent(p.dir+', Rosario, Santa Fe, Argentina');
-    const r=await fetch('https://nominatim.openstreetmap.org/search?q='+q+'&format=json&limit=1&countrycodes=ar');
-    const d=await r.json();
-    if(d.length){const la=parseFloat(d[0].lat),lo=parseFloat(d[0].lon);if(la>-33.05&&la<-32.85&&lo>-60.8&&lo<-60.5) return [la,lo];}
-  }catch(e){}
-  return null;
+function geoFetch(p){
+  return new Promise(res=>{
+    if(!geocoder){res(null);return;}
+    const query=p.dir+', Rosario, Santa Fe, Argentina';
+    geocoder.geocode({address:query,region:'ar'},(results,status)=>{
+      if(status==='OK'&&results[0]){
+        const loc=results[0].geometry.location;
+        const la=loc.lat(), lo=loc.lng();
+        // Validar que esté dentro de Rosario
+        if(la>-33.05&&la<-32.85&&lo>-60.8&&lo<-60.5) res([la,lo]);
+        else res(null);
+      } else res(null);
+    });
+  });
 }
 
 function addMkr(p){
-  if(!lmap) return;
-  if(mkrs[p.id]) lmap.removeLayer(mkrs[p.id]);
-  const co=gcache[p.id]; if(!co) return;
+  if(!lmap||!gcache[p.id]) return;
+  if(mkrs[p.id]) mkrs[p.id].setMap(null);
+  const [la,lo]=gcache[p.id];
   const color=sel.has(p.id)?'#10b981':'#3b82f6';
-  const icon=L.divIcon({html:'<div style="background:'+color+';width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',className:'',iconSize:[13,13],iconAnchor:[6,6]});
-  const m=L.marker(co,{icon}).addTo(lmap);
   const mapsUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.dir+', Rosario, Santa Fe, Argentina')+'&travelmode=driving';
-  m.bindPopup('<div style="min-width:160px"><b style="font-size:13px">'+p.nombre+'</b><br><span style="opacity:.8;font-size:11px">📍 '+p.dir+'</span><br><span style="opacity:.6;font-size:11px">ID: '+p.id+'</span>'+(p.obs?'<br><span style="opacity:.6;font-size:11px">ℹ️ '+p.obs+'</span>':'')+'<br><br><a href="'+mapsUrl+'" target="_blank" style="display:block;background:#1d6fa4;color:#fff;text-align:center;padding:7px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none">🗺️ Navegar con Google Maps</a></div>');
-  mkrs[p.id]=m;
+  const marker=new google.maps.Marker({
+    position:{lat:la,lng:lo},
+    map:lmap,
+    title:p.nombre,
+    icon:{
+      path:google.maps.SymbolPath.CIRCLE,
+      scale:8,
+      fillColor:color,
+      fillOpacity:1,
+      strokeColor:'#ffffff',
+      strokeWeight:2
+    }
+  });
+  const info=new google.maps.InfoWindow({
+    content:'<div style="min-width:180px;font-family:sans-serif">'+
+      '<b style="font-size:13px">'+p.nombre+'</b><br>'+
+      '<span style="font-size:11px;color:#666">📍 '+p.dir+'</span><br>'+
+      '<span style="font-size:11px;color:#666">ID: '+p.id+'</span>'+
+      (p.obs?'<br><span style="font-size:10px;color:#888">ℹ️ '+p.obs+'</span>':'')+
+      '<br><br><a href="'+mapsUrl+'" target="_blank" style="display:block;background:#1d6fa4;color:#fff;text-align:center;padding:8px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none">🗺️ Navegar con Google Maps</a>'+
+    '</div>'
+  });
+  marker.addListener('click',()=>{
+    Object.values(infoWindows).forEach(iw=>iw.close());
+    info.open(lmap,marker);
+  });
+  mkrs[p.id]=marker;
+  infoWindows[p.id]=info;
 }
 
+let infoWindows={};
+
 function fitMap(){
+  if(!lmap) return;
   const ms=Object.values(mkrs);
-  if(!ms.length||!lmap) return;
-  lmap.fitBounds(L.featureGroup(ms).getBounds().pad(.08));
+  if(!ms.length) return;
+  const bounds=new google.maps.LatLngBounds();
+  ms.forEach(m=>bounds.extend(m.getPosition()));
+  lmap.fitBounds(bounds);
 }
 
 // ── GPS / MI UBICACIÓN
@@ -892,7 +965,7 @@ function savePl(){
     foto:fotoData,
   };
   visits[curId].done=true;
-  renderV();updStats();
+  renderV();updStats();guardarEstado();
 }
 
 // ── IMPORT EXCEL
@@ -923,7 +996,7 @@ function addEmail(){
   var v=inp.value.trim().replace(/,$/,'');
   if(!v||!v.includes('@')){toast('Email inválido',true);return;}
   if(emails.includes(v)){toast('Ya está',true);return;}
-  emails.push(v);inp.value='';renderChips();toast('Agregado ✓');
+  emails.push(v);inp.value='';renderChips();guardarEstado();toast('Agregado ✓');
 }
 function removeEmail(i){emails.splice(i,1);renderChips();}
 function renderChips(){
