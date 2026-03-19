@@ -192,13 +192,20 @@ textarea.pli{resize:vertical;min-height:60px}
   <!-- MAPA -->
   <div class="mpw" id="p1">
     <div id="map" style="flex:1"></div>
+    <div style="background:var(--s1);border-bottom:1px solid var(--bd);padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="sm" id="d-ALL"  onclick="filtrarDistrito('ALL')"  style="background:#3b82f6;color:#fff;font-size:10px">Todos</button>
+      <button class="sm" id="d-NORTE"  onclick="filtrarDistrito('NORTE')"  style="background:rgba(56,161,105,.2);color:#68d391;border:1px solid #38a169;font-size:10px">🟢 Norte</button>
+      <button class="sm" id="d-CENTRO" onclick="filtrarDistrito('CENTRO')" style="background:rgba(229,62,62,.2);color:#fc8181;border:1px solid #e53e3e;font-size:10px">🔴 Centro</button>
+      <button class="sm" id="d-SUR"    onclick="filtrarDistrito('SUR')"    style="background:rgba(49,130,206,.2);color:#63b3ed;border:1px solid #3182ce;font-size:10px">🔵 Sur</button>
+      <button class="sm" id="d-OESTE"  onclick="filtrarDistrito('OESTE')"  style="background:rgba(128,90,213,.2);color:#b794f4;border:1px solid #805ad5;font-size:10px">🟣 Oeste</button>
+    </div>
     <div class="mbar">
       <span style="font-size:11px;color:var(--t2);flex:1">
         <strong id="mcnt" style="color:var(--a2);font-family:'JetBrains Mono',monospace">0</strong>
-        <span id="mst"> puntos cargados</span>
+        <span id="mst"> puntos</span>
       </span>
-      <button class="sm sma" onclick="fitMap()">⊕ Ver todos</button>
-      <button class="sm smg" id="btnGps" onclick="toggleGPS()">🔴 Mi ubicación</button>
+      <button class="sm sma" onclick="fitMap()">⊕ Todos</button>
+      <button class="sm" id="btnGps" onclick="toggleGPS()" style="background:#ef4444;color:#fff">🔴 GPS</button>
     </div>
   </div>
 
@@ -481,6 +488,75 @@ function toggleSel(id){
   toast(sel.has(id)?'Agregado ✓':'Quitado');
 }
 
+
+const DISTRITOS = {
+  NORTE: {
+    color: '#38a169', fillColor: '#68d391', nombre: 'Norte',
+    poligono: [
+      {lat:-32.870, lng:-60.720},
+      {lat:-32.870, lng:-60.615},
+      {lat:-32.930, lng:-60.615},
+      {lat:-32.930, lng:-60.648},
+      {lat:-32.935, lng:-60.683},
+      {lat:-32.930, lng:-60.720},
+    ]
+  },
+  CENTRO: {
+    color: '#e53e3e', fillColor: '#fc8181', nombre: 'Centro',
+    poligono: [
+      {lat:-32.930, lng:-60.648},
+      {lat:-32.930, lng:-60.615},
+      {lat:-32.956, lng:-60.615},
+      {lat:-32.956, lng:-60.648},
+      {lat:-32.950, lng:-60.655},
+      {lat:-32.940, lng:-60.648},
+    ]
+  },
+  SUR: {
+    color: '#3182ce', fillColor: '#63b3ed', nombre: 'Sur',
+    poligono: [
+      {lat:-32.956, lng:-60.615},
+      {lat:-32.956, lng:-60.690},
+      {lat:-32.975, lng:-60.690},
+      {lat:-33.010, lng:-60.700},
+      {lat:-33.010, lng:-60.615},
+    ]
+  },
+  OESTE: {
+    color: '#805ad5', fillColor: '#b794f4', nombre: 'Oeste',
+    poligono: [
+      {lat:-32.870, lng:-60.720},
+      {lat:-32.930, lng:-60.720},
+      {lat:-32.930, lng:-60.683},
+      {lat:-32.935, lng:-60.683},
+      {lat:-32.956, lng:-60.690},
+      {lat:-32.975, lng:-60.690},
+      {lat:-33.010, lng:-60.700},
+      {lat:-33.010, lng:-60.760},
+      {lat:-32.870, lng:-60.760},
+    ]
+  }
+};
+
+function getDistrito(lat, lng) {
+  for (const [key, d] of Object.entries(DISTRITOS)) {
+    if (puntoDentroDePoligono(lat, lng, d.poligono)) return key;
+  }
+  return null;
+}
+
+function puntoDentroDePoligono(lat, lng, poligono) {
+  let inside = false;
+  const n = poligono.length;
+  for (let i = 0, j = n-1; i < n; j = i++) {
+    const xi = poligono[i].lng, yi = poligono[i].lat;
+    const xj = poligono[j].lng, yj = poligono[j].lat;
+    const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj-xi)*(lat-yi)/(yj-yi)+xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 // ── GOOGLE MAPS
 let geocoder=null;
 
@@ -496,6 +572,7 @@ function initMap(){
   });
   geocoder = new google.maps.Geocoder();
   document.getElementById('mst').textContent=' puntos · Geocodificando...';
+  dibujarPoligonos();
   geoAll();
 }
 
@@ -545,7 +622,10 @@ function addMkr(p){
   if(!lmap||!gcache[p.id]) return;
   if(mkrs[p.id]) mkrs[p.id].setMap(null);
   const [la,lo]=gcache[p.id];
-  const color=sel.has(p.id)?'#10b981':'#3b82f6';
+  const distrito = gcache[p.id] ? getDistrito(gcache[p.id][0], gcache[p.id][1]) : null;
+  const dInfo = distrito ? DISTRITOS[distrito] : null;
+  const color = sel.has(p.id) ? '#10b981' : (dInfo ? dInfo.color : '#3b82f6');
+  if(p._distrito !== distrito){ p._distrito = distrito; }
   const mapsUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.dir+', Rosario, Santa Fe, Argentina')+'&travelmode=driving';
   const marker=new google.maps.Marker({
     position:{lat:la,lng:lo},
@@ -578,6 +658,50 @@ function addMkr(p){
 }
 
 let infoWindows={};
+let distritoPoly={};
+let filtroActivo='ALL';
+
+function filtrarDistrito(d){
+  filtroActivo=d;
+  // Update button styles
+  ['ALL','NORTE','CENTRO','SUR','OESTE'].forEach(k=>{
+    const btn=document.getElementById('d-'+k);
+    if(!btn) return;
+    btn.style.opacity = (d===k||d==='ALL'&&k==='ALL') ? '1' : '0.45';
+    btn.style.fontWeight = d===k ? '800' : '600';
+  });
+  // Show/hide markers
+  Object.keys(mkrs).forEach(id=>{
+    const p=puntos.find(x=>x.id===id);
+    if(!p) return;
+    const show = d==='ALL' || p._distrito===d;
+    mkrs[id].setVisible(show);
+  });
+  // Show/hide polygons
+  Object.entries(distritoPoly).forEach(([k,poly])=>{
+    poly.setVisible(d==='ALL'||d===k);
+  });
+  // Update count
+  const visible=Object.values(mkrs).filter(m=>m.getVisible()).length;
+  document.getElementById('mcnt').textContent=visible;
+}
+
+function dibujarPoligonos(){
+  if(!lmap) return;
+  Object.entries(DISTRITOS).forEach(([key,d])=>{
+    if(distritoPoly[key]) return;
+    distritoPoly[key]=new google.maps.Polygon({
+      paths:d.poligono,
+      strokeColor:d.color,
+      strokeOpacity:0.7,
+      strokeWeight:2,
+      fillColor:d.fillColor,
+      fillOpacity:0.08,
+      map:lmap,
+      clickable:false
+    });
+  });
+}
 
 function fitMap(){
   if(!lmap) return;
