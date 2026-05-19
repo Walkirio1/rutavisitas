@@ -4,104 +4,107 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Verificaciones SUBE</title>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB2yPk1pwHeXyVPgl4qzRqVAUQHZpV8dQs&libraries=places&language=es"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-:root{
-  --bg:#080c14;--s1:#0f1520;--s2:#161e2e;--s3:#1c2638;
-  --ac:#3b82f6;--a2:#60a5fa;--gn:#10b981;--or:#f59e0b;--rd:#ef4444;
-  --sb:#1d6fa4;--s2b:#38bdf8;--wa:#25D366;
-  --tx:#e8edf5;--t2:#94a3b8;
-  --bd:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);
-  --r:13px;--r2:9px;
-}
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;overscroll-behavior:none}
+body{font-family:'Outfit',system-ui,sans-serif;background:#080c14;color:#e8edf5;font-size:14px;overscroll-behavior:none}
 .app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
-.hdr{flex-shrink:0;padding:12px 16px 10px;background:var(--s1);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+
+/* HEADER */
+.hdr{flex-shrink:0;padding:12px 16px 10px;background:#0f1520;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between}
 .logo{font-size:19px;font-weight:800;letter-spacing:-.5px}
-.logo span{color:var(--a2)}
-.csel{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);color:var(--s2b);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:'Outfit',sans-serif;outline:none}
-.csel option{background:#1a2638;color:var(--tx)}
-.tabs{flex-shrink:0;display:flex;background:var(--s1);border-bottom:1px solid var(--bd)}
-.tab{flex:1;padding:9px 2px 7px;text-align:center;font-size:10px;font-weight:600;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;text-transform:uppercase;letter-spacing:.03em}
-.tab.active{color:var(--a2);border-bottom-color:var(--a2)}
+.logo span{color:#60a5fa}
+
+/* TABS */
+.tabs{flex-shrink:0;display:flex;background:#0f1520;border-bottom:1px solid rgba(255,255,255,.07)}
+.tab{flex:1;padding:9px 2px 7px;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;font-family:inherit}
+.tab.on{color:#60a5fa;border-bottom-color:#60a5fa}
 .ti{font-size:15px;display:block;margin-bottom:2px}
+
+/* CONTENIDO */
 .cnt{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 13px 80px}
 .cnt::-webkit-scrollbar{display:none}
-.pnl{display:none}.pnl.active{display:block}
-.mpw{flex:1;display:none;flex-direction:column;overflow:hidden}
-.mpw.active{display:flex}
-#map{flex:1;min-height:0}
-.mbar{flex-shrink:0;background:var(--s1);border-top:1px solid var(--bd);padding:9px 13px;display:flex;align-items:center;gap:10px}
+.pnl{display:none}.pnl.on{display:block}
 
-.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:13px;margin-bottom:9px}
-.stit{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px}
-input[type=text],select,textarea{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r2);color:var(--tx);font-family:'Outfit',sans-serif;font-size:13px;padding:9px 11px;outline:none;transition:border .2s}
-input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.5);background:var(--s3)}
+/* CARDS */
+.card{background:#0f1520;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:13px;margin-bottom:9px}
+.stit{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px;display:block}
+
+/* INPUTS */
+input[type=text],input[type=email],select,textarea{width:100%;background:#161e2e;border:1px solid rgba(255,255,255,.07);border-radius:9px;color:#e8edf5;font-family:inherit;font-size:13px;padding:9px 11px;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.5);background:#1c2638}
 select option{background:#1a2638}
 textarea{resize:vertical;min-height:65px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.gf{grid-column:1/-1}
-.fg{display:flex;flex-direction:column;gap:3px}
-.fl{font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.07em}
-.row{display:flex;gap:7px;margin-bottom:7px}
-.btn{border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .18s;width:100%;display:block;margin-top:7px}
+
+/* BOTONES */
+.btn{border:none;border-radius:10px;padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;display:block;margin-top:7px;color:#fff;transition:all .15s}
 .btn:active{transform:scale(.97)}
-.ba{background:var(--ac);color:#fff}.ba:hover{background:#2563eb}
-.bs{background:linear-gradient(135deg,var(--sb),var(--s2b));color:#fff}
-.bg{background:var(--gn);color:#fff}
-.bw{background:var(--wa);color:#fff}
-.bh{background:var(--s2);color:var(--tx);border:1px solid var(--b2)}
-.bh:hover{border-color:var(--ac);color:var(--a2)}
-.btn:disabled{opacity:.33;cursor:not-allowed;transform:none!important}
-.sm{border:none;border-radius:7px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.ba{background:#3b82f6}.bg{background:#10b981}.bw{background:#25D366}.bd{background:#1c2638;border:1px solid rgba(255,255,255,.13);color:#e8edf5}.br{background:#ef4444}
+.sm{border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
 .sm:active{transform:scale(.96)}
-.sma{background:var(--ac);color:#fff}
-.sms{background:var(--sb);color:#fff}
-.smg{background:var(--gn);color:#fff}
-.smh{background:var(--s2);color:var(--tx);border:1px solid var(--bd)}
-.smh:hover{border-color:var(--ac);color:var(--a2)}
-.sts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.sc{background:var(--s2);border-radius:9px;padding:10px;text-align:center;border:1px solid var(--bd)}
-.sn{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--a2)}
-.sl{font-size:9px;color:var(--t2);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
-.pi{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;background:var(--s2);border-radius:9px;margin-bottom:5px;border:1px solid var(--bd);transition:border .15s}
-.pi.sl2{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.05)}
-.pnum{min-width:24px;height:24px;border-radius:50%;background:var(--ac);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.sma{background:#3b82f6;color:#fff}.smg{background:#10b981;color:#fff}.smb{background:#1d6fa4;color:#fff}
+.smh{background:#1c2638;color:#e8edf5;border:1px solid rgba(255,255,255,.07)}
+.smr{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+
+/* PUNTO ITEM */
+.pi{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;background:#161e2e;border-radius:9px;margin-bottom:5px;border:1px solid rgba(255,255,255,.07);transition:border .15s}
+.pi.sel{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.05)}
+.pnum{min-width:24px;height:24px;border-radius:50%;background:#3b82f6;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .pb{flex:1;min-width:0}
 .pno{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pd{font-size:11px;color:var(--t2);margin-top:1px}
-.pi2{font-size:10px;color:var(--t2);font-family:'JetBrains Mono',monospace}
-.pt{font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700;margin-top:3px;display:inline-block}
-.tr{background:rgba(59,130,246,.12);color:var(--a2)}
-.tv{background:rgba(16,185,129,.12);color:var(--gn)}
-.pac{display:flex;gap:5px;flex-direction:column;flex-shrink:0}
-.sb2{position:relative;margin-bottom:9px}
-.sb2 input{padding-left:32px}
-.si2{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
-.uz{border:2px dashed var(--b2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;background:var(--s2);margin-bottom:9px;transition:all .2s}
-.uz:hover{border-color:var(--s2b)}.uz input{display:none}
-.vi{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:12px;margin-bottom:8px;transition:border .2s}
+.pd{font-size:11px;color:#94a3b8;margin-top:1px}
+.pid{font-size:10px;color:#94a3b8;font-family:monospace}
+.pobs{font-size:10px;color:#94a3b8;margin-top:1px}
+.ptag{font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700;margin-top:3px;display:inline-block}
+.tv{background:rgba(16,185,129,.12);color:#10b981}.tr{background:rgba(59,130,246,.12);color:#60a5fa}
+
+/* STATS */
+.sts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.sc{background:#161e2e;border-radius:9px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,.07)}
+.sn{font-family:monospace;font-size:20px;font-weight:600;color:#60a5fa}
+.sl{font-size:9px;color:#94a3b8;margin-top:2px;text-transform:uppercase}
+
+/* VISITA ITEM */
+.vi{background:#0f1520;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:12px;margin-bottom:8px;transition:border .2s}
 .vi.dn{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.03)}
 .vh{display:flex;align-items:flex-start;gap:9px}
-.vn{min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.vp{background:rgba(59,130,246,.15);color:var(--a2)}
-.vd{background:rgba(16,185,129,.15);color:var(--gn)}
+.vnum{min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.vp{background:rgba(59,130,246,.15);color:#60a5fa}.vd{background:rgba(16,185,129,.15);color:#10b981}
 .vb{flex:1;min-width:0}
 .va{font-size:12px;font-weight:700}
-.vid{font-size:10px;color:var(--t2);font-family:'JetBrains Mono',monospace}
-.vs{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;flex-shrink:0}
-.vsp{background:rgba(245,158,11,.12);color:var(--or)}
-.vsd{background:rgba(16,185,129,.12);color:var(--gn)}
-.vac{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.chip{display:inline-flex;align-items:center;gap:5px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:var(--a2);border-radius:20px;padding:3px 9px;font-size:11px;margin:2px}
+.vid2{font-size:10px;color:#94a3b8;font-family:monospace}
+.vst{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;flex-shrink:0}
+.vsp{background:rgba(245,158,11,.12);color:#f59e0b}.vsd{background:rgba(16,185,129,.12);color:#10b981}
+
+/* BADGE */
+.bdg{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;background:rgba(59,130,246,.15);color:#60a5fa}
+.bdg.gr{background:rgba(16,185,129,.12);color:#10b981}
+.bdg.rd{background:rgba(239,68,68,.12);color:#ef4444}
+
+/* HISTORIAL ROW */
+.hrow{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#161e2e;border:1px solid rgba(255,255,255,.07);border-radius:9px;margin-bottom:5px;cursor:pointer}
+
+/* CHIP EMAIL */
+.chip{display:inline-flex;align-items:center;gap:5px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#60a5fa;border-radius:20px;padding:3px 9px;font-size:11px;margin:2px}
 .chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.7}
-.cbox{min-height:36px;padding:4px;background:var(--s2);border-radius:8px;border:1px solid var(--bd);margin-bottom:7px;display:flex;flex-wrap:wrap;align-items:center}
-.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;overflow-y:auto;padding:10px;backdrop-filter:blur(4px)}
+
+/* BUSCADOR */
+.sb{position:relative;margin-bottom:9px}
+.sb input{padding-left:32px}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+
+/* UPLOAD ZONE */
+.uz{border:2px dashed rgba(255,255,255,.13);border-radius:13px;padding:18px;text-align:center;cursor:pointer;background:#161e2e;margin-bottom:9px;display:block;transition:all .2s}
+.uz:hover{border-color:#38bdf8}
+.uz input{display:none}
+
+/* INFOBANNER */
+.info{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:#94a3b8;line-height:1.7}
+
+/* PLANILLA MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;overflow-y:auto;padding:10px;backdrop-filter:blur(4px)}
 .ov.show{display:block}
 .plw{max-width:460px;margin:0 auto;background:#f0f4fa;border-radius:15px;overflow:hidden;padding-bottom:14px;animation:su .22s ease}
 @keyframes su{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -109,1061 +112,785 @@ textarea{resize:vertical;min-height:65px}
 .pll{font-size:22px;font-weight:800;color:#fff;letter-spacing:2px}
 .plsub{color:rgba(255,255,255,.85);font-size:10px;font-weight:600;text-align:right;text-transform:uppercase}
 .plb{padding:12px 15px}
+.plsec{background:#1e293b;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:6px;border-radius:6px;margin:10px 0 7px;letter-spacing:.07em;text-transform:uppercase}
+.pli{background:#fff!important;border:1.5px solid #cbd5e1!important;border-radius:7px!important;padding:8px 10px!important;font-family:inherit!important;font-size:13px!important;color:#1e293b!important;outline:none!important;transition:border .2s;width:100%}
+.pli:focus{border-color:#1d6fa4!important}
+.plau{background:#eff6ff!important;color:#1d6fa4!important;font-weight:600!important}
 .plg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .plgf{grid-column:1/-1}
-.plfl{display:flex;flex-direction:column;gap:3px}
-.pllb{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
-input.pli,textarea.pli{background:#fff;border:1.5px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:#1e293b;outline:none;transition:border .2s;width:100%}
-input.pli:focus,textarea.pli:focus{border-color:#1d6fa4}
-input.plau{background:#eff6ff;color:#1d6fa4;font-weight:600;border-color:#bfdbfe;font-family:'JetBrains Mono',monospace;font-size:12px}
-textarea.pli{resize:vertical;min-height:60px}
-.plsec{background:#1e293b;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:6px;border-radius:6px;margin:10px 0 7px;letter-spacing:.07em;text-transform:uppercase}
-.plr{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px;cursor:pointer;user-select:none;border:1px solid transparent;margin-bottom:3px;transition:all .15s}
+.pllb{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.plr{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px;cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:all .15s;user-select:none}
 .plr:hover{background:#f0f6ff}.plr.on{background:#dbeafe;border-color:#93c5fd}
-.plrn{font-size:11px;font-weight:700;text-transform:uppercase;flex:1;text-align:center;color:#475569;transition:color .15s}
+.plrn{font-size:11px;font-weight:700;text-transform:uppercase;flex:1;color:#475569;transition:color .15s}
 .plr.on .plrn{color:#1d6fa4}
 .plck{width:20px;height:20px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff;flex-shrink:0;transition:all .15s}
 .plr.on .plck{background:#1d6fa4;border-color:#1d6fa4}
 .plx{color:#fff;font-size:12px;font-weight:800;display:none}
 .plr.on .plx{display:block}
-.pvb{background:#fff;border-radius:9px;overflow:hidden;margin-bottom:10px;border:2px solid #10b981;display:none}
-.foto-sec{margin-top:10px}
-.foto-prev{width:100%;border-radius:9px;object-fit:cover;max-height:200px;display:none;margin-top:8px;border:2px solid #10b981}
-.foto-btn{background:#f0f4fa;border:2px dashed #94a3b8;border-radius:9px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;margin-top:6px}
-.foto-btn:hover{border-color:#1d6fa4;background:#eff6ff}
-.foto-btn input{display:none}
-.pvb canvas{width:100%;display:block}
-.pvl{background:#10b981;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:5px}
-.plbr{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px}
-.plbt{border:none;border-radius:9px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .18s;width:100%}
+.plbt{border:none;border-radius:9px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;width:100%;color:#fff}
 .plbt:active{transform:scale(.97)}
-.plgo{background:linear-gradient(135deg,#1d6fa4,#38bdf8);color:#fff}
+.plgo{background:linear-gradient(135deg,#1d6fa4,#38bdf8)}
+.plgr{background:#10b981}
 .plcl{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
-.plbt:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
-.si{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)}
-.sia{flex:1;font-size:11px}
-.sib{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700}
-.bok{background:rgba(16,185,129,.12);color:var(--gn)}
-.bir{background:rgba(239,68,68,.12);color:var(--rd)}
-.empty{text-align:center;padding:36px 14px;color:var(--t2)}
+.plbr{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px;margin-top:6px}
+
+/* PLANILLA GUARDADA ITEM */
+.pl-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;margin-bottom:5px;border:1px solid #cbd5e1;background:#fff;transition:all .15s}
+.pl-item.on{border:2px solid #1d6fa4;background:#dbeafe}
+
+/* FOTO */
+.foto-btn{border:2px dashed #94a3b8;border-radius:9px;padding:14px;text-align:center;cursor:pointer;background:#f8fafc;margin-top:6px;display:block;transition:all .2s}
+.foto-btn input{display:none}
+.foto-prev{width:100%;border-radius:9px;object-fit:cover;max-height:200px;display:none;margin-top:8px;border:2px solid #10b981}
+
+/* CONFIRM DIALOG */
+.dlg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:2000;align-items:center;justify-content:center;padding:20px}
+.dlg.show{display:flex}
+.dlgw{background:#0f1520;border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:20px;max-width:340px;width:100%}
+
+/* TOAST */
+.toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(18px);background:#10b981;color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;opacity:0;transition:all .28s;pointer-events:none;white-space:nowrap;z-index:3000;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:#ef4444}
+
+/* EMPTY */
+.empty{text-align:center;padding:36px 14px;color:#94a3b8}
 .ei{font-size:38px;margin-bottom:10px;display:block}
 .empty p{font-size:12px;line-height:1.6}
-.toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(18px);background:var(--gn);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;opacity:0;transition:all .28s;pointer-events:none;white-space:nowrap;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,.3)}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast.err{background:var(--rd)}
 </style>
 </head>
 <body>
 <div class="app">
+
+  <!-- HEADER -->
   <div class="hdr">
     <div class="logo">Verific.<span>SUBE</span></div>
-    <select class="csel" id="csel" onchange="onCity()">
-      <option value="">Todas</option>
-      <option value="ROSARIO" selected>Rosario</option>
-    </select>
-  </div>
-  <div class="tabs">
-    <div class="tab active" onclick="showTab(0)"><span class="ti">📋</span>Puntos</div>
-    <div class="tab" onclick="showTab(1)"><span class="ti">🗺️</span>Mapa</div>
-    <div class="tab" onclick="showTab(2)"><span class="ti">✅</span>Visitas</div>
-    <div class="tab" onclick="showTab(3)"><span class="ti">📧</span>Informe</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span id="fechaHdr" style="font-size:10px;color:#94a3b8"></span>
+      <button class="sm smh" onclick="cerrarDia()">📁 Cerrar día</button>
+    </div>
   </div>
 
-  <!-- PUNTOS -->
-  <div class="cnt pnl active" id="p0">
-    <div class="stit">Importar Excel</div>
-    <div class="uz" onclick="document.getElementById('xlup').click()">
-      <input type="file" id="xlup" accept=".xlsx,.xls" onchange="importXL(this)"/>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab on" onclick="showTab(0)"><span class="ti">📋</span>Puntos</button>
+    <button class="tab"    onclick="showTab(1)"><span class="ti">✅</span>Visitas</button>
+    <button class="tab"    onclick="showTab(2)"><span class="ti">📜</span>Historial</button>
+    <button class="tab"    onclick="showTab(3)"><span class="ti">📄</span>Planillas</button>
+    <button class="tab"    onclick="showTab(4)"><span class="ti">📧</span>Informe</button>
+  </div>
+
+  <!-- TAB 0: PUNTOS -->
+  <div class="cnt pnl on" id="t0">
+    <span class="stit">Importar Excel</span>
+    <label class="uz">
+      <input type="file" accept=".xlsx,.xls" onchange="importXL(this)"/>
       <div style="font-size:22px;margin-bottom:4px">📊</div>
-      <div style="font-size:12px;color:var(--t2)">Subir Excel · o usá los <strong style="color:var(--a2)">40 puntos ya cargados ↓</strong></div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
-      <div class="stit" style="margin:0">Puntos de verificación</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span id="badge" style="font-size:10px;background:rgba(59,130,246,.15);color:var(--a2);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace">40</span>
-        <button class="sm" style="font-size:10px;background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:3px 9px" onclick="limpiarLista()">🗑️ Limpiar</button>
+      <div style="font-size:12px;color:#94a3b8">Subir Excel con los puntos del día</div>
+    </label>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span class="stit" style="margin:0">Lista de puntos</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="bdg" id="cntBadge">0</span>
+        <button class="sm smr" id="btnLimpiar" style="display:none" onclick="borrarDia()">🗑️ Limpiar</button>
       </div>
     </div>
-    <div class="sb2"><span class="si2">🔍</span><input type="text" id="qin" placeholder="Buscar nombre, dirección, ID..." oninput="renderP()"/></div>
+    <div class="sb" id="sbWrap" style="display:none">
+      <span class="si">🔍</span>
+      <input type="text" id="qin" placeholder="Buscar nombre, dirección, ID..." oninput="renderP()"/>
+    </div>
     <div id="plist"></div>
-    <div id="pempty" class="empty" style="display:none"><span class="ei">📋</span><p>Sin resultados.</p></div>
+    <div class="empty" id="pEmpty" style="display:none"><span class="ei">📋</span><p>Sin resultados.</p></div>
+    <div class="empty" id="pVacio"><span class="ei">📋</span><p>Importá un Excel para cargar los puntos del día.<br/>Los datos se guardan automáticamente.</p></div>
   </div>
 
-  <!-- MAPA -->
-  <div class="mpw" id="p1">
-    <div id="map" style="flex:1"></div>
-    <div style="background:var(--s1);border-bottom:1px solid var(--bd);padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap">
-      <button class="sm" id="d-ALL"  onclick="filtrarDistrito('ALL')"  style="background:#3b82f6;color:#fff;font-size:10px">Todos</button>
-      <button class="sm" id="d-NORTE"  onclick="filtrarDistrito('NORTE')"  style="background:rgba(56,161,105,.2);color:#68d391;border:1px solid #38a169;font-size:10px">🟢 Norte</button>
-      <button class="sm" id="d-CENTRO" onclick="filtrarDistrito('CENTRO')" style="background:rgba(229,62,62,.2);color:#fc8181;border:1px solid #e53e3e;font-size:10px">🔴 Centro</button>
-      <button class="sm" id="d-SUR"    onclick="filtrarDistrito('SUR')"    style="background:rgba(49,130,206,.2);color:#63b3ed;border:1px solid #3182ce;font-size:10px">🔵 Sur</button>
-      <button class="sm" id="d-OESTE"  onclick="filtrarDistrito('OESTE')"  style="background:rgba(128,90,213,.2);color:#b794f4;border:1px solid #805ad5;font-size:10px">🟣 Oeste</button>
-    </div>
-    <div class="mbar">
-      <span style="font-size:11px;color:var(--t2);flex:1">
-        <strong id="mcnt" style="color:var(--a2);font-family:'JetBrains Mono',monospace">0</strong>
-        <span id="mst"> puntos</span>
-      </span>
-      <button class="sm sma" onclick="fitMap()">⊕ Todos</button>
-      <button class="sm" id="btnGps" onclick="toggleGPS()" style="background:#ef4444;color:#fff">🔴 GPS</button>
-    </div>
-  </div>
-
-  <!-- VISITAS -->
-  <div class="cnt pnl" id="p2">
+  <!-- TAB 1: VISITAS -->
+  <div class="cnt pnl" id="t1">
     <div class="sts">
-      <div class="sc"><div class="sn" id="s0">0</div><div class="sl">Puntos</div></div>
-      <div class="sc"><div class="sn" id="s1">0</div><div class="sl">Hechos</div></div>
+      <div class="sc"><div class="sn" id="s0">0</div><div class="sl">En ruta</div></div>
+      <div class="sc"><div class="sn" id="s1">0</div><div class="sl">Hechas</div></div>
       <div class="sc"><div class="sn" id="s2">0</div><div class="sl">Pendientes</div></div>
     </div>
     <div id="vlist"></div>
-    <div id="vempty" class="empty"><span class="ei">✅</span><p>Seleccioná puntos desde la pestaña Puntos.</p></div>
+    <div class="empty" id="vEmpty"><span class="ei">✅</span><p>Seleccioná puntos en la pestaña Puntos.</p></div>
   </div>
 
-  <!-- INFORME -->
-  <div class="cnt pnl" id="p3">
-    <div class="stit">Destinatarios</div>
+  <!-- TAB 2: HISTORIAL -->
+  <div class="cnt pnl" id="t2">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+      <span class="stit" style="margin:0">Historial de jornadas</span>
+      <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">🗑️ Borrar todo</button>
+    </div>
+    <div id="hlist"></div>
+    <div class="empty" id="hEmpty"><span class="ei">📜</span><p>Cerrá el día desde el encabezado<br/>para guardar jornadas aquí.</p></div>
+  </div>
+
+  <!-- TAB 3: PLANILLAS GUARDADAS -->
+  <div class="cnt pnl" id="t3">
+    <span class="stit">Mis planillas PDF guardadas</span>
+    <div class="info">
+      💡 <strong style="color:#e8edf5">¿Para qué sirve?</strong><br>
+      Guardás tu planilla PDF una sola vez y la nombrás. La próxima vez que completes una visita, la seleccionás de la lista. Máximo 10 planillas guardadas.
+    </div>
+    <!-- Subir nueva -->
+    <div class="card" id="nuevaPlanCard">
+      <span class="stit">Agregar planilla <span id="plCount" style="color:#60a5fa"></span></span>
+      <div id="pdfDropZone">
+        <label class="uz" style="padding:14px;margin-bottom:9px">
+          <input type="file" accept=".pdf" onchange="loadNuevaPdf(this)"/>
+          <div style="font-size:18px;margin-bottom:3px">📄</div>
+          <div style="font-size:12px;color:#94a3b8">Tocá para elegir el <strong style="color:#60a5fa">PDF de la planilla</strong></div>
+        </label>
+      </div>
+      <div id="pdfOkZone" style="display:none;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:9px;padding:9px 12px;margin-bottom:9px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span>✅</span>
+          <div style="flex:1;font-size:12px;color:#10b981;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="pdfNombreFile"></div>
+          <button style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px" onclick="quitarNuevaPdf()">✕</button>
+        </div>
+      </div>
+      <input type="text" id="nuevaPlNombre" placeholder="Nombre (ej: Planilla Rosario Norte)" style="margin-bottom:9px"/>
+      <button class="btn ba" onclick="guardarNuevaPlanilla()">💾 Guardar planilla</button>
+    </div>
+    <!-- Lista -->
+    <div id="plList"></div>
+    <div class="empty" id="plEmpty" style="display:none"><span class="ei">📄</span><p>Todavía no guardaste ninguna planilla.</p></div>
+  </div>
+
+  <!-- TAB 4: INFORME -->
+  <div class="cnt pnl" id="t4">
+    <span class="stit">Destinatarios</span>
     <div class="card">
-      <div class="cbox" id="chips"></div>
-      <div class="row">
-        <input type="text" id="ein" placeholder="email@ejemplo.com" onkeydown="if(event.key==='Enter')addEmail()"/>
+      <div style="min-height:36px;padding:4px;background:#161e2e;border-radius:8px;border:1px solid rgba(255,255,255,.07);margin-bottom:7px;display:flex;flex-wrap:wrap;align-items:center" id="chips"></div>
+      <div style="display:flex;gap:7px">
+        <input type="email" id="ein" placeholder="email@ejemplo.com" onkeydown="if(event.key==='Enter')addEmail()"/>
         <button class="sm sma" onclick="addEmail()">+</button>
       </div>
     </div>
-    <div class="stit">Resumen</div>
-    <div class="card" id="scard"><div class="empty" style="padding:14px 0"><p>Completá visitas para ver el resumen.</p></div></div>
-    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--t2);line-height:1.7">
-      💡 <strong style="color:var(--tx)">Para enviar las planillas y fotos:</strong><br>
-      1. Completá cada visita → descargá planilla y foto<br>
-      2. Todos los archivos quedan en <strong style="color:var(--a2)">Descargas</strong> del teléfono<br>
-      3. Abrí WhatsApp → adjuntá desde Descargas
-    </div>
-    <button class="btn bw" onclick="sendWA()">💬 Enviar resumen por WhatsApp</button>
-    <button class="btn bh" onclick="sendEmail()" style="margin-top:6px">📧 Enviar resumen por email</button>
+    <span class="stit">Resumen del día</span>
+    <div class="card" id="resCard"></div>
+    <button class="btn bw" onclick="sendWA()">💬 Enviar por WhatsApp</button>
+    <button class="btn bd" style="margin-top:6px" onclick="sendEmail()">📧 Enviar por email</button>
   </div>
-</div>
 
-<!-- PLANILLA OVERLAY -->
+</div><!-- /app -->
+
+<!-- MODAL PLANILLA VISITA -->
 <div class="ov" id="ov">
   <div class="plw">
     <div class="plh"><div class="pll">SUBE</div><div class="plsub">Planilla de<br>Verificaciones</div></div>
     <div class="plb">
-      <div id="upSec">
-        <div class="plsec">Planilla SUBE original</div>
-        <div class="uz" onclick="document.getElementById('plpdf').click()" style="padding:14px;margin-bottom:8px">
-          <input type="file" id="plpdf" accept=".pdf" onchange="loadPDF(this)"/>
-          <div style="font-size:18px;margin-bottom:3px">📄</div>
-          <div style="font-size:12px;color:#64748b">Subir planilla <strong style="color:#1d6fa4">SUBE en blanco</strong></div>
-        </div>
-        <div id="pdfOk" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 12px;font-size:12px;color:#059669;font-weight:600;margin-bottom:8px">✅ <span id="pdfNm"></span></div>
+
+      <!-- SECCIÓN: elegir planilla PDF -->
+      <div class="plsec">Planilla PDF</div>
+      <div id="plGuardadasSec"></div>
+      <div id="pdfNuevoSec">
+        <label class="foto-btn" style="margin-bottom:8px">
+          <input type="file" accept=".pdf" onchange="loadPdfModal(this)"/>
+          <div style="font-size:18px;margin-bottom:3px">📤</div>
+          <div style="font-size:12px;color:#64748b" id="pdfNuevoLbl">Subir planilla PDF</div>
+        </label>
       </div>
-      <div class="plsec">Datos de la visita</div>
-      <div class="plg">
-        <div class="plfl"><div class="pllb">Fecha</div><input class="pli plau" id="plF" readonly/></div>
-        <div class="plfl"><div class="pllb">Hora</div><input class="pli plau" id="plH" readonly/></div>
-        <div class="plfl"><div class="pllb">ID PS</div><input class="pli plau" id="plI" readonly/></div>
-        <div class="plfl"><div class="pllb">Rubro</div><input class="pli" id="plR" placeholder="Kiosco"/></div>
-        <div class="plfl plgf"><div class="pllb">Dirección</div><input class="pli plau" id="plD" readonly/></div>
-      </div>
-      <div class="plsec">Irregularidad de Carga</div>
-      <div id="plCarga"></div>
-      <div class="plsec">Irregularidad en la Venta</div>
-      <div id="plVenta"></div>
-      <div class="plsec">Observaciones</div>
-      <textarea class="pli" id="plO" placeholder="Observaciones..."></textarea>
-      <!-- FOTO -->
-      <div class="plsec">Foto de la visita</div>
-      <div class="foto-sec">
-        <div class="foto-btn" onclick="document.getElementById('fotoInput').click()">
-          <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="loadFoto(this)"/>
-          <div style="font-size:22px;margin-bottom:4px">📷</div>
-          <div style="font-size:12px;color:#64748b">Tocar para <strong style="color:#1d6fa4">sacar foto</strong> o elegir de la galería</div>
+      <div id="pdfNuevoOk" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;padding:9px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span>✅</span>
+          <div style="flex:1;font-size:12px;color:#15803d;font-weight:600">PDF nuevo cargado</div>
+          <button style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px" onclick="quitarPdfModal()">✕</button>
         </div>
-        <img id="fotoPrev" class="foto-prev"/>
-        <div id="fotoOk" style="display:none;font-size:11px;color:#059669;font-weight:600;margin-top:5px;text-align:center">✅ Foto cargada — se descarga junto a la planilla</div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #bbf7d0">
+          <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleGuardarNueva()">
+            <div id="chkGuardar" style="width:18px;height:18px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff;flex-shrink:0"></div>
+            <span style="font-size:11px;font-weight:600;color:#475569">Guardar esta planilla para usar después</span>
+          </div>
+          <input type="text" id="guardarNuevaNombre" style="display:none;margin-top:7px;background:#fff;border:1.5px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1e293b;outline:none;width:100%" placeholder="Nombre (ej: Planilla Rosario)"/>
+        </div>
+      </div>
+      <div id="pdfWarning" style="display:none;font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:6px;text-align:center;padding:6px;background:#fffbeb;border-radius:7px">
+        ⚠️ Sin planilla PDF — los datos igualmente se guardan
       </div>
 
-      <div class="pvb" id="pvb"><div class="pvl">👁️ Vista previa</div><canvas id="pvc"></canvas></div>
+      <!-- DATOS -->
+      <div class="plsec">Datos de la visita</div>
+      <div class="plg">
+        <div><div class="pllb">Fecha</div><input class="pli plau" id="plF" readonly/></div>
+        <div><div class="pllb">Hora</div><input class="pli plau" id="plH" readonly/></div>
+        <div><div class="pllb">ID PS</div><input class="pli plau" id="plI" readonly/></div>
+        <div><div class="pllb">Rubro</div><input class="pli" id="plR" placeholder="Kiosco"/></div>
+        <div class="plgf"><div class="pllb">Dirección</div><input class="pli plau" id="plD" readonly/></div>
+      </div>
+
+      <!-- CARGA -->
+      <div class="plsec">Irregularidad de Carga</div>
+      <div id="plCarga"></div>
+
+      <!-- VENTA -->
+      <div class="plsec">Irregularidad en la Venta</div>
+      <div id="plVenta"></div>
+
+      <!-- OBS -->
+      <div class="plsec">Observaciones</div>
+      <textarea class="pli" id="plO" placeholder="Observaciones..." style="resize:vertical;min-height:60px"></textarea>
+
+      <!-- FOTO -->
+      <div class="plsec">Foto de la visita</div>
+      <label class="foto-btn" id="fotoBtnLbl">
+        <input type="file" accept="image/*" capture="environment" onchange="loadFoto(this)"/>
+        <div style="font-size:22px;margin-bottom:4px">📷</div>
+        <div style="font-size:12px;color:#64748b">Tocar para <strong style="color:#1d6fa4">sacar foto</strong></div>
+      </label>
+      <img id="fotoPrev" class="foto-prev"/>
+      <div id="fotoOk" style="display:none;font-size:11px;color:#059669;font-weight:600;margin-top:5px;text-align:center">✅ Foto cargada</div>
+      <button id="fotoQuit" style="display:none;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:7px;width:100%;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;margin-top:6px" onclick="quitarFoto()">🗑️ Quitar foto</button>
     </div>
-    <div class="plbr" id="brA">
-      <button class="plbt plgo" id="btnPv" onclick="genPrev()">👁️ Ver cómo queda</button>
+    <div class="plbr">
+      <button class="plbt plgo" onclick="guardarVisita()">💾 Guardar visita</button>
       <button class="plbt plcl" onclick="closeOv()">✕ Cancelar</button>
     </div>
-    <div class="plbr" id="brB" style="display:none">
-      <button class="plbt plgo" onclick="dlPlanilla()">📥 Descargar</button>
-      <button class="plbt plcl" onclick="backEdit()">✏️ Editar</button>
-    </div>
-    <div style="padding:0 15px;margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:7px">
-      <button class="plbt plgo" style="background:#10b981" id="btnDlDirecto" onclick="dlPlanilla()">📥 Descargar</button>
-      <button class="plbt plgo" style="background:#1a73e8" id="btnDrive" onclick="subirDrive()">☁️ Drive</button>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="dlg" id="dlg">
+  <div class="dlgw">
+    <p id="dlgMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px"></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn br" onclick="dlgOk()">Sí, confirmar</button>
+      <button class="btn bd" onclick="closeDlg()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<canvas id="wc" style="display:none"></canvas>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-// ── PLANILLA COORDS
-const DRIVE_URL="https://script.google.com/macros/s/AKfycby6XhurQN8qMrHkncuhvSvfKK0PV_LIBK4WjRig9TiH9cMZYBFcmOOs53kNl-0qkB4Y/exec";
+// ── CONSTANTES
 const CN=["DOMICILIO INEXISTENTE","COMERCIO CERRADO","NO COMERCIALIZA SUBE","SIN SERVICIO DE CARGA","COBRO ADICIONAL","NO ENTREGA TICKET","TICKET CON OTRA DIRECCIÓN","SIN SEÑALÉTICA"];
 const VN=["COBRO ADICIONAL EN LA VENTA","SIN STOCK DE TARJETAS"];
-const PW=595.44,PH=841.92,EX=195,CX=480.5;
-const CCY=[312.8,335.5,360.4,383.1,407.1,430.7,455.1,479.1];
-const VCY=[568.5,587.5];
-const TY=[128.1,152.4,176.6,200.8,225.1];
 
-// ── DATA (40 puntos de Rosario)
-const DATA=[
-  {id:"112633",nombre:"AGENCIA EL ALQUIMISTA",dir:"MENDOZA 7171",localidad:"ROSARIO",tipo:"Recarga",obs:"Entre calles: MEJICO Y GUATEMALA"},
-  {id:"113348",nombre:"KND RED MINIMARKET",dir:"3 DE FEBRERO 2157",localidad:"ROSARIO",tipo:"Recarga",obs:"entre calles: TELLIER Y ROSALES"},
-  {id:"116793",nombre:"AUTOSERVICIO ALDO",dir:"24 DE SEPTIEMBRE 2930",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"Entre calles: OMAR CARRASCO Y SUIPACHA"},
-  {id:"118619",nombre:"anda ziami",dir:"27 DE FEBRERO 2893",localidad:"ROSARIO",tipo:"Recarga",obs:"Barrio: carrasco y o. Lagos"},
-  {id:"113903",nombre:"CASTILLO LUCIANA MARIA",dir:"3 DE FEBRERO 3558",localidad:"ROSARIO",tipo:"Recarga",obs:"entre Cafferata y San Nicolas"},
-  {id:"109034",nombre:"MAXIKIOSCO BIGOTE",dir:"ALDAO CAMILO BIS 401",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"Entre calles: GORRITI Y BIELSA"},
-  {id:"57944",nombre:"Sucursal 1 Rosario",dir:"ALEM 1755",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"120868",nombre:"ARROYO JUAN",dir:"AMAZONAS 3273",localidad:"ROSARIO",tipo:"Recarga",obs:"entre Crespo y Vera Mujica"},
-  {id:"120068",nombre:"GOVINO GRACIELA MARTA",dir:"ARIJON 305",localidad:"ROSARIO",tipo:"Recarga",obs:"esquina AYACUCHO"},
-  {id:"108718",nombre:"EL CRUCE",dir:"ARIJON 1508",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"PREST. ROCA Y FLAMMARION"},
-  {id:"121161",nombre:"QUEVE2",dir:"ARIJON 1688",localidad:"ROSARIO",tipo:"Recarga",obs:"ESQUINA ESPAÑA"},
-  {id:"123485",nombre:"Las Golosas",dir:"ARIJON 2168",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"Entre Balcarce y Bv Oroño"},
-  {id:"47159",nombre:"Ales Mario Enrique",dir:"AV. ARIJON 333",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:""},
-  {id:"114380",nombre:"VALLEJOS GLADIS ISABEL",dir:"AV. EVA PERÓN 5725",localidad:"ROSARIO",tipo:"Recarga",obs:"Cuba y Juan Díaz de Solis"},
-  {id:"47160",nombre:"Los Primos",dir:"AV. GENOVA 6413",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:""},
-  {id:"46675",nombre:"Baglioni",dir:"AV. PRES. PERÓN 3298",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"114352",nombre:"JAKUCEVICIUS CLAUDIA",dir:"AV. SAN MARTÍN 5897",localidad:"ROSARIO",tipo:"Recarga",obs:"esquina Láinez"},
-  {id:"57955",nombre:"Sucursal 9 Rosario",dir:"AYACUCHO 5516",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"123085",nombre:"Las Reinas VMF",dir:"BAIGORRIA 1398",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"Anchoris y Machain"},
-  {id:"57963",nombre:"Sucursal 13 Rosario",dir:"BALCARCE 1651",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"106501",nombre:"NICHEA SILVIA ANDREA",dir:"BOULEVARD OROÑO 5080",localidad:"ROSARIO",tipo:"Recarga",obs:"LAMADRID Y SAVIO"},
-  {id:"110789",nombre:"Rota Juan Pablo",dir:"BROWN 1774",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:""},
-  {id:"114846",nombre:"ITATI",dir:"BUENOS AIRES 2099",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:""},
-  {id:"110026",nombre:"Richard",dir:"BUENOS AIRES 5937",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:""},
-  {id:"116788",nombre:"FARMACIA GERVATTI",dir:"BV. AVELLANEDA BIS 967",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"ALMAFUERTE Y JOSE INGENIEROS"},
-  {id:"109280",nombre:"kiosco el gomez",dir:"C. POET VICENTE MEDINA 6322",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"61799",nombre:"El Pajaro S.R.L",dir:"CAFFERATA 702",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"Terminal de omnibus"},
-  {id:"97591",nombre:"UTE",dir:"CAFFERATA 702",localidad:"ROSARIO",tipo:"Recarga",obs:"Terminal Boletera 35"},
-  {id:"112696",nombre:"MERCE&GEOR",dir:"CALLE 1831 5925",localidad:"ROSARIO",tipo:"Recarga",obs:"NICANOR FURTOS Y MAGALLANES"},
-  {id:"107828",nombre:"MINIMERCADO",dir:"CASIANO CASAS 1690",localidad:"ROSARIO",tipo:"Recarga y Venta",obs:"MILLER Y ESQUIVEL"},
-  {id:"112547",nombre:"Casilda 5932",dir:"CASILDA 5932",localidad:"ROSARIO",tipo:"Recarga",obs:"Entre Solis y Pje Rafaela"},
-  {id:"112707",nombre:"MINIMARKET",dir:"CENTENO 416",localidad:"ROSARIO",tipo:"Recarga",obs:"ALEM Y 1 DE MAYO"},
-  {id:"102611",nombre:"MINIMARKET SERKIO S",dir:"COCHABAMBA 1580",localidad:"ROSARIO",tipo:"Recarga",obs:"P.ROCA Y PARAGUAY"},
-  {id:"105512",nombre:"E-CARGA",dir:"COLON 1450",localidad:"ROSARIO",tipo:"Recarga",obs:"9 DE JULIO Y ZEBALLOS"},
-  {id:"73670",nombre:"Mi Recarga",dir:"CORDOBA 1015",localidad:"ROSARIO",tipo:"Recarga",obs:"Galeria Victoria Mall"},
-  {id:"118268",nombre:"JUAN GONZALO NICOLAS",dir:"CORDOBA 3025",localidad:"ROSARIO",tipo:"Recarga",obs:"entre Suipacha y Francia"},
-  {id:"123672",nombre:"FANNY DE WOODSTOCK",dir:"CORRIENTES 1841",localidad:"ROSARIO",tipo:"Recarga",obs:""},
-  {id:"114466",nombre:"DE ACEVEDO RAMOS",dir:"CRESPO 2079",localidad:"ROSARIO",tipo:"Recarga",obs:"entre Ituzaingo y Cerrito"},
-  {id:"109264",nombre:"DON MARCELO",dir:"DE ALVEAR MARCELO T. 5579",localidad:"ROSARIO",tipo:"Recarga",obs:"ORIBE Y ROMA"},
-  {id:"112709",nombre:"MULTISERVICIOS",dir:"DIAZ VELEZ BIS 155",localidad:"ROSARIO",tipo:"Recarga",obs:"VELEZ SARSFIELD Y CAGGIANO"}
-];
+// ── HELPERS FECHA
+function hoy(){return new Date().toLocaleDateString('es-AR');}
+function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});}
 
-// ── STATE
-let puntos=[...DATA], sel=new Set(), visits={}, emails=[];
-let plC={}, curId=null, pdfB=null, fotoData=null;
-let lmap=null, mkrs={}, gcache={}, gcing=false, gpsMarker=null, gpsCircle=null, gpsWatch=null, gpsActive=false;
+// ── STORAGE (localStorage con prefijo)
+const SK={
+  puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
+  historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas'
+};
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){showToast('Storage lleno: borrar historial viejo',true);}}
+function lsDel(k){try{localStorage.removeItem(k);}catch{}}
 
-// ── HISTORIAL: guardar y restaurar estado
-function guardarEstado(){
-  try{
-    localStorage.setItem('vsube_sel', JSON.stringify([...sel]));
-    localStorage.setItem('vsube_visits', JSON.stringify(visits));
-    localStorage.setItem('vsube_emails', JSON.stringify(emails));
-    // Guardar puntos extra (importados por el usuario, no los del DATA)
-    const extras=puntos.filter(p=>!DATA.find(d=>d.id===p.id));
-    localStorage.setItem('vsube_extras', JSON.stringify(extras));
-  }catch(e){}
-}
+// ── ESTADO
+let puntos   = lsGet(SK.puntos)    || [];
+let sel      = new Set(lsGet(SK.sel) || []);
+let visits   = lsGet(SK.visits)    || {};
+let historial= lsGet(SK.historial) || [];
+let emails   = lsGet(SK.emails)    || [];
+let planillas= lsGet(SK.planillas) || [];
 
-function restaurarEstado(){
-  try{
-    const savedSel=localStorage.getItem('vsube_sel');
-    if(savedSel) sel=new Set(JSON.parse(savedSel));
-    const savedVisits=localStorage.getItem('vsube_visits');
-    if(savedVisits) visits=JSON.parse(savedVisits);
-    const savedEmails=localStorage.getItem('vsube_emails');
-    if(savedEmails) emails=JSON.parse(savedEmails);
-    const savedExtras=localStorage.getItem('vsube_extras');
-    if(savedExtras){
-      const extras=JSON.parse(savedExtras);
-      puntos=[...DATA,...extras];
-    }
-  }catch(e){}
-}
+// modal state
+let curId=null, plC={}, fotoData=null, pdfB64Modal=null, pdfSelId=null, guardarNuevaCheck=false;
+let dlgCb=null, histOpenIdx=null;
 
-function limpiarHistorial(){
-  if(!confirm('¿Borrar el historial del día? Se perderán todas las visitas guardadas.')) return;
-  localStorage.removeItem('vsube_sel');
-  localStorage.removeItem('vsube_visits');
-  localStorage.removeItem('vsube_emails');
-  localStorage.removeItem('vsube_extras');
-  sel=new Set(); visits={}; emails=[];
-  puntos=[...DATA];
-  renderP(); updStats(); renderChips();
-  toast('Historial del día borrado ✓');
-}
-
-// ── INIT — render puntos immediately on load
-window.addEventListener('DOMContentLoaded', function() {
-  restaurarEstado();
-  renderP();
-  if(emails.length) renderChips();
-  if([...sel].length) updStats();
-});
+// ── INIT
+document.getElementById('fechaHdr').textContent=hoy();
+renderP(); renderH(); renderPlanillas(); renderChips(); updStats();
 
 // ── TABS
-function showTab(n) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
-  ['p0','p1','p2','p3'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.classList.toggle('active',i===n);
-  });
-  if(n===1) initMap();
-  if(n===2){renderV();updStats();}
-  if(n===3) renderSum();
+function showTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===n));
+  document.querySelectorAll('.pnl').forEach((p,i)=>p.classList.toggle('on',i===n));
+  if(n===1){renderV();updStats();}
+  if(n===4) renderRes();
 }
 
-function getCity(){return document.getElementById('csel').value;}
-function onCity(){renderP(); if(lmap) reloadMkrs();}
-function filt(){const c=getCity(); return c?puntos.filter(p=>p.localidad===c):puntos;}
-
 // ── RENDER PUNTOS
-function renderP() {
+function renderP(){
   const q=(document.getElementById('qin')||{value:''}).value.toLowerCase();
-  const base=filt();
-  const list=q?base.filter(p=>
-    p.nombre.toLowerCase().includes(q)||
-    p.dir.toLowerCase().includes(q)||
-    p.id.includes(q)
-  ):base;
-  const badge=document.getElementById('badge');
-  if(badge) badge.textContent=list.length;
+  const list=q?puntos.filter(p=>p.nombre.toLowerCase().includes(q)||p.dir.toLowerCase().includes(q)||p.id.includes(q)):puntos;
+  document.getElementById('cntBadge').textContent=list.length;
+  document.getElementById('btnLimpiar').style.display=puntos.length?'':'none';
+  document.getElementById('sbWrap').style.display=puntos.length?'':'none';
+  document.getElementById('pVacio').style.display=puntos.length?'none':'block';
   const plist=document.getElementById('plist');
-  const pempty=document.getElementById('pempty');
-  if(!plist) return;
-  if(!list.length){plist.innerHTML='';pempty.style.display='block';return;}
-  pempty.style.display='none';
+  if(!list.length){plist.innerHTML='';document.getElementById('pEmpty').style.display=puntos.length?'block':'none';return;}
+  document.getElementById('pEmpty').style.display='none';
   plist.innerHTML=list.map((p,i)=>{
     const s=sel.has(p.id);
-    return '<div class="pi'+(s?' sl2':'')+'">'
-      +'<div class="pnum">'+(i+1)+'</div>'
-      +'<div class="pb">'
-        +'<div class="pno">'+p.nombre+'</div>'
-        +'<div class="pd">📍 '+p.dir+'</div>'
-        +'<div class="pi2">ID: '+p.id+'</div>'
-        +(p.obs?'<div style="font-size:10px;color:var(--t2);margin-top:1px">ℹ️ '+p.obs+'</div>':'')
-        +'<span class="pt '+(p.tipo.includes('Venta')?'tv':'tr')+'">'+p.tipo+'</span>'
-      +'</div>'
-      +'<div class="pac">'
-        +'<button class="sm '+(s?'smg':'smh')+'" onclick="toggleSel(\''+p.id+'\')">'+( s?'✓ En ruta':'+ Agregar')+'</button>'
-        +'<button class="sm sma" onclick="verMapa(\''+p.id+'\')" style="font-size:10px">🗺️ Mapa</button>'
-      +'</div>'
-    +'</div>';
+    return `<div class="pi${s?' sel':''}">
+      <div class="pnum">${i+1}</div>
+      <div class="pb">
+        <div class="pno">${p.nombre}</div>
+        <div class="pd">📍 ${p.dir}</div>
+        <div class="pid">ID: ${p.id}</div>
+        ${p.obs?`<div class="pobs">ℹ️ ${p.obs}</div>`:''}
+        <span class="ptag ${p.tipo.includes('Venta')?'tv':'tr'}">${p.tipo}</span>
+      </div>
+      <button class="sm ${s?'smg':'smh'}" onclick="toggleSel('${p.id}')">${s?'✓ En ruta':'+ Agregar'}</button>
+    </div>`;
   }).join('');
 }
 
-function limpiarLista(){
-  if(!confirm('¿Borrar todos los puntos de la lista? Esta acción no se puede deshacer.')) return;
-  puntos=[];
-  sel=new Set();
-  visits={};
-  renderP();
-  updStats();
-  // Limpiar marcadores del mapa
-  if(lmap){
-    Object.values(mkrs).forEach(m=>lmap.removeLayer(m));
-    mkrs={}; gcache={}; gcing=false;
-    const el=document.getElementById('mcnt');
-    if(el) el.textContent='0';
-  }
-  toast('Lista limpiada ✓');
-}
-
 function toggleSel(id){
-  if(sel.has(id)) sel.delete(id); else sel.add(id);
-  renderP(); updStats();
-  if(lmap && gcache[id]){const p=puntos.find(x=>x.id===id);if(p)addMkr(p);}
-  toast(sel.has(id)?'Agregado ✓':'Quitado');
+  if(sel.has(id))sel.delete(id);else sel.add(id);
+  lsSet(SK.sel,[...sel]);
+  renderP();updStats();
+  showToast(sel.has(id)?'Agregado a la ruta ✓':'Quitado de la ruta');
 }
 
-
-const DISTRITOS = {
-  NORTE: {
-    color: '#38a169', fillColor: '#68d391', nombre: 'Norte',
-    poligono: [
-      {lat:-32.870, lng:-60.720},
-      {lat:-32.870, lng:-60.615},
-      {lat:-32.930, lng:-60.615},
-      {lat:-32.930, lng:-60.648},
-      {lat:-32.935, lng:-60.683},
-      {lat:-32.930, lng:-60.720},
-    ]
-  },
-  CENTRO: {
-    color: '#e53e3e', fillColor: '#fc8181', nombre: 'Centro',
-    poligono: [
-      {lat:-32.930, lng:-60.648},
-      {lat:-32.930, lng:-60.615},
-      {lat:-32.956, lng:-60.615},
-      {lat:-32.956, lng:-60.648},
-      {lat:-32.950, lng:-60.655},
-      {lat:-32.940, lng:-60.648},
-    ]
-  },
-  SUR: {
-    color: '#3182ce', fillColor: '#63b3ed', nombre: 'Sur',
-    poligono: [
-      {lat:-32.956, lng:-60.615},
-      {lat:-32.956, lng:-60.690},
-      {lat:-32.975, lng:-60.690},
-      {lat:-33.010, lng:-60.700},
-      {lat:-33.010, lng:-60.615},
-    ]
-  },
-  OESTE: {
-    color: '#805ad5', fillColor: '#b794f4', nombre: 'Oeste',
-    poligono: [
-      {lat:-32.870, lng:-60.720},
-      {lat:-32.930, lng:-60.720},
-      {lat:-32.930, lng:-60.683},
-      {lat:-32.935, lng:-60.683},
-      {lat:-32.956, lng:-60.690},
-      {lat:-32.975, lng:-60.690},
-      {lat:-33.010, lng:-60.700},
-      {lat:-33.010, lng:-60.760},
-      {lat:-32.870, lng:-60.760},
-    ]
-  }
-};
-
-function getDistrito(lat, lng) {
-  for (const [key, d] of Object.entries(DISTRITOS)) {
-    if (puntoDentroDePoligono(lat, lng, d.poligono)) return key;
-  }
-  return null;
+// ── IMPORTAR EXCEL
+function importXL(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws);
+      const nuevos=rows.map(r=>({
+        id:String(r['Ubicación ID']||r['ID']||''),
+        nombre:String(r['Ubicación']||r['Nombre']||''),
+        dir:(String(r['Dirección']||'')+' '+String(r['Numero']||'')).trim(),
+        localidad:String(r['Localidad']||''),
+        tipo:String(r['Tipo Centro']||''),
+        obs:String(r['Observaciones']||''),
+      })).filter(r=>r.dir&&r.id);
+      puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos];
+      lsSet(SK.puntos,puntos);
+      renderP();showToast(nuevos.length+' puntos importados ✓');
+    }catch(err){showToast('Error al leer el Excel',true);}
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
 }
 
-function puntoDentroDePoligono(lat, lng, poligono) {
-  let inside = false;
-  const n = poligono.length;
-  for (let i = 0, j = n-1; i < n; j = i++) {
-    const xi = poligono[i].lng, yi = poligono[i].lat;
-    const xj = poligono[j].lng, yj = poligono[j].lat;
-    const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj-xi)*(lat-yi)/(yj-yi)+xi);
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
-// ── GOOGLE MAPS
-let geocoder=null;
-
-function initMap(){
-  if(lmap) return;
-  lmap = new google.maps.Map(document.getElementById('map'),{
-    center:{lat:-32.9468,lng:-60.6393},
-    zoom:12,
-    mapTypeControl:false,
-    streetViewControl:false,
-    fullscreenControl:false,
-    styles:[{featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]}]
-  });
-  geocoder = new google.maps.Geocoder();
-  document.getElementById('mst').textContent=' puntos · Geocodificando...';
-  dibujarPoligonos();
-  geoAll();
-}
-
-function reloadMkrs(){
-  if(!lmap) return;
-  Object.values(mkrs).forEach(m=>m.setMap(null));
-  mkrs={}; gcache={}; gcing=false;
-  document.getElementById('mcnt').textContent='0';
-  geoAll();
-}
-
-async function geoAll(){
-  if(gcing) return;
-  gcing=true;
-  const pts=filt();
-  let n=0;
-  for(const p of pts){
-    if(!gcache[p.id]){
-      const c=await geoFetch(p);
-      if(c) gcache[p.id]=c;
-      await new Promise(r=>setTimeout(r,200));
-    }
-    if(gcache[p.id]){addMkr(p);n++;document.getElementById('mcnt').textContent=n;}
-  }
-  document.getElementById('mst').textContent=' puntos en el mapa';
-  gcing=false;
-  if(n) fitMap();
-}
-
-function geoFetch(p){
-  return new Promise(res=>{
-    if(!geocoder){res(null);return;}
-    const query=p.dir+', Rosario, Santa Fe, Argentina';
-    geocoder.geocode({address:query,region:'ar'},(results,status)=>{
-      if(status==='OK'&&results[0]){
-        const loc=results[0].geometry.location;
-        const la=loc.lat(), lo=loc.lng();
-        // Validar que esté dentro de Rosario
-        if(la>-33.05&&la<-32.85&&lo>-60.8&&lo<-60.5) res([la,lo]);
-        else res(null);
-      } else res(null);
-    });
+// ── BORRAR DÍA ACTUAL
+function borrarDia(){
+  confirm2('¿Borrar todos los puntos y visitas del día actual?',function(){
+    puntos=[];sel=new Set();visits={};
+    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});
+    renderP();updStats();showToast('Día actual borrado ✓');
   });
 }
 
-function addMkr(p){
-  if(!lmap||!gcache[p.id]) return;
-  if(mkrs[p.id]) mkrs[p.id].setMap(null);
-  const [la,lo]=gcache[p.id];
-  const distrito = gcache[p.id] ? getDistrito(gcache[p.id][0], gcache[p.id][1]) : null;
-  const dInfo = distrito ? DISTRITOS[distrito] : null;
-  const color = sel.has(p.id) ? '#10b981' : (dInfo ? dInfo.color : '#3b82f6');
-  if(p._distrito !== distrito){ p._distrito = distrito; }
-  const mapsUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.dir+', Rosario, Santa Fe, Argentina')+'&travelmode=driving';
-  const marker=new google.maps.Marker({
-    position:{lat:la,lng:lo},
-    map:lmap,
-    title:p.nombre,
-    icon:{
-      path:google.maps.SymbolPath.CIRCLE,
-      scale:8,
-      fillColor:color,
-      fillOpacity:1,
-      strokeColor:'#ffffff',
-      strokeWeight:2
-    }
-  });
-  const info=new google.maps.InfoWindow({
-    content:'<div style="min-width:180px;font-family:sans-serif">'+
-      '<b style="font-size:13px">'+p.nombre+'</b><br>'+
-      '<span style="font-size:11px;color:#666">📍 '+p.dir+'</span><br>'+
-      '<span style="font-size:11px;color:#666">ID: '+p.id+'</span>'+
-      (p.obs?'<br><span style="font-size:10px;color:#888">ℹ️ '+p.obs+'</span>':'')+
-      '<br><br><a href="'+mapsUrl+'" target="_blank" style="display:block;background:#1d6fa4;color:#fff;text-align:center;padding:8px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none">🗺️ Navegar con Google Maps</a>'+
-    '</div>'
-  });
-  marker.addListener('click',()=>{
-    Object.values(infoWindows).forEach(iw=>iw.close());
-    info.open(lmap,marker);
-  });
-  mkrs[p.id]=marker;
-  infoWindows[p.id]=info;
-}
-
-let infoWindows={};
-let distritoPoly={};
-let filtroActivo='ALL';
-
-function filtrarDistrito(d){
-  filtroActivo=d;
-  // Update button styles
-  ['ALL','NORTE','CENTRO','SUR','OESTE'].forEach(k=>{
-    const btn=document.getElementById('d-'+k);
-    if(!btn) return;
-    btn.style.opacity = (d===k||d==='ALL'&&k==='ALL') ? '1' : '0.45';
-    btn.style.fontWeight = d===k ? '800' : '600';
-  });
-  // Show/hide markers
-  Object.keys(mkrs).forEach(id=>{
-    const p=puntos.find(x=>x.id===id);
-    if(!p) return;
-    const show = d==='ALL' || p._distrito===d;
-    mkrs[id].setVisible(show);
-  });
-  // Show/hide polygons
-  Object.entries(distritoPoly).forEach(([k,poly])=>{
-    poly.setVisible(d==='ALL'||d===k);
-  });
-  // Update count
-  const visible=Object.values(mkrs).filter(m=>m.getVisible()).length;
-  document.getElementById('mcnt').textContent=visible;
-}
-
-function dibujarPoligonos(){
-  if(!lmap) return;
-  Object.entries(DISTRITOS).forEach(([key,d])=>{
-    if(distritoPoly[key]) return;
-    distritoPoly[key]=new google.maps.Polygon({
-      paths:d.poligono,
-      strokeColor:d.color,
-      strokeOpacity:0.7,
-      strokeWeight:2,
-      fillColor:d.fillColor,
-      fillOpacity:0.08,
-      map:lmap,
-      clickable:false
-    });
+// ── CERRAR DÍA → HISTORIAL
+function cerrarDia(){
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  if(!enRuta.length){showToast('No hay puntos en la ruta',true);return;}
+  confirm2('¿Cerrar el día? Se guarda en el historial y se limpia la jornada actual.',function(){
+    const entrada={
+      fecha:hoy(),hora:ahora(),
+      puntos:enRuta,
+      visits:{...visits},
+      total:enRuta.length,
+      hechos:enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length,
+    };
+    historial=[entrada,...historial].slice(0,60);
+    puntos=[];sel=new Set();visits={};
+    lsSet(SK.historial,historial);
+    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});
+    renderP();updStats();renderH();showToast('Día cerrado y guardado ✓');
+    showTab(2);
   });
 }
 
-function fitMap(){
-  if(!lmap) return;
-  const ms=Object.values(mkrs);
-  if(!ms.length) return;
-  const bounds=new google.maps.LatLngBounds();
-  ms.forEach(m=>bounds.extend(m.getPosition()));
-  lmap.fitBounds(bounds);
-}
-
-// ── GPS / MI UBICACIÓN
-function toggleGPS(){
-  if(gpsActive) stopGPS(); else startGPS();
-}
-
-function startGPS(){
-  if(!navigator.geolocation){toast('GPS no disponible en este dispositivo',true);return;}
-  const btn=document.getElementById('btnGps');
-  btn.textContent='⏳ Buscando...'; btn.style.background='var(--or)';
-  btn.style.background='var(--or)';
-  
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      gpsActive=true;
-      showMyPos(pos);
-      // Seguimiento continuo
-      gpsWatch = navigator.geolocation.watchPosition(showMyPos, gpsError, {
-        enableHighAccuracy:true, maximumAge:3000, timeout:10000
-      });
-      btn.textContent='🔴 Siguiendo';
-      btn.style.background='#ef4444';
-      toast('🔴 Tu ubicación activada');
-    },
-    gpsError,
-    {enableHighAccuracy:true, timeout:10000}
-  );
-}
-
-function showMyPos(pos){
-  if(!lmap) return;
-  const lat=pos.coords.latitude, lon=pos.coords.longitude;
-  const acc=pos.coords.accuracy;
-  
-  // Remover markers anteriores
-  if(gpsMarker) lmap.removeLayer(gpsMarker);
-  if(gpsCircle) lmap.removeLayer(gpsCircle);
-  
-  // Círculo de precisión
-  gpsCircle = L.circle([lat,lon], {
-    radius: acc,
-    color:'#ef4444', fillColor:'#ef4444',
-    fillOpacity:0.1, weight:1
-  }).addTo(lmap);
-  
-  // Puntito azul de ubicación
-  const myIcon = L.divIcon({
-    html:'<div style="background:#ef4444;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(239,68,68,.8)"></div>',
-    className:'', iconSize:[16,16], iconAnchor:[8,8]
-  });
-  gpsMarker = L.marker([lat,lon], {icon:myIcon, zIndexOffset:1000}).addTo(lmap);
-  gpsMarker.bindPopup('<b style="color:#ef4444">🔴 Tu ubicación</b><br><span style="opacity:.7;font-size:11px">Precisión: '+Math.round(acc)+'m</span>');
-  
-  // Centrar mapa en mi posición la primera vez
-  if(!gpsActive) lmap.setView([lat,lon], 15);
-  else lmap.panTo([lat,lon]);
-}
-
-function gpsError(err){
-  const btn=document.getElementById('btnGps');
-  btn.textContent='🔴 Mi ubicación';
-  btn.style.background='';
-  gpsActive=false;
-  if(err.code===1) toast('Permiso de GPS denegado. Activalo en ajustes.',true);
-  else toast('No se pudo obtener la ubicación',true);
-}
-
-function stopGPS(){
-  if(gpsWatch) navigator.geolocation.clearWatch(gpsWatch);
-  if(gpsMarker) lmap.removeLayer(gpsMarker);
-  if(gpsCircle) lmap.removeLayer(gpsCircle);
-  gpsMarker=null; gpsCircle=null; gpsWatch=null; gpsActive=false;
-  const btn=document.getElementById('btnGps');
-  btn.textContent='🔴 Mi ubicación';
-  btn.style.background='';
-  toast('GPS desactivado');
-}
-
-async function verMapa(id){
-  showTab(1);
-  setTimeout(async()=>{
-    initMap();
-    if(gcache[id]){lmap.setView(gcache[id],17);mkrs[id]&&mkrs[id].openPopup();}
-    else{
-      toast('Buscando...');
-      const p=puntos.find(x=>x.id===id); if(!p) return;
-      const c=await geoFetch(p);
-      if(c){gcache[id]=c;addMkr(p);lmap.setView(c,17);mkrs[id]&&mkrs[id].openPopup();}
-      else toast('No se pudo ubicar',true);
-    }
-  },300);
-}
-
-// ── VISITAS
+// ── STATS
 function updStats(){
-  const s=[...sel];
-  document.getElementById('s0').textContent=s.length;
-  const d=s.filter(id=>visits[id]&&visits[id].done).length;
-  document.getElementById('s1').textContent=d;
-  document.getElementById('s2').textContent=s.length-d;
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  const hchos=enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length;
+  document.getElementById('s0').textContent=enRuta.length;
+  document.getElementById('s1').textContent=hchos;
+  document.getElementById('s2').textContent=enRuta.length-hchos;
 }
 
+// ── RENDER VISITAS
 function renderV(){
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  const vEmpty=document.getElementById('vEmpty');
   const vlist=document.getElementById('vlist');
-  const vempty=document.getElementById('vempty');
-  const s=[...sel];
-  if(!s.length){vempty.style.display='block';vlist.innerHTML='';return;}
-  vempty.style.display='none';
-  vlist.innerHTML=s.map((id,i)=>{
-    const p=puntos.find(x=>x.id===id)||{id,nombre:id,dir:'',tipo:''};
-    const v=visits[id]||{},done=v.done;
-    return '<div class="vi'+(done?' dn':'')+'">'
-      +'<div class="vh">'
-        +'<div class="vn '+(done?'vd':'vp')+'">'+(i+1)+'</div>'
-        +'<div class="vb">'
-          +'<div class="va">'+p.nombre+'</div>'
-          +'<div class="vid">📍 '+p.dir+' · ID: '+p.id+'</div>'
-          +(p.obs?'<div style="font-size:10px;color:var(--t2);margin-top:1px">ℹ️ '+p.obs+'</div>':'')
-        +'</div>'
-        +'<div class="vs '+(done?'vsd':'vsp')+'">'+(done?'✓':'Pendiente')+'</div>'
-      +'</div>'
-      +(v.planilla?'<div style="font-size:11px;color:var(--gn);margin-top:5px">📄 '+v.planilla.ti+' irregularidades</div>':'')
-      +(!done?'<div class="vac">'
-        +'<button class="sm sms" onclick="openPl(\''+id+'\')">📋 Planilla SUBE</button>'
-        +'<button class="sm smh" onclick="markDone(\''+id+'\')">✓ Hecha</button>'
-        +'</div>'
-        :'<div style="font-size:11px;color:var(--gn);margin-top:6px">✅ Verificación completada</div>')
-    +'</div>';
+  if(!enRuta.length){vEmpty.style.display='block';vlist.innerHTML='';return;}
+  vEmpty.style.display='none';
+  vlist.innerHTML=enRuta.map((p,i)=>{
+    const v=visits[p.id]||{};const pl=v.planilla;
+    const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
+    return `<div class="vi${v.done?' dn':''}">
+      <div class="vh">
+        <div class="vnum ${v.done?'vd':'vp'}">${i+1}</div>
+        <div class="vb">
+          <div class="va">${p.nombre}</div>
+          <div class="vid2">📍 ${p.dir} · ID: ${p.id}</div>
+          ${p.obs?`<div style="font-size:10px;color:#94a3b8">ℹ️ ${p.obs}</div>`:''}
+          ${pl?`<div style="font-size:11px;color:#10b981;margin-top:4px">📄 ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
+          ${pl&&pl.obs?`<div style="font-size:10px;color:#94a3b8;margin-top:2px">📝 ${pl.obs}</div>`:''}
+        </div>
+        <span class="vst ${v.done?'vsd':'vsp'}">${v.done?'✓ Hecha':'Pendiente'}</span>
+      </div>
+      ${!v.done?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="sm smb" onclick="openPl('${p.id}')">📋 Planilla</button>
+        <button class="sm smh" onclick="markDone('${p.id}')">✓ Marcar hecha</button>
+      </div>`:`<div style="font-size:11px;color:#10b981;margin-top:6px">✅ Completada · ${pl?pl.fecha+' '+pl.hora:''}</div>`}
+    </div>`;
   }).join('');
 }
 
 function markDone(id){
-  if(!visits[id]) visits[id]={};
+  if(!visits[id])visits[id]={};
   visits[id].done=true;
-  renderV();updStats();toast('Marcada como hecha ✓');
+  lsSet(SK.visits,visits);
+  renderV();updStats();showToast('Marcada como hecha ✓');
 }
 
-// ── PLANILLA
+// ── HISTORIAL
+function renderH(){
+  const hlist=document.getElementById('hlist');
+  const hEmpty=document.getElementById('hEmpty');
+  const btnBH=document.getElementById('btnBorrarHist');
+  if(!historial.length){hEmpty.style.display='block';hlist.innerHTML='';btnBH.style.display='none';return;}
+  hEmpty.style.display='none';btnBH.style.display='';
+  hlist.innerHTML=historial.map((h,i)=>{
+    const open=histOpenIdx===i;
+    const rows=(h.puntos||[]).map(p=>{
+      const v=h.visits&&h.visits[p.id]||{};
+      const pl=v.planilla;
+      const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
+      return `<div style="padding:7px 10px;background:#0f1520;border-radius:8px;margin-bottom:4px;border:1px solid rgba(255,255,255,.05)">
+        <div style="display:flex;gap:6px">
+          <span>${v.done?'✅':'⏳'}</span>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:700">${p.nombre}</div>
+            <div style="font-size:10px;color:#94a3b8">📍 ${p.dir} · ID: ${p.id}</div>
+            ${irregs.length?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">⚠️ ${irregs.join(', ')}</div>`:''}
+            ${pl&&pl.obs?`<div style="font-size:10px;color:#94a3b8;margin-top:1px">📝 ${pl.obs}</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div>
+      <div class="hrow" onclick="toggleHist(${i})">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">📅 ${h.fecha} · ${h.hora}</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">${h.hechos}/${h.total} verificados</div>
+        </div>
+        <span class="bdg gr">${h.hechos} hechos</span>
+        <span style="font-size:12px;color:#94a3b8">${open?'▲':'▼'}</span>
+      </div>
+      ${open?`<div style="margin-bottom:8px;padding-left:8px;border-left:2px solid rgba(59,130,246,.3)">
+        ${rows}
+        <button class="sm smr" style="font-size:10px;margin-top:4px" onclick="borrarJornada(${i})">🗑️ Borrar esta jornada</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleHist(i){histOpenIdx=histOpenIdx===i?null:i;renderH();}
+
+function borrarJornada(i){
+  confirm2('¿Borrar esta jornada del historial?',function(){
+    historial=historial.filter((_,j)=>j!==i);
+    lsSet(SK.historial,historial);
+    histOpenIdx=null;renderH();showToast('Jornada borrada ✓');
+  });
+}
+
+function borrarHistorial(){
+  confirm2('¿Borrar TODO el historial? No se puede deshacer.',function(){
+    historial=[];lsDel(SK.historial);renderH();showToast('Historial borrado ✓');
+  });
+}
+
+// ── PLANILLAS GUARDADAS
+function renderPlanillas(){
+  const plList=document.getElementById('plList');
+  const plEmpty=document.getElementById('plEmpty');
+  document.getElementById('plCount').textContent=planillas.length?`(${planillas.length}/10)`:'';
+  if(!planillas.length){plEmpty.style.display='block';plList.innerHTML='';return;}
+  plEmpty.style.display='none';
+  plList.innerHTML=planillas.map(pl=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:#0f1520;border:1px solid rgba(255,255,255,.07);border-radius:11px;margin-bottom:6px">
+      <span style="font-size:26px;flex-shrink:0">📄</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pl.nombre}</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">Guardada el ${pl.fecha}</div>
+      </div>
+      <button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>
+    </div>
+  `).join('');
+}
+
+let nuevaPdfB64=null;
+function loadNuevaPdf(input){
+  const file=input.files[0];if(!file)return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){showToast('Solo archivos PDF',true);return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const bytes=new Uint8Array(e.target.result);let bin='';
+    bytes.forEach(b=>bin+=String.fromCharCode(b));
+    nuevaPdfB64=btoa(bin);
+    document.getElementById('pdfNombreFile').textContent=file.name;
+    document.getElementById('pdfDropZone').style.display='none';
+    document.getElementById('pdfOkZone').style.display='block';
+    const nm=document.getElementById('nuevaPlNombre');
+    if(!nm.value) nm.value=file.name.replace(/\.pdf$/i,'').replace(/_/g,' ');
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+
+function quitarNuevaPdf(){
+  nuevaPdfB64=null;
+  document.getElementById('pdfDropZone').style.display='';
+  document.getElementById('pdfOkZone').style.display='none';
+}
+
+function guardarNuevaPlanilla(){
+  if(!nuevaPdfB64){showToast('Elegí un PDF primero',true);return;}
+  const nombre=document.getElementById('nuevaPlNombre').value.trim();
+  if(!nombre){showToast('Escribí un nombre',true);return;}
+  if(planillas.length>=10){showToast('Máximo 10 planillas',true);return;}
+  const np=[{id:'pl_'+Date.now(),nombre,b64:nuevaPdfB64,fecha:hoy()},...planillas].slice(0,10);
+  planillas=np;lsSet(SK.planillas,planillas);
+  nuevaPdfB64=null;
+  document.getElementById('nuevaPlNombre').value='';
+  document.getElementById('pdfDropZone').style.display='';
+  document.getElementById('pdfOkZone').style.display='none';
+  renderPlanillas();showToast(`Planilla "${nombre}" guardada ✓`);
+}
+
+function borrarPlanilla(id){
+  confirm2('¿Eliminar esta planilla guardada?',function(){
+    planillas=planillas.filter(p=>p.id!==id);
+    lsSet(SK.planillas,planillas);
+    renderPlanillas();showToast('Planilla eliminada ✓');
+  });
+}
+
+// ── MODAL PLANILLA VISITA
 function openPl(id){
-  curId=id;
+  curId=id;plC={};fotoData=null;pdfB64Modal=null;pdfSelId=null;guardarNuevaCheck=false;
   const p=puntos.find(x=>x.id===id)||{};
-  const v=visits[id]||{};
-  plC={};
+  const v=visits[id]||{};const pl=v.planilla;
+
+  // checkboxes
   document.getElementById('plCarga').innerHTML=CN.map((n,i)=>
-    '<div class="plr" onclick="plT(\'c'+i+'\',this)"><div class="plrn">'+n+'</div><div class="plck"><span class="plx">✕</span></div></div>'
+    `<div class="plr${pl&&pl.chC&&pl.chC[i]?' on':''}" onclick="plT('c${i}',this)"><div class="plrn">${n}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
   document.getElementById('plVenta').innerHTML=VN.map((n,i)=>
-    '<div class="plr" onclick="plT(\'v'+i+'\',this)"><div class="plrn">'+n+'</div><div class="plck"><span class="plx">✕</span></div></div>'
+    `<div class="plr${pl&&pl.chV&&pl.chV[i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${n}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
-  const now=new Date();
-  document.getElementById('plF').value=now.toLocaleDateString('es-AR');
-  document.getElementById('plH').value=now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(pl&&pl.chC) CN.forEach((_,i)=>{if(pl.chC[i])plC['c'+i]=true;});
+  if(pl&&pl.chV) VN.forEach((_,i)=>{if(pl.chV[i])plC['v'+i]=true;});
+
+  document.getElementById('plF').value=hoy();
+  document.getElementById('plH').value=ahora();
   document.getElementById('plI').value=p.id||'';
   document.getElementById('plD').value=p.dir||'';
-  document.getElementById('plR').value=(v.planilla&&v.planilla.rubro)||p.tipo||'';
-  document.getElementById('plO').value=(v.planilla&&v.planilla.obs)||'';
-  if(v.planilla&&v.planilla.chC) CN.forEach((_,i)=>{if(v.planilla.chC[i]){plC['c'+i]=true;document.querySelectorAll('#plCarga .plr')[i]&&document.querySelectorAll('#plCarga .plr')[i].classList.add('on');}});
-  if(v.planilla&&v.planilla.chV) VN.forEach((_,i)=>{if(v.planilla.chV[i]){plC['v'+i]=true;document.querySelectorAll('#plVenta .plr')[i]&&document.querySelectorAll('#plVenta .plr')[i].classList.add('on');}});
-  document.getElementById('upSec').style.display=pdfB?'none':'block';
-  document.getElementById('pdfOk').style.display=pdfB?'block':'none';
-  document.getElementById('pvb').style.display='none';
-  document.getElementById('brA').style.display='grid';
-  document.getElementById('brB').style.display='none';
-  // Reset foto
-  fotoData=(v.planilla&&v.planilla.foto)||null;
+  document.getElementById('plR').value=(pl&&pl.rubro)||p.tipo||'';
+  document.getElementById('plO').value=(pl&&pl.obs)||'';
+
+  // foto
+  fotoData=(pl&&pl.foto)||null;
   const fp=document.getElementById('fotoPrev');
-  const fb=document.getElementById('fotoInput')&&document.getElementById('fotoInput').parentElement;
-  if(fotoData){fp.src=fotoData;fp.style.display='block';document.getElementById('fotoOk').style.display='block';if(fb)fb.style.display='none';}
-  else{fp.style.display='none';fp.src='';document.getElementById('fotoOk').style.display='none';if(fb)fb.style.display='block';}
+  document.getElementById('fotoBtnLbl').style.display=fotoData?'none':'block';
+  fp.style.display=fotoData?'block':'none';
+  if(fotoData)fp.src=fotoData;
+  document.getElementById('fotoOk').style.display=fotoData?'block':'none';
+  document.getElementById('fotoQuit').style.display=fotoData?'block':'none';
+
+  // planillas guardadas
+  renderPlGuardadasModal();
+  updPdfWarning();
+
   document.getElementById('ov').classList.add('show');
   document.body.style.overflow='hidden';
 }
-function plT(k,el){plC[k]=!plC[k];el.classList.toggle('on',plC[k]);}
-function closeOv(){document.getElementById('ov').classList.remove('show');document.body.style.overflow='';}
-function backEdit(){document.getElementById('pvb').style.display='none';document.getElementById('brA').style.display='grid';document.getElementById('brB').style.display='none';}
 
-async function loadPDF(input){
-  const file=input.files[0];if(!file)return;
-  pdfB=await file.arrayBuffer();
-  document.getElementById('pdfNm').textContent=file.name;
-  document.getElementById('pdfOk').style.display='block';
-  document.getElementById('upSec').style.display='none';
-  toast('Planilla cargada ✓');input.value='';
+function renderPlGuardadasModal(){
+  const sec=document.getElementById('plGuardadasSec');
+  const nuevoLbl=document.getElementById('pdfNuevoLbl');
+  if(!planillas.length){sec.innerHTML='';nuevoLbl.textContent='Subir planilla PDF';return;}
+  nuevoLbl.textContent='Subir otra planilla PDF';
+  sec.innerHTML=`<div style="margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">📂 Tus planillas guardadas:</div>
+    ${planillas.map(pl=>`
+      <div class="pl-item${pdfSelId===pl.id?' on':''}" onclick="selPdfGuardada('${pl.id}')">
+        <span style="font-size:20px">📄</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:#1e293b">${pl.nombre}</div>
+          <div style="font-size:10px;color:#64748b">Guardada el ${pl.fecha}</div>
+        </div>
+        ${pdfSelId===pl.id?'<span style="font-size:16px;color:#1d6fa4;font-weight:800">✓</span>':''}
+      </div>
+    `).join('')}
+    <div style="text-align:center;font-size:11px;color:#94a3b8;margin:6px 0 4px">— o subí otra —</div>
+  </div>`;
 }
+
+function selPdfGuardada(id){
+  pdfSelId=pdfSelId===id?null:id;
+  if(pdfSelId){pdfB64Modal=null;document.getElementById('pdfNuevoOk').style.display='none';}
+  renderPlGuardadasModal();updPdfWarning();
+}
+
+function loadPdfModal(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const bytes=new Uint8Array(e.target.result);let bin='';
+    bytes.forEach(b=>bin+=String.fromCharCode(b));
+    pdfB64Modal=btoa(bin);pdfSelId=null;
+    document.getElementById('pdfNuevoOk').style.display='block';
+    document.getElementById('guardarNuevaNombre').value=file.name.replace(/\.pdf$/i,'').replace(/_/g,' ');
+    renderPlGuardadasModal();updPdfWarning();showToast('PDF cargado ✓');
+  };
+  reader.readAsArrayBuffer(file);input.value='';
+}
+
+function quitarPdfModal(){
+  pdfB64Modal=null;guardarNuevaCheck=false;
+  document.getElementById('pdfNuevoOk').style.display='none';
+  document.getElementById('chkGuardar').innerHTML='';
+  document.getElementById('guardarNuevaNombre').style.display='none';
+  updPdfWarning();
+}
+
+function toggleGuardarNueva(){
+  guardarNuevaCheck=!guardarNuevaCheck;
+  const chk=document.getElementById('chkGuardar');
+  chk.style.background=guardarNuevaCheck?'#1d6fa4':'#fff';
+  chk.style.borderColor=guardarNuevaCheck?'#1d6fa4':'#cbd5e1';
+  chk.innerHTML=guardarNuevaCheck?'<span style="color:#fff;font-size:11px;font-weight:800">✓</span>':'';
+  document.getElementById('guardarNuevaNombre').style.display=guardarNuevaCheck?'block':'none';
+}
+
+function updPdfWarning(){
+  const b64Activa=pdfSelId||pdfB64Modal;
+  document.getElementById('pdfWarning').style.display=b64Activa?'none':'block';
+}
+
+function plT(k,el){plC[k]=!plC[k];el.classList.toggle('on',plC[k]);}
 
 function loadFoto(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(e){
     fotoData=e.target.result;
-    const prev=document.getElementById('fotoPrev');
-    prev.src=fotoData;prev.style.display='block';
+    const fp=document.getElementById('fotoPrev');fp.src=fotoData;fp.style.display='block';
+    document.getElementById('fotoBtnLbl').style.display='none';
     document.getElementById('fotoOk').style.display='block';
-    document.getElementById('fotoInput').parentElement.style.display='none';
-    toast('Foto cargada ✓');
+    document.getElementById('fotoQuit').style.display='block';
+    showToast('Foto cargada ✓');
   };
   reader.readAsDataURL(file);
 }
 
-async function renderCv(scale){
-  if(!pdfB) throw new Error('Subí la planilla SUBE en blanco primero');
-  const pdf=await pdfjsLib.getDocument({data:pdfB.slice(0)}).promise;
-  const page=await pdf.getPage(1);
-  const vp=page.getViewport({scale});
-  const wc=document.getElementById('wc');
-  wc.width=vp.width;wc.height=vp.height;
-  const ctx=wc.getContext('2d');
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  await page.render({canvasContext:ctx,viewport:vp}).promise;
-  const SX=vp.width/PW,SY=vp.height/PH;
-  const cx=x=>x*SX,cy=y=>y*SY;
-  const fs=Math.round(10*SX);
-  ctx.font=fs+'px Arial,sans-serif';ctx.textBaseline='alphabetic';
-  const vals=[
-    document.getElementById('plF').value,
-    document.getElementById('plH').value,
-    document.getElementById('plI').value,
-    document.getElementById('plD').value,
-    document.getElementById('plR').value,
-  ];
-  vals.forEach(function(v,i){
-    if(!v)return;
-    ctx.fillStyle='rgb(238,238,238)';
-    ctx.fillRect(cx(EX-2),cy(TY[i]-7),cx(376),cy(19)-cy(0));
-    ctx.fillStyle='#000';ctx.fillText(v,cx(EX),cy(TY[i]+2));
-  });
-  ctx.font='bold '+Math.round(12*SX)+'px Arial,sans-serif';ctx.fillStyle='#000';
-  CCY.forEach(function(y,i){if(plC['c'+i])ctx.fillText('X',cx(CX-5),cy(y+4));});
-  VCY.forEach(function(y,i){if(plC['v'+i])ctx.fillText('X',cx(CX-5),cy(y+4));});
-  const obs=document.getElementById('plO').value.trim();
-  if(obs){
-    ctx.fillStyle='rgb(238,238,238)';ctx.fillRect(cx(36),cy(638),cx(522),cy(56)-cy(0)+2);
-    ctx.fillStyle='#000';ctx.font=fs+'px Arial,sans-serif';
-    const words=obs.split(' ');var lines=[],line='';
-    words.forEach(function(w){var t=(line+' '+w).trim();if(ctx.measureText(t).width<cx(490)){line=t;}else{if(line)lines.push(line);line=w;}});
-    if(line)lines.push(line);
-    lines.slice(0,4).forEach(function(ln,j){ctx.fillText(ln,cx(42),cy(638+12+j*13));});
+function quitarFoto(){
+  fotoData=null;
+  document.getElementById('fotoPrev').style.display='none';
+  document.getElementById('fotoPrev').src='';
+  document.getElementById('fotoBtnLbl').style.display='block';
+  document.getElementById('fotoOk').style.display='none';
+  document.getElementById('fotoQuit').style.display='none';
+}
+
+async function guardarVisita(){
+  // guardar planilla nueva si corresponde
+  if(pdfB64Modal&&guardarNuevaCheck){
+    const nombre=document.getElementById('guardarNuevaNombre').value.trim();
+    if(nombre&&planillas.length<10){
+      planillas=[{id:'pl_'+Date.now(),nombre,b64:pdfB64Modal,fecha:hoy()},...planillas].slice(0,10);
+      lsSet(SK.planillas,planillas);
+      renderPlanillas();showToast(`Planilla "${nombre}" guardada ✓`);
+    }
   }
-  return wc;
-}
-
-async function genPrev(){
-  if(!pdfB){toast('Subí la planilla SUBE primero',true);return;}
-  const btn=document.getElementById('btnPv');
-  btn.textContent='⏳ Generando...';btn.disabled=true;
-  try{
-    const wc=await renderCv(1.5);
-    const pc=document.getElementById('pvc');
-    pc.width=wc.width;pc.height=wc.height;
-    pc.getContext('2d').drawImage(wc,0,0);
-    document.getElementById('pvb').style.display='block';
-    document.getElementById('brA').style.display='none';
-    document.getElementById('brB').style.display='block';
-    document.getElementById('pvb').scrollIntoView({behavior:'smooth',block:'start'});
-    // Show/hide foto button based on whether foto exists
-    // foto button removed
-  }catch(e){toast(e.message,true);}
-  btn.textContent='👁️ Ver cómo queda';btn.disabled=false;
-}
-
-async function dlDirecto(){
-  if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
-  const btn=document.querySelector('[onclick="dlDirecto()"]');
-  if(btn){btn.textContent='⏳ Descargando...';btn.disabled=true;}
-  try{
-    const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
-    const fec=document.getElementById('plF').value.replace(/\//g,'-');
-    // Descargar planilla
-    const wc=await renderCv(3);
-    const urlPl=wc.toDataURL('image/jpeg',.95);
-    const a=document.createElement('a');
-    a.href=urlPl;a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    // Descargar foto si existe
-    if(fotoData){
-      await new Promise(r=>setTimeout(r,600));
-      const ext=fotoData.startsWith('data:image/png')?'png':'jpg';
-      const b=document.createElement('a');
-      b.href=fotoData;b.download='Foto_'+dir+'_'+fec+'.'+ext;
-      document.body.appendChild(b);b.click();document.body.removeChild(b);
-    }
-    savePl();
-    toast('✅ Planilla'+(fotoData?' y foto':'')+' descargadas');
-    setTimeout(closeOv,800);
-  }catch(e){toast('Error: '+e.message,true);}
-  if(btn){btn.textContent='📥 Descargar directamente';btn.disabled=false;}
-}
-
-async function dlPlanilla(){
-  const btn=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
-  if(btn){btn.textContent='⏳ Generando...';btn.disabled=true;}
-  try{
-    const dir=(document.getElementById('plD').value||'visita').replace(/\s/g,'_').substring(0,25);
-    const fec=document.getElementById('plF').value.replace(/\//g,'-');
-    const fotoActual=fotoData;
-
-    // 1. Descargar planilla
-    const wc=await renderCv(3);
-    const urlPl=wc.toDataURL('image/jpeg',0.95);
-    const a=document.createElement('a');
-    a.href=urlPl;
-    a.download='Planilla_SUBE_'+dir+'_'+fec+'.jpg';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-
-    // 2. Descargar foto por separado si existe (Chrome lo permite)
-    if(fotoActual){
-      await new Promise(r=>setTimeout(r,800));
-      const ext=fotoActual.startsWith('data:image/png')?'png':'jpg';
-      const b=document.createElement('a');
-      b.href=fotoActual;
-      b.download='Foto_visita_'+dir+'_'+fec+'.'+ext;
-      document.body.appendChild(b);b.click();document.body.removeChild(b);
-      toast('✅ Planilla y foto descargadas');
-    } else {
-      toast('✅ Planilla descargada');
-    }
-
-    savePl();
-    setTimeout(closeOv,1000);
-  }catch(e){toast('Error: '+e.message,true);}
-  finally{
-    const b=document.getElementById('btnDlDirecto')||document.querySelector('[onclick="dlPlanilla()"]');
-    if(b){b.textContent='📥 Descargar planilla y foto';b.disabled=false;}
-  }
-}
-
-async function subirDrive(){
-  if(!pdfB){toast('Subí la planilla SUBE en blanco primero',true);return;}
-  const btn=document.getElementById('btnDrive');
-  btn.textContent='⏳ Subiendo...';btn.disabled=true;
-  try{
-    const dir=(document.getElementById('plD').value||'visita').substring(0,25);
-    const fec=document.getElementById('plF').value.replace(/\//g,'-');
-    const fotoActual=fotoData;
-
-    // Renderizar planilla a base64
-    const wc=await renderCv(3);
-    const planillaB64=wc.toDataURL('image/jpeg',0.92);
-
-    // Enviar a Google Drive
-    const resp=await fetch(DRIVE_URL,{
-      method:'POST',
-      body:JSON.stringify({
-        planilla:planillaB64,
-        foto:fotoActual||null,
-        fecha:document.getElementById('plF').value,
-        hora:document.getElementById('plH').value,
-        direccion:dir,
-      })
-    });
-    const result=await resp.json();
-    if(result.ok){
-      savePl();
-      toast('☁️ Guardado en Drive correctamente');
-      setTimeout(closeOv,800);
-    } else {
-      toast('Error Drive: '+result.error,true);
-    }
-  }catch(e){toast('Error: '+e.message,true);}
-  btn.textContent='☁️ Drive';btn.disabled=false;
-}
-
-function saveOnly(){savePl();closeOv();toast('Guardado ✓');}
-
-function savePl(){
-  const chC=CN.map(function(_,i){return !!plC['c'+i];});
-  const chV=VN.map(function(_,i){return !!plC['v'+i];});
+  const chC=CN.map((_,i)=>!!plC['c'+i]);
+  const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
   if(!visits[curId])visits[curId]={};
-  visits[curId].planilla={
+  visits[curId]={done:true,planilla:{
+    chC,chV,ti,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
-    obs:document.getElementById('plO').value,
-    chC:chC,chV:chV,ti:ti,
-    fecha:document.getElementById('plF').value,
-    hora:document.getElementById('plH').value,
-    foto:fotoData,
-  };
-  visits[curId].done=true;
-  renderV();updStats();guardarEstado();
+    foto:fotoData,fecha:hoy(),hora:ahora(),
+  }};
+  lsSet(SK.visits,visits);
+  renderV();updStats();closeOv();showToast('Visita guardada ✓');
 }
 
-// ── IMPORT EXCEL
-async function importXL(input){
-  const file=input.files[0];if(!file)return;
-  const ab=await file.arrayBuffer();
-  const wb=XLSX.read(ab,{type:'array'});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws);
-  const nuevos=rows.map(function(r){return{
-    id:String(r['Ubicación ID']||r['ID']||''),
-    nombre:String(r['Ubicación']||r['Nombre']||''),
-    dir:(String(r['Dirección']||'')+' '+String(r['Numero']||'')).trim(),
-    localidad:String(r['Localidad']||''),
-    tipo:String(r['Tipo Centro']||''),
-    obs:String(r['Observaciones']||''),
-  };}).filter(function(r){return r.dir&&r.id;});
-  puntos=puntos.concat(nuevos);
-  var cs=document.getElementById('csel');
-  var cities=[...new Set(puntos.map(function(p){return p.localidad;}).filter(Boolean))];
-  cities.forEach(function(c){if(![].slice.call(cs.options).find(function(o){return o.value===c;})){cs.add(new Option(c,c));}});
-  renderP();toast(nuevos.length+' puntos importados ✓');input.value='';
+function closeOv(){
+  document.getElementById('ov').classList.remove('show');
+  document.body.style.overflow='';
 }
 
-// ── EMAIL / WA
+// ── EMAILS
 function addEmail(){
-  var inp=document.getElementById('ein');
-  var v=inp.value.trim().replace(/,$/,'');
-  if(!v||!v.includes('@')){toast('Email inválido',true);return;}
-  if(emails.includes(v)){toast('Ya está',true);return;}
-  emails.push(v);inp.value='';renderChips();guardarEstado();toast('Agregado ✓');
+  const inp=document.getElementById('ein');
+  const v=inp.value.trim();
+  if(!v||!v.includes('@')){showToast('Email inválido',true);return;}
+  if(emails.includes(v)){showToast('Ya está',true);return;}
+  emails.push(v);inp.value='';lsSet(SK.emails,emails);renderChips();showToast('Agregado ✓');
 }
-function removeEmail(i){emails.splice(i,1);renderChips();}
+function removeEmail(i){emails.splice(i,1);lsSet(SK.emails,emails);renderChips();}
 function renderChips(){
-  document.getElementById('chips').innerHTML=emails.map(function(e,i){
-    return '<span class="chip">'+e+'<button onclick="removeEmail('+i+')">✕</button></span>';
+  document.getElementById('chips').innerHTML=emails.map((e,i)=>
+    `<span class="chip">${e}<button onclick="removeEmail(${i})">✕</button></span>`
+  ).join('');
+}
+
+// ── INFORME
+function renderRes(){
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  const hchos=enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length;
+  const rc=document.getElementById('resCard');
+  if(!enRuta.length){rc.innerHTML='<div class="empty" style="padding:14px 0"><p>Seleccioná puntos primero.</p></div>';return;}
+  rc.innerHTML=`<div style="margin-bottom:10px;display:flex;align-items:baseline;gap:8px">
+    <span style="font-family:monospace;font-size:22px;font-weight:700;color:#60a5fa">${hchos}/${enRuta.length}</span>
+    <span style="font-size:12px;color:#94a3b8">verificaciones completadas</span>
+  </div>`+enRuta.map(p=>{
+    const v=visits[p.id]||{};
+    const irr=(v.planilla&&v.planilla.chC?v.planilla.chC.filter(Boolean).length:0)+(v.planilla&&v.planilla.chV?v.planilla.chV.filter(Boolean).length:0);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+      <span>${v.done?'✅':'⏳'}</span>
+      <div style="flex:1;font-size:11px">
+        <div>${p.nombre}</div>
+        <div style="font-size:10px;color:#94a3b8">${p.dir} · ID: ${p.id}</div>
+      </div>
+      ${v.done?`<span class="bdg ${irr?'rd':'gr'}">${irr?irr+' irreg.':'OK'}</span>`:''}
+    </div>`;
   }).join('');
 }
+
 function buildMsg(){
-  var s=[...sel],done=s.filter(function(id){return visits[id]&&visits[id].done;}).length;
-  var now=new Date();
-  return '📋 *VERIFICACIONES SUBE*\n📅 '+now.toLocaleDateString('es-AR')+' · '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'\n✅ '+done+'/'+s.length+' puntos verificados\n\n'
-    +s.map(function(id,i){
-      var p=puntos.find(function(x){return x.id===id;})||{id:id};
-      var v=visits[id]||{};
-      var irregs=v.planilla?CN.filter(function(_,j){return v.planilla.chC[j];}).concat(VN.filter(function(_,j){return v.planilla.chV[j];})):[];
-      return (i+1)+'. '+(p.nombre||id)+' · ID:'+(p.id||id)+'\n   📍 '+(p.dir||'')+'\n   '+(v.done?'✓ Verificado':'⏳ Pendiente')+(irregs.length?'\n   ⚠️ '+irregs.join(', '):'')+((v.planilla&&v.planilla.obs)?'\n   📝 '+v.planilla.obs:'');
-    }).join('\n\n')+'\n\n_Planillas PDF adjuntas._';
-}
-function renderSum(){
-  var sc=document.getElementById('scard'),s=[...sel];
-  if(!s.length){sc.innerHTML='<div class="empty" style="padding:14px 0"><p>Seleccioná puntos primero.</p></div>';return;}
-  var done=s.filter(function(id){return visits[id]&&visits[id].done;}).length;
-  sc.innerHTML='<div style="margin-bottom:10px;display:flex;align-items:baseline;gap:8px">'
-    +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:22px;font-weight:700;color:var(--a2)">'+done+'/'+s.length+'</span>'
-    +'<span style="font-size:12px;color:var(--t2)">verificaciones completadas</span></div>'
-    +s.map(function(id){
-      var p=puntos.find(function(x){return x.id===id;})||{};
-      var v=visits[id]||{},irr=(v.planilla&&v.planilla.ti)||0;
-      return '<div class="si"><span style="font-size:13px">'+(v.done?'✅':'⏳')+'</span>'
-        +'<div class="sia"><div>'+(p.nombre||id)+'</div><div style="font-size:10px;color:var(--t2)">'+(p.dir||'')+' · ID: '+(p.id||id)+'</div></div>'
-        +(v.done?'<span class="sib '+(irr?'bir':'bok')+'">'+(irr?irr+' irreg.':'OK')+'</span>':'')
-        +'</div>';
-    }).join('');
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  const hchos=enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length;
+  const now=new Date();
+  return '📋 *VERIFICACIONES SUBE*\n📅 '+now.toLocaleDateString('es-AR')+' · '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'\n✅ '+hchos+'/'+enRuta.length+' puntos verificados\n\n'
+    +enRuta.map((p,i)=>{
+      const v=visits[p.id]||{};
+      const irregs=v.planilla?CN.filter((_,j)=>v.planilla.chC&&v.planilla.chC[j]).concat(VN.filter((_,j)=>v.planilla.chV&&v.planilla.chV[j])):[];
+      return (i+1)+'. '+p.nombre+' · ID:'+p.id+'\n   📍 '+p.dir+'\n   '+(v.done?'✓ Verificado':'⏳ Pendiente')+(irregs.length?'\n   ⚠️ '+irregs.join(', '):'')+(v.planilla&&v.planilla.obs?'\n   📝 '+v.planilla.obs:'');
+    }).join('\n\n')+'\n\n_Planillas adjuntas._';
 }
 function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank');}
 function sendEmail(){
-  if(!emails.length){toast('Agregá destinatarios',true);return;}
-  window.location.href='mailto:'+emails.join(',')+'?subject='+encodeURIComponent('Verificaciones SUBE')+'&body='+encodeURIComponent(buildMsg());
+  if(!emails.length){showToast('Agregá destinatarios',true);return;}
+  window.location.href='mailto:'+emails.join(',')+'?subject=Verificaciones SUBE&body='+encodeURIComponent(buildMsg());
 }
-function toast(msg,err){
-  var t=document.getElementById('toast');
+
+// ── CONFIRM DIALOG
+function confirm2(msg,cb){
+  document.getElementById('dlgMsg').textContent=msg;
+  dlgCb=cb;document.getElementById('dlg').classList.add('show');
+}
+function dlgOk(){if(dlgCb)dlgCb();closeDlg();}
+function closeDlg(){document.getElementById('dlg').classList.remove('show');dlgCb=null;}
+
+// ── TOAST
+let toastTm=null;
+function showToast(msg,err){
+  if(toastTm)clearTimeout(toastTm);
+  const t=document.getElementById('toast');
   t.textContent=msg;t.classList.toggle('err',!!err);
-  t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3000);
+  t.classList.add('show');
+  toastTm=setTimeout(()=>t.classList.remove('show'),3000);
 }
 </script>
 </body>
