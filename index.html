@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Verificaciones SUBE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -157,6 +159,25 @@ textarea{resize:vertical;min-height:65px}
 .empty{text-align:center;padding:36px 14px;color:#94a3b8}
 .ei{font-size:38px;margin-bottom:10px;display:block}
 .empty p{font-size:12px;line-height:1.6}
+
+/* MAPA */
+#mapa{width:100%;height:calc(100vh - 200px);min-height:380px;border-radius:13px;border:1px solid rgba(255,255,255,.07);background:#0f1520;z-index:0}
+.leaflet-popup-content-wrapper{background:#0f1520;color:#e8edf5;border:1px solid rgba(255,255,255,.13);border-radius:11px}
+.leaflet-popup-content{margin:11px 13px;font-family:'Outfit',sans-serif}
+.leaflet-popup-tip{background:#0f1520;border:1px solid rgba(255,255,255,.13)}
+.leaflet-popup-close-button{color:#94a3b8!important;font-size:18px!important;padding:6px 6px 0 0!important}
+.popup-title{font-size:13px;font-weight:700;margin-bottom:4px;color:#e8edf5}
+.popup-dir{font-size:11px;color:#94a3b8;margin-bottom:3px}
+.popup-id{font-size:10px;color:#94a3b8;font-family:monospace;margin-bottom:8px}
+.popup-btn{display:block;width:100%;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;text-decoration:none}
+.popup-btn.gm{background:#10b981;margin-top:5px}
+.geo-pend{background:#161e2e;border:1px solid rgba(245,158,11,.3);border-radius:9px;padding:8px 11px;margin-bottom:6px;font-size:11px;color:#f59e0b}
+.geo-progress{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(15,21,32,.95);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:6px 14px;font-size:11px;color:#60a5fa;font-weight:700;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none}
+.geo-progress.show{display:block}
+
+/* PIN MARKERS */
+.pin-marker{display:flex;align-items:center;justify-content:center;width:30px;height:42px;background:transparent}
+.pin-marker svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
 </style>
 </head>
 <body>
@@ -175,9 +196,10 @@ textarea{resize:vertical;min-height:65px}
   <div class="tabs">
     <button class="tab on" onclick="showTab(0)"><span class="ti">📋</span>Puntos</button>
     <button class="tab"    onclick="showTab(1)"><span class="ti">✅</span>Visitas</button>
-    <button class="tab"    onclick="showTab(2)"><span class="ti">📜</span>Historial</button>
-    <button class="tab"    onclick="showTab(3)"><span class="ti">📄</span>Planillas</button>
-    <button class="tab"    onclick="showTab(4)"><span class="ti">📧</span>Informe</button>
+    <button class="tab"    onclick="showTab(2)"><span class="ti">🗺️</span>Mapa</button>
+    <button class="tab"    onclick="showTab(3)"><span class="ti">📜</span>Historial</button>
+    <button class="tab"    onclick="showTab(4)"><span class="ti">📄</span>Planillas</button>
+    <button class="tab"    onclick="showTab(5)"><span class="ti">📧</span>Informe</button>
   </div>
 
   <!-- TAB 0: PUNTOS -->
@@ -215,8 +237,37 @@ textarea{resize:vertical;min-height:65px}
     <div class="empty" id="vEmpty"><span class="ei">✅</span><p>Seleccioná puntos en la pestaña Puntos.</p></div>
   </div>
 
-  <!-- TAB 2: HISTORIAL -->
-  <div class="cnt pnl" id="t2">
+  <!-- TAB 2: MAPA -->
+  <div class="cnt pnl" id="t2" style="position:relative;padding:10px 13px 80px">
+    <div class="card" style="margin-bottom:10px">
+      <span class="stit">⚙️ API Key de Google Geocoding</span>
+      <div style="display:flex;gap:7px;margin-bottom:6px">
+        <input type="text" id="gApiKey" placeholder="Pegá tu API key acá" autocomplete="off"/>
+        <button class="sm sma" onclick="saveApiKey()">💾</button>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;line-height:1.5">
+        🔒 La key se guarda solo en tu dispositivo. <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" style="color:#60a5fa">Obtener key →</a>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap">
+      <button class="sm sma" onclick="geocodificarTodos()">🔄 Geocodificar pendientes</button>
+      <button class="sm smh" onclick="centrarEnMiUbicacion()">📍 Mi ubicación</button>
+      <button class="sm smh" onclick="centrarEnPuntos()">🎯 Ver todos</button>
+    </div>
+
+    <div id="geoPendList"></div>
+
+    <div style="position:relative">
+      <div class="geo-progress" id="geoProgress">⏳ Geocodificando <span id="geoProgressN">0/0</span></div>
+      <div id="mapa"></div>
+    </div>
+
+    <div class="empty" id="mapaVacio" style="display:none"><span class="ei">🗺️</span><p>Importá un Excel y configurá tu API key<br/>para ver los puntos en el mapa.</p></div>
+  </div>
+
+  <!-- TAB 3: HISTORIAL -->
+  <div class="cnt pnl" id="t3">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
       <span class="stit" style="margin:0">Historial de jornadas</span>
       <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">🗑️ Borrar todo</button>
@@ -225,8 +276,8 @@ textarea{resize:vertical;min-height:65px}
     <div class="empty" id="hEmpty"><span class="ei">📜</span><p>Cerrá el día desde el encabezado<br/>para guardar jornadas aquí.</p></div>
   </div>
 
-  <!-- TAB 3: PLANILLAS GUARDADAS -->
-  <div class="cnt pnl" id="t3">
+  <!-- TAB 4: PLANILLAS GUARDADAS -->
+  <div class="cnt pnl" id="t4">
     <span class="stit">Mis planillas PDF guardadas</span>
     <div class="info">
       💡 <strong style="color:#e8edf5">¿Para qué sirve?</strong><br>
@@ -257,8 +308,8 @@ textarea{resize:vertical;min-height:65px}
     <div class="empty" id="plEmpty" style="display:none"><span class="ei">📄</span><p>Todavía no guardaste ninguna planilla.</p></div>
   </div>
 
-  <!-- TAB 4: INFORME -->
-  <div class="cnt pnl" id="t4">
+  <!-- TAB 5: INFORME -->
+  <div class="cnt pnl" id="t5">
     <span class="stit">Destinatarios</span>
     <div class="card">
       <div style="min-height:36px;padding:4px;background:#161e2e;border-radius:8px;border:1px solid rgba(255,255,255,.07);margin-bottom:7px;display:flex;flex-wrap:wrap;align-items:center" id="chips"></div>
@@ -374,7 +425,8 @@ function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',mi
 // ── STORAGE (localStorage con prefijo)
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
-  historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas'
+  historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
+  apiKey:'sube:apikey'
 };
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){showToast('Storage lleno: borrar historial viejo',true);}}
@@ -401,7 +453,8 @@ function showTab(n){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===n));
   document.querySelectorAll('.pnl').forEach((p,i)=>p.classList.toggle('on',i===n));
   if(n===1){renderV();updStats();}
-  if(n===4) renderRes();
+  if(n===2){initMapa();renderMapa();}
+  if(n===5) renderRes();
 }
 
 // ── RENDER PUNTOS
@@ -454,10 +507,17 @@ function importXL(input){
         localidad:String(r['Localidad']||''),
         tipo:String(r['Tipo Centro']||''),
         obs:String(r['Observaciones']||''),
+        lat:null,lng:null,geoErr:null,
       })).filter(r=>r.dir&&r.id);
-      puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos];
+      // mantener lat/lng de puntos existentes si coincide ID
+      puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos.map(n=>{
+        const ex=puntos.find(p=>p.id===n.id);
+        return ex&&ex.lat?{...n,lat:ex.lat,lng:ex.lng}:n;
+      })];
       lsSet(SK.puntos,puntos);
       renderP();showToast(nuevos.length+' puntos importados ✓');
+      // arrancar geocodificación automática
+      setTimeout(()=>geocodificarTodos(true),400);
     }catch(err){showToast('Error al leer el Excel',true);}
   };
   reader.readAsArrayBuffer(file);
@@ -490,7 +550,7 @@ function cerrarDia(){
     lsSet(SK.historial,historial);
     lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});
     renderP();updStats();renderH();showToast('Día cerrado y guardado ✓');
-    showTab(2);
+    showTab(3);
   });
 }
 
@@ -891,6 +951,234 @@ function showToast(msg,err){
   t.textContent=msg;t.classList.toggle('err',!!err);
   t.classList.add('show');
   toastTm=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── MAPA Y GEOCODIFICACIÓN (Google Geocoding API)
+// ═══════════════════════════════════════════════════════════
+let apiKey = lsGet(SK.apiKey) || '';
+let mapa = null;
+let markersLayer = null;
+let geocodingInProgress = false;
+
+// Cargar API key al input al iniciar
+setTimeout(()=>{
+  const inp=document.getElementById('gApiKey');
+  if(inp&&apiKey)inp.value=apiKey;
+},100);
+
+function saveApiKey(){
+  const v=document.getElementById('gApiKey').value.trim();
+  if(!v){showToast('Pegá una API key primero',true);return;}
+  apiKey=v;lsSet(SK.apiKey,v);
+  showToast('API key guardada ✓');
+  // si hay puntos pendientes, ofrecer geocodificar
+  const pend=puntos.filter(p=>!p.lat).length;
+  if(pend>0)setTimeout(()=>geocodificarTodos(true),300);
+}
+
+// Iconos SVG para los pins
+function makeIcon(color){
+  const svg=`<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 0 C6.7 0 0 6.7 0 15 c0 11 15 27 15 27 s15-16 15-27 C30 6.7 23.3 0 15 0 z" fill="${color}"/>
+    <circle cx="15" cy="15" r="6" fill="#fff"/>
+  </svg>`;
+  return L.divIcon({
+    html:`<div class="pin-marker">${svg}</div>`,
+    className:'',
+    iconSize:[30,42],
+    iconAnchor:[15,42],
+    popupAnchor:[0,-38]
+  });
+}
+const ICON_SEL = () => makeIcon('#3b82f6');   // azul: en ruta
+const ICON_DEF = () => makeIcon('#94a3b8');   // gris: no en ruta
+const ICON_DONE = () => makeIcon('#10b981');  // verde: verificado
+
+// Inicializar mapa una sola vez
+function initMapa(){
+  if(mapa)return;
+  // Default: Rosario, Argentina
+  mapa = L.map('mapa',{zoomControl:true,attributionControl:false}).setView([-32.9442,-60.6505],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'© OSM'
+  }).addTo(mapa);
+  markersLayer = L.layerGroup().addTo(mapa);
+  // Pequeño delay para que el contenedor calcule bien el tamaño
+  setTimeout(()=>mapa.invalidateSize(),200);
+}
+
+// Renderizar markers en el mapa + lista de pendientes
+function renderMapa(){
+  if(!mapa)return;
+  markersLayer.clearLayers();
+
+  const conGeo = puntos.filter(p=>p.lat&&p.lng);
+  const sinGeo = puntos.filter(p=>!p.lat);
+
+  // empty state
+  document.getElementById('mapaVacio').style.display = puntos.length?'none':'block';
+  document.getElementById('mapa').style.display = puntos.length?'block':'none';
+
+  // lista de puntos sin geocodificar
+  const pendList=document.getElementById('geoPendList');
+  if(sinGeo.length&&puntos.length){
+    pendList.innerHTML=`<div class="geo-pend">
+      ⚠️ <strong>${sinGeo.length}</strong> punto${sinGeo.length>1?'s':''} sin ubicación.
+      ${apiKey?'Tocá "🔄 Geocodificar pendientes" para procesarlos.':'Configurá tu API key arriba.'}
+    </div>`;
+  }else{
+    pendList.innerHTML='';
+  }
+
+  // markers
+  const bounds=[];
+  conGeo.forEach((p,i)=>{
+    const enRuta = sel.has(p.id);
+    const visitado = visits[p.id]&&visits[p.id].done;
+    const icon = visitado?ICON_DONE():(enRuta?ICON_SEL():ICON_DEF());
+    const marker = L.marker([p.lat,p.lng],{icon}).addTo(markersLayer);
+    const gmUrl = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+    const popup = `
+      <div class="popup-title">${escapeHtml(p.nombre)}</div>
+      <div class="popup-dir">📍 ${escapeHtml(p.dir)}</div>
+      <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
+      <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm">🧭 Ir con Google Maps</a>
+      <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'✓ En ruta':'+ Agregar a ruta'}</button>
+    `;
+    marker.bindPopup(popup);
+    bounds.push([p.lat,p.lng]);
+  });
+
+  // Auto-fit a los bounds si hay markers
+  if(bounds.length===1){
+    mapa.setView(bounds[0],15);
+  }else if(bounds.length>1){
+    mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
+  }
+}
+
+function toggleSelFromMap(id){
+  toggleSel(id);
+  renderMapa(); // refresca colores de pin
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Geocodificar un punto via Google Geocoding API
+async function geocodeOne(p){
+  const q=[p.dir, p.localidad, 'Argentina'].filter(Boolean).join(', ');
+  const url=`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=ar&key=${apiKey}`;
+  try{
+    const r=await fetch(url);
+    const data=await r.json();
+    if(data.status==='OK'&&data.results&&data.results[0]){
+      const loc=data.results[0].geometry.location;
+      return {lat:loc.lat,lng:loc.lng,err:null};
+    }else if(data.status==='ZERO_RESULTS'){
+      return {lat:null,lng:null,err:'No encontrada'};
+    }else if(data.status==='REQUEST_DENIED'){
+      return {lat:null,lng:null,err:'API key inválida: '+(data.error_message||'')};
+    }else if(data.status==='OVER_QUERY_LIMIT'){
+      return {lat:null,lng:null,err:'Cuota excedida'};
+    }else{
+      return {lat:null,lng:null,err:data.status||'Error'};
+    }
+  }catch(e){
+    return {lat:null,lng:null,err:'Sin conexión'};
+  }
+}
+
+// Geocodificar todos los puntos pendientes
+async function geocodificarTodos(silent){
+  if(geocodingInProgress){showToast('Ya hay un proceso en curso',true);return;}
+  if(!apiKey){
+    if(!silent)showToast('Configurá tu API key primero',true);
+    return;
+  }
+  const pendientes=puntos.filter(p=>!p.lat);
+  if(!pendientes.length){
+    if(!silent)showToast('No hay puntos pendientes ✓');
+    return;
+  }
+
+  geocodingInProgress=true;
+  const prog=document.getElementById('geoProgress');
+  const progN=document.getElementById('geoProgressN');
+  if(prog){prog.classList.add('show');}
+
+  let ok=0,fail=0,denied=false;
+  for(let i=0;i<pendientes.length;i++){
+    const p=pendientes[i];
+    if(progN)progN.textContent=(i+1)+'/'+pendientes.length;
+
+    const res=await geocodeOne(p);
+    // Actualizar el punto en el array principal (por ID)
+    const idx=puntos.findIndex(pp=>pp.id===p.id);
+    if(idx>=0){
+      if(res.lat){
+        puntos[idx].lat=res.lat;
+        puntos[idx].lng=res.lng;
+        puntos[idx].geoErr=null;
+        ok++;
+      }else{
+        puntos[idx].geoErr=res.err;
+        fail++;
+        if(res.err&&res.err.startsWith('API key inválida')){
+          showToast('API key inválida — revisá la configuración',true);
+          denied=true;
+          break;
+        }
+        if(res.err==='Cuota excedida'){
+          showToast('Cuota de Google excedida',true);
+          break;
+        }
+      }
+    }
+    // Pequeño delay para no saturar (Google permite ~50 req/s, vamos cómodos)
+    await new Promise(r=>setTimeout(r,80));
+  }
+
+  lsSet(SK.puntos,puntos);
+  if(prog)prog.classList.remove('show');
+  geocodingInProgress=false;
+
+  if(mapa)renderMapa();
+
+  if(!denied){
+    let msg=`✓ ${ok} geocodificado${ok!==1?'s':''}`;
+    if(fail)msg+=` · ${fail} sin ubicar`;
+    showToast(msg);
+  }
+}
+
+// Centrar mapa en mi ubicación
+function centrarEnMiUbicacion(){
+  if(!mapa){showToast('Abrí primero el mapa',true);return;}
+  if(!navigator.geolocation){showToast('Geolocalización no disponible',true);return;}
+  showToast('Obteniendo ubicación...');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    mapa.setView([pos.coords.latitude,pos.coords.longitude],14);
+    L.circleMarker([pos.coords.latitude,pos.coords.longitude],{
+      radius:8,color:'#fff',weight:3,fillColor:'#ef4444',fillOpacity:1
+    }).addTo(markersLayer).bindPopup('Tu ubicación');
+    showToast('Centrado en tu ubicación ✓');
+  },err=>{
+    showToast('No se pudo obtener la ubicación',true);
+  },{timeout:8000,enableHighAccuracy:true});
+}
+
+// Centrar para ver todos los puntos
+function centrarEnPuntos(){
+  if(!mapa)return;
+  const conGeo=puntos.filter(p=>p.lat&&p.lng);
+  if(!conGeo.length){showToast('No hay puntos en el mapa',true);return;}
+  const bounds=conGeo.map(p=>[p.lat,p.lng]);
+  if(bounds.length===1)mapa.setView(bounds[0],15);
+  else mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
 }
 </script>
 </body>
