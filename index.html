@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Verificaciones SUBE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1558,7 +1559,97 @@ function safeName(s){
   return String(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').substring(0,80);
 }
 
-// Subir visita (foto + PDF) a Drive
+// ═══════════════════════════════════════════════════════════
+// RELLENAR PLANILLA PDF CON DATOS DE LA VISITA
+// Toma el PDF en blanco (base64) y le sobreimprime los datos
+// en las coordenadas exactas mapeadas del PDF oficial SUBE.
+// ═══════════════════════════════════════════════════════════
+async function rellenarPlanillaPDF(pdfB64, punto, visita){
+  if(!window.PDFLib){throw new Error('pdf-lib no cargó');}
+  const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+
+  // Decodificar base64 plano
+  let bytes;
+  const clean = pdfB64.replace(/\s/g,'');
+  const bin = atob(clean);
+  bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+
+  const pdfDoc = await PDFDocument.load(bytes);
+  const page = pdfDoc.getPages()[0];
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const pl = visita.planilla || {};
+  const fecha = pl.fecha || hoy();
+  const hora = pl.hora || ahora();
+
+  // ── COORDENADAS (ya mapeadas y validadas con preview) ──
+  // Datos cabecera: x=157.5, y desde abajo
+  const drawTxt = (txt, x, y, sz)=> page.drawText(String(txt||''),{x,y,size:sz||10,font,color:rgb(0,0,0)});
+
+  drawTxt(fecha,                157.5, 706.2);
+  drawTxt(hora,                 157.5, 681.9);
+  drawTxt(punto.id||'',         157.5, 657.7);
+  // Dirección: si es muy larga, truncar
+  let dir = (punto.dir||'') + (punto.localidad?' - '+punto.localidad:'');
+  if(dir.length > 70) dir = dir.substring(0,67) + '...';
+  drawTxt(dir,                  157.5, 633.5);
+  drawTxt(pl.rubro||'',         157.5, 609.2);
+
+  // ── CHECKBOXES IRREGULARIDAD DE CARGA (X grande centrada DENTRO del cuadrado) ──
+  const yCarga = [529.8, 506.0, 482.3, 458.5, 434.7, 411.0, 387.2, 363.4];
+  const chC = pl.chC || [];
+  for(let i=0;i<8;i++){
+    if(chC[i]){
+      // X tamaño 16, ancho aprox 10pt → para centrar en x=478 ponemos x=473
+      page.drawText('X', {x:473, y:yCarga[i]-3, size:16, font:fontBold, color:rgb(0,0,0)});
+    }
+  }
+
+  // ── CHECKBOXES IRREGULARIDAD VENTA ──
+  const yVenta = [279.4, 255.6];
+  const chV = pl.chV || [];
+  for(let i=0;i<2;i++){
+    if(chV[i]){
+      page.drawText('X', {x:473, y:yVenta[i]-3, size:16, font:fontBold, color:rgb(0,0,0)});
+    }
+  }
+
+  // ── OBSERVACIONES (multilínea word-wrap) ──
+  if(pl.obs){
+    const maxChars = 90;
+    const palabras = pl.obs.split(/\s+/);
+    const lineas = [];
+    let actual = '';
+    for(const p of palabras){
+      if((actual+' '+p).trim().length <= maxChars){
+        actual = (actual+' '+p).trim();
+      }else{
+        if(actual) lineas.push(actual);
+        actual = p;
+      }
+    }
+    if(actual) lineas.push(actual);
+    let yObs = 175;
+    for(const ln of lineas.slice(0,4)){ // máx 4 líneas para no salir del cuadro
+      page.drawText(ln, {x:63, y:yObs, size:9, font, color:rgb(0,0,0)});
+      yObs -= 11;
+    }
+  }
+
+  // Serializar PDF resultante
+  const pdfBytes = await pdfDoc.save();
+  // Convertir a base64 plano
+  let bin2 = '';
+  const chunkSize = 8192;
+  for(let i=0; i<pdfBytes.length; i+=chunkSize){
+    bin2 += String.fromCharCode.apply(null, pdfBytes.subarray(i,i+chunkSize));
+  }
+  return btoa(bin2);
+}
+
+// Subir visita (foto + PDF rellenado) a Drive
 async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   if(!drv.connected) return;
   const root = await driveGetRootFolderId();
@@ -1577,10 +1668,19 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
       visits[curId].planilla.driveFotoUrl = r.webViewLink;
     }catch(e){console.error('foto:',e);}
   }
-  // Subir PDF si hay
+  // Subir PDF rellenado si hay planilla base
   if(pdfB64){
     try{
-      const r = await driveUploadFile(`${prefix}_${safeName(pdfNombre||'planilla')}`,'application/pdf',pdfB64,sub);
+      // Rellenar el PDF con los datos antes de subirlo
+      let pdfFinal = pdfB64;
+      try{
+        pdfFinal = await rellenarPlanillaPDF(pdfB64, punto, visita);
+      }catch(e){
+        console.error('Error rellenando PDF, subo el original:',e);
+        showToast('⚠️ No pude rellenar el PDF, se sube en blanco',true);
+      }
+      const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
+      const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
       visits[curId].planilla.drivePdfUrl = r.webViewLink;
     }catch(e){console.error('pdf:',e);}
   }
