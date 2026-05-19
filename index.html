@@ -7,6 +7,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -178,6 +180,20 @@ textarea{resize:vertical;min-height:65px}
 /* PIN MARKERS */
 .pin-marker{display:flex;align-items:center;justify-content:center;width:30px;height:42px;background:transparent}
 .pin-marker svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+
+/* DRIVE STATUS */
+.drv-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:3px 7px;border-radius:12px;background:rgba(148,163,184,.15);color:#94a3b8}
+.drv-badge.on{background:rgba(16,185,129,.15);color:#10b981}
+.drv-badge.sync{background:rgba(59,130,246,.15);color:#60a5fa}
+.drv-dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.drv-dot.pulse{animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* RESUMEN JORNADA DRIVE */
+.resume-card{background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(16,185,129,.08));border:1px solid rgba(59,130,246,.3);border-radius:13px;padding:14px;margin-bottom:12px}
+.resume-title{font-size:13px;font-weight:800;color:#60a5fa;margin-bottom:5px}
+.resume-info{font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:9px}
+.resume-btns{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 </style>
 </head>
 <body>
@@ -187,6 +203,7 @@ textarea{resize:vertical;min-height:65px}
   <div class="hdr">
     <div class="logo">Verific.<span>SUBE</span></div>
     <div style="display:flex;gap:6px;align-items:center">
+      <span class="drv-badge" id="drvBadge" onclick="showTab(5)" style="cursor:pointer"><span class="drv-dot"></span><span id="drvBadgeTxt">Drive off</span></span>
       <span id="fechaHdr" style="font-size:10px;color:#94a3b8"></span>
       <button class="sm smh" onclick="cerrarDia()">📁 Cerrar día</button>
     </div>
@@ -199,7 +216,8 @@ textarea{resize:vertical;min-height:65px}
     <button class="tab"    onclick="showTab(2)"><span class="ti">🗺️</span>Mapa</button>
     <button class="tab"    onclick="showTab(3)"><span class="ti">📜</span>Historial</button>
     <button class="tab"    onclick="showTab(4)"><span class="ti">📄</span>Planillas</button>
-    <button class="tab"    onclick="showTab(5)"><span class="ti">📧</span>Informe</button>
+    <button class="tab"    onclick="showTab(5)"><span class="ti">☁️</span>Drive</button>
+    <button class="tab"    onclick="showTab(6)"><span class="ti">📧</span>Informe</button>
   </div>
 
   <!-- TAB 0: PUNTOS -->
@@ -308,8 +326,52 @@ textarea{resize:vertical;min-height:65px}
     <div class="empty" id="plEmpty" style="display:none"><span class="ei">📄</span><p>Todavía no guardaste ninguna planilla.</p></div>
   </div>
 
-  <!-- TAB 5: INFORME -->
+  <!-- TAB 5: DRIVE -->
   <div class="cnt pnl" id="t5">
+    <div class="card" style="margin-bottom:10px">
+      <span class="stit">⚙️ Google OAuth Client ID</span>
+      <div style="display:flex;gap:7px;margin-bottom:6px">
+        <input type="text" id="gClientId" placeholder="123456-abc...apps.googleusercontent.com" autocomplete="off"/>
+        <button class="sm sma" onclick="saveClientId()">💾</button>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;line-height:1.5">
+        🔒 Se guarda solo en tu dispositivo. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#60a5fa">Crear Client ID →</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <span class="stit">Conexión con Drive</span>
+      <div id="drvConnInfo" style="font-size:12px;color:#94a3b8;margin-bottom:9px;line-height:1.6"></div>
+      <button class="btn ba" id="btnConnect" onclick="connectDrive()">🔐 Conectar con Google Drive</button>
+      <button class="btn bd" id="btnDisconnect" style="display:none" onclick="disconnectDrive()">🔓 Desconectar</button>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <span class="stit">📁 Carpeta destino en Drive</span>
+      <input type="text" id="folderName" placeholder="Verificaciones SUBE" style="margin-bottom:7px"/>
+      <div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-bottom:8px">
+        Dentro se crean subcarpetas <code style="color:#60a5fa">YYYY-MM-DD/IdPunto_Nombre/</code> con la foto + PDF de cada visita.
+      </div>
+      <button class="sm sma" onclick="saveFolderName()">💾 Guardar nombre</button>
+    </div>
+
+    <div class="card">
+      <span class="stit">Auto-guardar jornada</span>
+      <div style="font-size:11px;color:#94a3b8;line-height:1.6;margin-bottom:8px">
+        Cuando está activo, cada cambio (importar puntos, marcar visitas, etc.) se guarda en tu Drive como <code style="color:#60a5fa">jornada-actual.json</code>. Si abrís la app en otro dispositivo o al día siguiente, podés <strong style="color:#e8edf5">retomar la jornada</strong>.
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="autosaveChk" onchange="toggleAutosave(this)" style="width:auto;margin:0"/>
+        <span style="font-size:12px">Activar auto-guardado</span>
+      </label>
+      <div id="lastSyncInfo" style="font-size:10px;color:#94a3b8;margin-top:8px"></div>
+      <button class="sm sma" style="margin-top:8px" onclick="guardarJornadaAhora()">💾 Guardar jornada ahora</button>
+      <button class="sm smh" style="margin-top:6px" onclick="cargarJornadaDesdeManual()">📂 Cargar jornada desde Drive</button>
+    </div>
+  </div>
+
+  <!-- TAB 6: INFORME -->
+  <div class="cnt pnl" id="t6">
     <span class="stit">Destinatarios</span>
     <div class="card">
       <div style="min-height:36px;padding:4px;background:#161e2e;border-radius:8px;border:1px solid rgba(255,255,255,.07);margin-bottom:7px;display:flex;flex-wrap:wrap;align-items:center" id="chips"></div>
@@ -426,7 +488,12 @@ function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',mi
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
   historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
-  apiKey:'sube:apikey'
+  apiKey:'sube:apikey',
+  clientId:'sube:clientid',
+  folderName:'sube:foldername',
+  rootFolderId:'sube:rootfolderid',
+  autosave:'sube:autosave',
+  lastSync:'sube:lastsync',
 };
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){showToast('Storage lleno: borrar historial viejo',true);}}
@@ -454,7 +521,8 @@ function showTab(n){
   document.querySelectorAll('.pnl').forEach((p,i)=>p.classList.toggle('on',i===n));
   if(n===1){renderV();updStats();}
   if(n===2){initMapa();renderMapa();}
-  if(n===5) renderRes();
+  if(n===5){renderDriveTab();}
+  if(n===6) renderRes();
 }
 
 // ── RENDER PUNTOS
@@ -489,6 +557,7 @@ function toggleSel(id){
   lsSet(SK.sel,[...sel]);
   renderP();updStats();
   showToast(sel.has(id)?'Agregado a la ruta ✓':'Quitado de la ruta');
+  triggerAutosave();
 }
 
 // ── IMPORTAR EXCEL
@@ -518,6 +587,8 @@ function importXL(input){
       renderP();showToast(nuevos.length+' puntos importados ✓');
       // arrancar geocodificación automática
       setTimeout(()=>geocodificarTodos(true),400);
+      // autosave
+      triggerAutosave();
     }catch(err){showToast('Error al leer el Excel',true);}
   };
   reader.readAsArrayBuffer(file);
@@ -550,6 +621,8 @@ function cerrarDia(){
     lsSet(SK.historial,historial);
     lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});
     renderP();updStats();renderH();showToast('Día cerrado y guardado ✓');
+    // borrar jornada-actual del Drive (la jornada ya pasó al historial)
+    if(drv.connected) borrarJornadaActualDrive().catch(()=>{});
     showTab(3);
   });
 }
@@ -598,6 +671,7 @@ function markDone(id){
   visits[id].done=true;
   lsSet(SK.visits,visits);
   renderV();updStats();showToast('Marcada como hecha ✓');
+  triggerAutosave();
 }
 
 // ── HISTORIAL
@@ -866,13 +940,34 @@ async function guardarVisita(){
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
   if(!visits[curId])visits[curId]={};
+  // determinar PDF activo: el del modal o el seleccionado de la lista
+  let pdfActivoB64 = pdfB64Modal;
+  let pdfActivoNombre = 'planilla.pdf';
+  if(!pdfActivoB64 && pdfSelId){
+    const pl = planillas.find(x=>x.id===pdfSelId);
+    if(pl){pdfActivoB64 = pl.b64; pdfActivoNombre = (pl.nombre||'planilla')+'.pdf';}
+  }
   visits[curId]={done:true,planilla:{
     chC,chV,ti,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:hoy(),hora:ahora(),
+    driveFotoUrl:null,drivePdfUrl:null,
   }};
   lsSet(SK.visits,visits);
   renderV();updStats();closeOv();showToast('Visita guardada ✓');
+
+  // Subir a Drive si está conectado
+  if(drv.connected){
+    const punto = puntos.find(p=>p.id===curId);
+    if(punto){
+      subirVisitaADrive(punto, visits[curId], pdfActivoB64, pdfActivoNombre).catch(e=>{
+        console.error('Error subiendo a Drive:',e);
+        showToast('⚠️ Error subiendo a Drive (se guardó local)',true);
+      });
+    }
+  }
+  // Autosave de jornada
+  triggerAutosave();
 }
 
 function closeOv(){
@@ -1180,6 +1275,457 @@ function centrarEnPuntos(){
   if(bounds.length===1)mapa.setView(bounds[0],15);
   else mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
 }
+
+// ═══════════════════════════════════════════════════════════
+// ── GOOGLE DRIVE: AUTH + UPLOAD + AUTOSAVE JORNADA
+// ═══════════════════════════════════════════════════════════
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+const drv = {
+  clientId: lsGet(SK.clientId) || '',
+  folderName: lsGet(SK.folderName) || 'Verificaciones SUBE',
+  rootFolderId: lsGet(SK.rootFolderId) || null,
+  autosave: lsGet(SK.autosave) || false,
+  lastSync: lsGet(SK.lastSync) || null,
+  tokenClient: null,
+  accessToken: null,
+  tokenExpiry: 0,
+  connected: false,
+  user: null,
+  gapiReady: false,
+  gisReady: false,
+  autosaveTimer: null,
+  autosavePending: false,
+};
+
+// Esperar a que GAPI y GIS carguen
+function waitForGoogleLibs(){
+  return new Promise((resolve)=>{
+    const check=()=>{
+      const gapiOk = typeof gapi !== 'undefined';
+      const gisOk = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
+      if(gapiOk && gisOk){
+        if(!drv.gapiReady){
+          gapi.load('client',async()=>{
+            await gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
+            drv.gapiReady=true;
+            drv.gisReady=true;
+            resolve();
+          });
+        }else{
+          resolve();
+        }
+      }else{
+        setTimeout(check,200);
+      }
+    };
+    check();
+  });
+}
+
+function saveClientId(){
+  const v=document.getElementById('gClientId').value.trim();
+  if(!v){showToast('Pegá el Client ID primero',true);return;}
+  drv.clientId=v;lsSet(SK.clientId,v);
+  showToast('Client ID guardado ✓');
+  renderDriveTab();
+}
+
+function saveFolderName(){
+  const v=document.getElementById('folderName').value.trim()||'Verificaciones SUBE';
+  drv.folderName=v;lsSet(SK.folderName,v);
+  // Resetear rootFolderId para que se vuelva a buscar/crear
+  drv.rootFolderId=null;lsDel(SK.rootFolderId);
+  showToast('Nombre de carpeta guardado ✓');
+}
+
+function toggleAutosave(chk){
+  drv.autosave=chk.checked;
+  lsSet(SK.autosave,drv.autosave);
+  if(drv.autosave){
+    if(!drv.connected){
+      showToast('Conectá Drive primero',true);
+      chk.checked=false;drv.autosave=false;
+      lsSet(SK.autosave,false);
+      return;
+    }
+    showToast('Auto-guardado activado ✓');
+    triggerAutosave();
+  }else{
+    showToast('Auto-guardado desactivado');
+  }
+}
+
+async function connectDrive(){
+  if(!drv.clientId){showToast('Pegá tu Client ID primero',true);return;}
+  showToast('Conectando con Drive...');
+  try{
+    await waitForGoogleLibs();
+    if(!drv.tokenClient){
+      drv.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: drv.clientId,
+        scope: DRIVE_SCOPE,
+        prompt: '',
+        callback: async (resp)=>{
+          if(resp.error){
+            console.error(resp);
+            showToast('Error de autorización: '+resp.error,true);
+            return;
+          }
+          drv.accessToken = resp.access_token;
+          drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
+          gapi.client.setToken({access_token: drv.accessToken});
+          drv.connected = true;
+          // probar la conexión y conseguir info del usuario
+          try{
+            const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+              headers:{'Authorization':'Bearer '+drv.accessToken}
+            }).then(r=>r.json());
+            drv.user = userInfo.email || null;
+          }catch(e){}
+          updateDriveBadge();
+          renderDriveTab();
+          showToast('✓ Conectado a Drive');
+          // si hay jornada-actual en Drive, ofrecer cargarla
+          checkJornadaActual();
+        }
+      });
+    }
+    // Forzar prompt de consentimiento la primera vez
+    const hint = drv.user?'':'consent';
+    drv.tokenClient.requestAccessToken({prompt: hint});
+  }catch(e){
+    console.error(e);
+    showToast('Error iniciando OAuth: '+e.message,true);
+  }
+}
+
+function disconnectDrive(){
+  if(drv.accessToken){
+    try{google.accounts.oauth2.revoke(drv.accessToken,()=>{});}catch(e){}
+  }
+  drv.accessToken=null;drv.connected=false;drv.user=null;drv.tokenExpiry=0;
+  updateDriveBadge();renderDriveTab();
+  showToast('Desconectado de Drive');
+}
+
+async function ensureToken(){
+  if(!drv.connected) throw new Error('No conectado a Drive');
+  // Si el token está por vencer, pedirlo de nuevo silenciosamente
+  if(Date.now() > drv.tokenExpiry){
+    return new Promise((resolve,reject)=>{
+      drv.tokenClient.callback = (resp)=>{
+        if(resp.error){reject(resp.error);return;}
+        drv.accessToken=resp.access_token;
+        drv.tokenExpiry=Date.now()+((resp.expires_in||3600)*1000)-60000;
+        gapi.client.setToken({access_token:drv.accessToken});
+        resolve();
+      };
+      drv.tokenClient.requestAccessToken({prompt:''});
+    });
+  }
+}
+
+function updateDriveBadge(){
+  const b=document.getElementById('drvBadge');
+  const t=document.getElementById('drvBadgeTxt');
+  if(!b)return;
+  b.classList.toggle('on',drv.connected);
+  t.textContent = drv.connected ? (drv.autosave?'Sync ✓':'Drive ✓') : 'Drive off';
+}
+
+function renderDriveTab(){
+  const inp=document.getElementById('gClientId');
+  if(inp&&drv.clientId&&!inp.value)inp.value=drv.clientId;
+  const fn=document.getElementById('folderName');
+  if(fn)fn.value=drv.folderName;
+  const chk=document.getElementById('autosaveChk');
+  if(chk)chk.checked=drv.autosave;
+  const info=document.getElementById('drvConnInfo');
+  if(info){
+    if(drv.connected){
+      info.innerHTML=`✅ Conectado como <strong style="color:#10b981">${drv.user||'tu cuenta'}</strong>`;
+      document.getElementById('btnConnect').style.display='none';
+      document.getElementById('btnDisconnect').style.display='block';
+    }else{
+      info.innerHTML='🔴 No conectado. Tocá el botón de abajo para empezar.';
+      document.getElementById('btnConnect').style.display='block';
+      document.getElementById('btnDisconnect').style.display='none';
+    }
+  }
+  const ls=document.getElementById('lastSyncInfo');
+  if(ls){
+    ls.textContent = drv.lastSync ? '⏱️ Última sincronización: '+drv.lastSync : '';
+  }
+}
+
+// --- DRIVE API HELPERS ---
+async function driveBuscarCarpeta(nombre, parentId){
+  await ensureToken();
+  const qParts = [
+    "mimeType='application/vnd.google-apps.folder'",
+    "trashed=false",
+    `name='${nombre.replace(/'/g,"\\'")}'`,
+  ];
+  if(parentId) qParts.push(`'${parentId}' in parents`);
+  const resp = await gapi.client.drive.files.list({
+    q: qParts.join(' and '),
+    fields:'files(id,name)',
+    pageSize: 5,
+  });
+  return resp.result.files && resp.result.files[0] ? resp.result.files[0].id : null;
+}
+
+async function driveCrearCarpeta(nombre, parentId){
+  await ensureToken();
+  const metadata = {name:nombre, mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) metadata.parents=[parentId];
+  const resp = await gapi.client.drive.files.create({resource:metadata, fields:'id,name'});
+  return resp.result.id;
+}
+
+async function driveGetOrCreateFolder(nombre, parentId){
+  let id = await driveBuscarCarpeta(nombre, parentId);
+  if(!id) id = await driveCrearCarpeta(nombre, parentId);
+  return id;
+}
+
+async function driveGetRootFolderId(){
+  if(drv.rootFolderId){
+    // verificar que sigue existiendo
+    try{
+      await ensureToken();
+      const r=await gapi.client.drive.files.get({fileId:drv.rootFolderId,fields:'id,trashed'});
+      if(r.result && !r.result.trashed) return drv.rootFolderId;
+    }catch(e){drv.rootFolderId=null;}
+  }
+  const id = await driveGetOrCreateFolder(drv.folderName, null);
+  drv.rootFolderId=id;lsSet(SK.rootFolderId,id);
+  return id;
+}
+
+// Subir archivo (multipart: metadata + bytes). content puede ser dataURL o Blob.
+async function driveUploadFile(nombre, mime, content, parentId){
+  await ensureToken();
+  let bytes;
+  if(typeof content === 'string' && content.startsWith('data:')){
+    // dataURL → blob
+    const m = content.match(/^data:([^;]+);base64,(.+)$/);
+    if(!m) throw new Error('dataURL inválido');
+    if(!mime) mime = m[1];
+    const bin = atob(m[2]);
+    const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    bytes = new Blob([arr],{type:mime});
+  }else if(typeof content === 'string'){
+    bytes = new Blob([content],{type:mime||'text/plain'});
+  }else{
+    bytes = content;
+  }
+  const metadata = {name:nombre, mimeType:mime};
+  if(parentId) metadata.parents=[parentId];
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+  form.append('file', bytes);
+
+  const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+drv.accessToken},
+    body: form,
+  });
+  if(!resp.ok){
+    const txt=await resp.text();
+    throw new Error('Upload falló: '+txt);
+  }
+  return await resp.json();
+}
+
+// Sanea nombres para Drive
+function safeName(s){
+  return String(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').substring(0,80);
+}
+
+// Subir visita (foto + PDF) a Drive
+async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
+  if(!drv.connected) return;
+  const root = await driveGetRootFolderId();
+  const fechaCarpeta = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
+  const dia = await driveGetOrCreateFolder(fechaCarpeta, root);
+  const subNombre = safeName(punto.id+'_'+(punto.nombre||'punto'));
+  const sub = await driveGetOrCreateFolder(subNombre, dia);
+
+  const hora = (new Date()).toTimeString().slice(0,5).replace(':','');
+  const prefix = `${fechaCarpeta}_${hora}`;
+
+  // Subir foto si hay
+  if(visita.planilla && visita.planilla.foto){
+    try{
+      const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
+      visits[curId].planilla.driveFotoUrl = r.webViewLink;
+    }catch(e){console.error('foto:',e);}
+  }
+  // Subir PDF si hay
+  if(pdfB64){
+    try{
+      const r = await driveUploadFile(`${prefix}_${safeName(pdfNombre||'planilla')}`,'application/pdf',pdfB64,sub);
+      visits[curId].planilla.drivePdfUrl = r.webViewLink;
+    }catch(e){console.error('pdf:',e);}
+  }
+  lsSet(SK.visits,visits);
+  showToast('☁️ Subido a Drive ✓');
+}
+
+// --- AUTOSAVE JORNADA-ACTUAL.JSON ---
+function triggerAutosave(){
+  if(!drv.autosave || !drv.connected) return;
+  // Debounce: si hay muchos cambios seguidos, espera 2s
+  drv.autosavePending = true;
+  if(drv.autosaveTimer) clearTimeout(drv.autosaveTimer);
+  drv.autosaveTimer = setTimeout(()=>{
+    guardarJornadaActualEnDrive().catch(e=>{
+      console.error('autosave:',e);
+    });
+  },2000);
+}
+
+async function guardarJornadaActualEnDrive(){
+  if(!drv.connected) return;
+  const root = await driveGetRootFolderId();
+  const jornada = {
+    fecha: hoy(),
+    hora: ahora(),
+    timestamp: Date.now(),
+    puntos: puntos,
+    sel: [...sel],
+    visits: visits,
+  };
+  const json = JSON.stringify(jornada);
+  // Buscar si ya existe el archivo
+  await ensureToken();
+  const buscar = await gapi.client.drive.files.list({
+    q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+    fields:'files(id,name)',
+    pageSize:1,
+  });
+  const existing = buscar.result.files && buscar.result.files[0];
+  if(existing){
+    // Update con PATCH multipart
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify({name:'jornada-actual.json',mimeType:'application/json'})],{type:'application/json'}));
+    form.append('file', new Blob([json],{type:'application/json'}));
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart`,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+drv.accessToken},
+      body: form,
+    });
+  }else{
+    await driveUploadFile('jornada-actual.json','application/json',json,root);
+  }
+  const now = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+  drv.lastSync = now;
+  lsSet(SK.lastSync,now);
+  drv.autosavePending = false;
+  updateDriveBadge();
+  const ls=document.getElementById('lastSyncInfo');
+  if(ls)ls.textContent='⏱️ Última sincronización: '+now;
+}
+
+async function guardarJornadaAhora(){
+  if(!drv.connected){showToast('Conectá Drive primero',true);return;}
+  showToast('Guardando jornada...');
+  try{
+    await guardarJornadaActualEnDrive();
+    showToast('✓ Jornada guardada en Drive');
+  }catch(e){
+    console.error(e);
+    showToast('Error guardando jornada',true);
+  }
+}
+
+async function cargarJornadaDesdeDrive(){
+  if(!drv.connected) return null;
+  const root = await driveGetRootFolderId();
+  await ensureToken();
+  const buscar = await gapi.client.drive.files.list({
+    q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+    fields:'files(id,name,modifiedTime)',
+    pageSize:1,
+  });
+  const f = buscar.result.files && buscar.result.files[0];
+  if(!f) return null;
+  // Bajar contenido
+  const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{
+    headers:{'Authorization':'Bearer '+drv.accessToken},
+  });
+  if(!resp.ok) throw new Error('No se pudo descargar');
+  return await resp.json();
+}
+
+function aplicarJornada(j){
+  if(!j || !j.puntos) return;
+  puntos = j.puntos||[];
+  sel = new Set(j.sel||[]);
+  visits = j.visits||{};
+  lsSet(SK.puntos,puntos);
+  lsSet(SK.sel,[...sel]);
+  lsSet(SK.visits,visits);
+  renderP();renderV();updStats();
+  if(mapa) renderMapa();
+  showToast('Jornada cargada ✓');
+}
+
+async function checkJornadaActual(){
+  // Solo ofrecer si hay archivo en Drive y la jornada local está vacía o es más vieja
+  try{
+    const j = await cargarJornadaDesdeDrive();
+    if(!j) return;
+    const localVacia = !puntos.length && Object.keys(visits).length===0;
+    const driveMasNueva = !localVacia && j.timestamp && j.timestamp > 0 &&
+      (puntos.length !== (j.puntos||[]).length || JSON.stringify([...sel].sort()) !== JSON.stringify((j.sel||[]).sort()));
+
+    if(localVacia){
+      confirm2(`📂 Hay una jornada guardada en Drive del ${j.fecha} ${j.hora||''} con ${(j.puntos||[]).length} puntos. ¿Cargarla?`,()=>aplicarJornada(j));
+    }else if(driveMasNueva){
+      confirm2(`⚠️ La jornada en Drive (${j.fecha} ${j.hora||''}) es diferente a la local. ¿Reemplazar la local con la de Drive?`,()=>aplicarJornada(j));
+    }
+  }catch(e){console.error('checkJornadaActual:',e);}
+}
+
+async function cargarJornadaDesdeManual(){
+  if(!drv.connected){showToast('Conectá Drive primero',true);return;}
+  showToast('Buscando jornada en Drive...');
+  try{
+    const j = await cargarJornadaDesdeDrive();
+    if(!j){showToast('No hay jornada guardada en Drive',true);return;}
+    confirm2(`📂 Jornada del ${j.fecha} ${j.hora||''} con ${(j.puntos||[]).length} puntos. ¿Cargar y reemplazar la local?`,()=>aplicarJornada(j));
+  }catch(e){
+    console.error(e);
+    showToast('Error cargando jornada',true);
+  }
+}
+
+async function borrarJornadaActualDrive(){
+  if(!drv.connected) return;
+  try{
+    const root = await driveGetRootFolderId();
+    await ensureToken();
+    const buscar = await gapi.client.drive.files.list({
+      q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+      fields:'files(id)',pageSize:1,
+    });
+    const f = buscar.result.files && buscar.result.files[0];
+    if(f){
+      await gapi.client.drive.files.delete({fileId:f.id});
+    }
+  }catch(e){console.error('borrarJornadaActual:',e);}
+}
+
+// Auto-cargar Client ID al iniciar e intentar reconexión silenciosa si había una activa
+setTimeout(()=>{
+  updateDriveBadge();
+  renderDriveTab();
+},300);
 </script>
 </body>
 </html>
