@@ -1504,7 +1504,7 @@ async function driveGetRootFolderId(){
   return id;
 }
 
-// Subir archivo (multipart: metadata + bytes). content puede ser dataURL o Blob.
+// Subir archivo (multipart: metadata + bytes). content puede ser dataURL, base64 plano o Blob.
 async function driveUploadFile(nombre, mime, content, parentId){
   await ensureToken();
   let bytes;
@@ -1517,6 +1517,18 @@ async function driveUploadFile(nombre, mime, content, parentId){
     const arr = new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
     bytes = new Blob([arr],{type:mime});
+  }else if(typeof content === 'string' && /^[A-Za-z0-9+/=\s]+$/.test(content) && content.length > 100){
+    // Base64 plano (sin prefijo data:) → blob binario
+    try{
+      const clean = content.replace(/\s/g,'');
+      const bin = atob(clean);
+      const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+      bytes = new Blob([arr],{type:mime||'application/octet-stream'});
+    }catch(e){
+      // Si falla decode, lo tratamos como texto plano
+      bytes = new Blob([content],{type:mime||'text/plain'});
+    }
   }else if(typeof content === 'string'){
     bytes = new Blob([content],{type:mime||'text/plain'});
   }else{
