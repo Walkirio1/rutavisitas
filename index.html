@@ -308,6 +308,10 @@ textarea{resize:vertical;min-height:65px}
         <button class="sm smr" id="btnLimpiar" style="display:none" onclick="borrarDia()">🗑️ Limpiar</button>
       </div>
     </div>
+    <div id="bulkActions" style="display:none;gap:6px;margin-bottom:9px;flex-wrap:wrap">
+      <button class="sm sma" id="btnAddAll" onclick="agregarTodosARuta()">➕ Cargar todas a la ruta</button>
+      <button class="sm smr" id="btnRemoveAll" onclick="quitarTodosDeRuta()" style="display:none">➖ Quitar todas de la ruta</button>
+    </div>
     <div class="sb" id="sbWrap" style="display:none">
       <span class="si">🔍</span>
       <input type="text" id="qin" placeholder="Buscar nombre, dirección, ID..." oninput="renderP()"/>
@@ -633,6 +637,21 @@ function renderP(){
   document.getElementById('btnLimpiar').style.display=puntos.length?'':'none';
   document.getElementById('sbWrap').style.display=puntos.length?'':'none';
   document.getElementById('pVacio').style.display=puntos.length?'none':'block';
+  // Mostrar/ocultar botones bulk según haya puntos cargados y cuántos están en ruta
+  const bulk=document.getElementById('bulkActions');
+  const btnAdd=document.getElementById('btnAddAll');
+  const btnRem=document.getElementById('btnRemoveAll');
+  if(puntos.length){
+    bulk.style.display='flex';
+    const noSel = puntos.filter(p=>!sel.has(p.id)).length;
+    const siSel = puntos.length - noSel;
+    btnAdd.style.display = noSel>0 ? '' : 'none';
+    btnAdd.textContent = noSel===puntos.length ? '➕ Cargar todas a la ruta' : `➕ Cargar ${noSel} restantes`;
+    btnRem.style.display = siSel>0 ? '' : 'none';
+    btnRem.textContent = siSel===puntos.length ? '➖ Quitar todas' : `➖ Quitar ${siSel} de la ruta`;
+  }else{
+    bulk.style.display='none';
+  }
   const plist=document.getElementById('plist');
   if(!list.length){plist.innerHTML='';document.getElementById('pEmpty').style.display=puntos.length?'block':'none';return;}
   document.getElementById('pEmpty').style.display='none';
@@ -650,6 +669,28 @@ function renderP(){
       <button class="sm ${s?'smg':'smh'}" onclick="toggleSel('${p.id}')">${s?'✓ En ruta':'+ Agregar'}</button>
     </div>`;
   }).join('');
+}
+
+function agregarTodosARuta(){
+  const noSel = puntos.filter(p=>!sel.has(p.id));
+  if(!noSel.length){showToast('Ya están todos en la ruta');return;}
+  noSel.forEach(p=>sel.add(p.id));
+  lsSet(SK.sel,[...sel]);
+  renderP();updStats();
+  showToast(`✓ ${noSel.length} punto${noSel.length>1?'s':''} agregado${noSel.length>1?'s':''} a la ruta`);
+  triggerAutosave();
+}
+
+function quitarTodosDeRuta(){
+  const enRuta = puntos.filter(p=>sel.has(p.id)).length;
+  if(!enRuta) return;
+  confirm2(`¿Quitar los ${enRuta} puntos de la ruta? No se borran de la lista de puntos, solo de tu ruta del día.`,()=>{
+    puntos.forEach(p=>sel.delete(p.id));
+    lsSet(SK.sel,[...sel]);
+    renderP();updStats();
+    showToast(`Ruta vaciada (${enRuta} quitados)`);
+    triggerAutosave();
+  });
 }
 
 function toggleSel(id){
