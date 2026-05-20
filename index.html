@@ -67,9 +67,20 @@ textarea{resize:vertical;min-height:65px}
 
 /* STATS */
 .sts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.sc{background:#161e2e;border-radius:9px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,.07)}
+.sc{background:#161e2e;border-radius:9px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.sc:hover{background:#1c2538;border-color:rgba(255,255,255,.14)}
+.sc:active{transform:scale(.97)}
+.sc.act{background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05));border-color:rgba(59,130,246,.55);box-shadow:0 0 0 1px rgba(59,130,246,.2) inset}
+.sc.act .sn{color:#60a5fa}
+.sc.act .sl{color:#93c5fd}
+.sc[data-flt="hechas"].act{background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05));border-color:rgba(16,185,129,.55)}
+.sc[data-flt="hechas"].act .sn,.sc[data-flt="hechas"].act .sl{color:#10b981}
+.sc[data-flt="pend"].act{background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border-color:rgba(245,158,11,.55)}
+.sc[data-flt="pend"].act .sn,.sc[data-flt="pend"].act .sl{color:#f59e0b}
 .sn{font-family:monospace;font-size:20px;font-weight:600;color:#60a5fa}
 .sl{font-size:9px;color:#94a3b8;margin-top:2px;text-transform:uppercase}
+.flt-info{font-size:10px;color:#94a3b8;margin:-4px 0 9px;text-align:center}
+.flt-info .clr{color:#60a5fa;cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:2px;margin-left:6px}
 
 /* VISITA ITEM */
 .vi{background:#0f1520;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:12px;margin-bottom:8px;transition:border .2s}
@@ -309,10 +320,11 @@ textarea{resize:vertical;min-height:65px}
   <!-- TAB 1: VISITAS -->
   <div class="cnt pnl" id="t1">
     <div class="sts">
-      <div class="sc"><div class="sn" id="s0">0</div><div class="sl">En ruta</div></div>
-      <div class="sc"><div class="sn" id="s1">0</div><div class="sl">Hechas</div></div>
-      <div class="sc"><div class="sn" id="s2">0</div><div class="sl">Pendientes</div></div>
+      <div class="sc" data-flt="ruta"   onclick="setFiltroV('ruta')"><div class="sn" id="s0">0</div><div class="sl">En ruta</div></div>
+      <div class="sc" data-flt="hechas" onclick="setFiltroV('hechas')"><div class="sn" id="s1">0</div><div class="sl">Hechas</div></div>
+      <div class="sc" data-flt="pend"   onclick="setFiltroV('pend')"><div class="sn" id="s2">0</div><div class="sl">Pendientes</div></div>
     </div>
+    <div class="flt-info" id="fltInfoV" style="display:none"></div>
     <div id="vlist"></div>
     <div class="empty" id="vEmpty"><span class="ei">✅</span><p>Seleccioná puntos en la pestaña Puntos.</p></div>
   </div>
@@ -724,19 +736,70 @@ function updStats(){
   document.getElementById('s2').textContent=enRuta.length-hchos;
 }
 
-// ── RENDER VISITAS
+// ── RENDER VISITAS (con filtro: 'ruta' = todas las de ruta, 'hechas', 'pend')
+let filtroV = 'ruta'; // estado del filtro: 'ruta' (todas), 'hechas', 'pend'
+
+function setFiltroV(f){
+  // Tocar el mismo filtro NO lo apaga: queda en ese filtro. Para "ver todas" se toca "En ruta".
+  filtroV = f;
+  // Actualizar visual de las cards
+  document.querySelectorAll('.sc[data-flt]').forEach(el=>{
+    el.classList.toggle('act', el.dataset.flt===f);
+  });
+  renderV();
+}
+
 function renderV(){
   const enRuta=puntos.filter(p=>sel.has(p.id));
   const vEmpty=document.getElementById('vEmpty');
   const vlist=document.getElementById('vlist');
-  if(!enRuta.length){vEmpty.style.display='block';vlist.innerHTML='';return;}
+  const fltInfo=document.getElementById('fltInfoV');
+  if(!enRuta.length){
+    vEmpty.style.display='block';vlist.innerHTML='';
+    if(fltInfo)fltInfo.style.display='none';
+    return;
+  }
   vEmpty.style.display='none';
-  vlist.innerHTML=enRuta.map((p,i)=>{
+
+  // Asegurar visual de filtro activa al renderizar
+  document.querySelectorAll('.sc[data-flt]').forEach(el=>{
+    el.classList.toggle('act', el.dataset.flt===filtroV);
+  });
+
+  // Aplicar filtro (manteniendo índice original del orden de ruta para numeración)
+  const indexados = enRuta.map((p,i)=>({p, i:i+1}));
+  let filtradas;
+  if(filtroV==='hechas'){
+    filtradas = indexados.filter(x => visits[x.p.id] && visits[x.p.id].done);
+  }else if(filtroV==='pend'){
+    filtradas = indexados.filter(x => !(visits[x.p.id] && visits[x.p.id].done));
+  }else{
+    filtradas = indexados; // 'ruta' = todas
+  }
+
+  // Mostrar info del filtro activo (excepto cuando son "todas")
+  if(fltInfo){
+    if(filtroV==='hechas' || filtroV==='pend'){
+      const lbl = filtroV==='hechas' ? '✓ Solo hechas' : '⏳ Solo pendientes';
+      fltInfo.innerHTML = `${lbl} · mostrando <strong style="color:#e8edf5">${filtradas.length}</strong> de ${enRuta.length}<span class="clr" onclick="setFiltroV('ruta')">Ver todas</span>`;
+      fltInfo.style.display='block';
+    }else{
+      fltInfo.style.display='none';
+    }
+  }
+
+  // Empty state del filtro
+  if(!filtradas.length){
+    vlist.innerHTML = `<div class="empty" style="padding:24px 14px"><span class="ei">${filtroV==='hechas'?'✅':'⏳'}</span><p>No hay visitas ${filtroV==='hechas'?'completadas':'pendientes'} todavía.</p></div>`;
+    return;
+  }
+
+  vlist.innerHTML=filtradas.map(({p,i})=>{
     const v=visits[p.id]||{};const pl=v.planilla;
     const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
     return `<div class="vi${v.done?' dn':''}">
       <div class="vh">
-        <div class="vnum ${v.done?'vd':'vp'}">${i+1}</div>
+        <div class="vnum ${v.done?'vd':'vp'}">${i}</div>
         <div class="vb">
           <div class="va">${p.nombre}</div>
           <div class="vid2">📍 ${p.dir} · ID: ${p.id}</div>
