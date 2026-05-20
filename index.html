@@ -606,6 +606,11 @@ let planillas= lsGet(SK.planillas) || [];
 let curId=null, plC={}, fotoData=null, pdfB64Modal=null, pdfSelId=null, guardarNuevaCheck=false;
 let dlgCb=null, histOpenIdx=null;
 
+// ── ESTADO UI (declarado antes del init para evitar temporal dead zone)
+let filtroGeoP = false;   // filtro de pestaña Puntos: si true, muestra solo los sin geocodificar
+let filtroV = 'ruta';     // filtro de pestaña Visitas: 'ruta' | 'hechas' | 'pend'
+let toastTm = null;       // timer del toast
+
 // ── INIT
 document.getElementById('fechaHdr').textContent=hoy();
 renderP(); renderH(); renderPlanillas(); renderChips(); updStats();
@@ -647,7 +652,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── RENDER PUNTOS
-let filtroGeoP = false; // si true, muestra solo los con geoErr
+// (filtroGeoP ya declarado arriba)
 
 function renderP(){
   const q=(document.getElementById('qin')||{value:''}).value.toLowerCase();
@@ -841,7 +846,7 @@ function updStats(){
 }
 
 // ── RENDER VISITAS (con filtro: 'ruta' = todas las de ruta, 'hechas', 'pend')
-let filtroV = 'ruta'; // estado del filtro: 'ruta' (todas), 'hechas', 'pend'
+// (filtroV ya declarado arriba)
 
 function setFiltroV(f){
   // Tocar el mismo filtro NO lo apaga: queda en ese filtro. Para "ver todas" se toca "En ruta".
@@ -1294,7 +1299,7 @@ function dlgOk(){if(dlgCb)dlgCb();closeDlg();}
 function closeDlg(){document.getElementById('dlg').classList.remove('show');dlgCb=null;}
 
 // ── TOAST
-let toastTm=null;
+// (toastTm ya declarado arriba)
 function showToast(msg,err){
   if(toastTm)clearTimeout(toastTm);
   const t=document.getElementById('toast');
