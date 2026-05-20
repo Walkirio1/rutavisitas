@@ -63,6 +63,22 @@ textarea{resize:vertical;min-height:65px}
 .pid{font-size:10px;color:#94a3b8;font-family:monospace}
 .pobs{font-size:10px;color:#94a3b8;margin-top:1px}
 .ptag{font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700;margin-top:3px;display:inline-block}
+
+/* Estado geocodificación */
+.geo-tag{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;margin-top:3px;margin-left:4px}
+.geo-tag.ok{background:rgba(16,185,129,.15);color:#10b981}
+.geo-tag.err{background:rgba(245,158,11,.18);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
+.geo-tag.pen{background:rgba(148,163,184,.15);color:#94a3b8}
+.pi.geo-err{border-left:3px solid #f59e0b}
+.pi.geo-err.sel{border-left:3px solid #f59e0b;background:linear-gradient(90deg,rgba(245,158,11,.05),transparent 30%)}
+
+/* Banner de pendientes en pestaña Puntos */
+.geo-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:11px;padding:10px 13px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s}
+.geo-warn:hover{background:rgba(245,158,11,.15)}
+.geo-warn .gw-ic{font-size:18px}
+.geo-warn .gw-tx{flex:1;font-size:11px;color:#f59e0b;line-height:1.4}
+.geo-warn .gw-tx strong{color:#fbbf24}
+.geo-warn .gw-ar{color:#f59e0b;font-size:14px}
 .tv{background:rgba(16,185,129,.12);color:#10b981}.tr{background:rgba(59,130,246,.12);color:#60a5fa}
 
 /* STATS */
@@ -316,6 +332,7 @@ textarea{resize:vertical;min-height:65px}
       <span class="si">🔍</span>
       <input type="text" id="qin" placeholder="Buscar nombre, dirección, ID..." oninput="renderP()"/>
     </div>
+    <div class="geo-warn" id="geoWarnP" style="display:none" onclick="toggleFiltroGeoP()"></div>
     <div id="plist"></div>
     <div class="empty" id="pEmpty" style="display:none"><span class="ei">📋</span><p>Sin resultados.</p></div>
     <div class="empty" id="pVacio"><span class="ei">📋</span><p>Importá un Excel para cargar los puntos del día.<br/>Los datos se guardan automáticamente.</p></div>
@@ -630,14 +647,33 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── RENDER PUNTOS
+let filtroGeoP = false; // si true, muestra solo los con geoErr
+
 function renderP(){
   const q=(document.getElementById('qin')||{value:''}).value.toLowerCase();
-  const list=q?puntos.filter(p=>p.nombre.toLowerCase().includes(q)||p.dir.toLowerCase().includes(q)||p.id.includes(q)):puntos;
+  let list = q ? puntos.filter(p=>p.nombre.toLowerCase().includes(q)||p.dir.toLowerCase().includes(q)||p.id.includes(q)) : puntos;
+  if(filtroGeoP) list = list.filter(p=>p.geoErr || (!p.lat && !p.geoErr)); // sin ubicación
   document.getElementById('cntBadge').textContent=list.length;
   document.getElementById('btnLimpiar').style.display=puntos.length?'':'none';
   document.getElementById('sbWrap').style.display=puntos.length?'':'none';
   document.getElementById('pVacio').style.display=puntos.length?'none':'block';
-  // Mostrar/ocultar botones bulk según haya puntos cargados y cuántos están en ruta
+
+  // Banner de puntos sin ubicación
+  const sinGeo = puntos.filter(p=>p.geoErr || (!p.lat && !p.geoErr));
+  const warnEl = document.getElementById('geoWarnP');
+  if(warnEl){
+    if(sinGeo.length && puntos.length){
+      const txt = filtroGeoP
+        ? `Mostrando solo los <strong>${sinGeo.length}</strong> puntos sin ubicación. <strong>Ver todos</strong>`
+        : `Hay <strong>${sinGeo.length}</strong> punto${sinGeo.length>1?'s':''} sin ubicación en el mapa. <strong>Ver cuáles</strong>`;
+      warnEl.innerHTML = `<span class="gw-ic">⚠️</span><span class="gw-tx">${txt}</span><span class="gw-ar">${filtroGeoP?'✕':'›'}</span>`;
+      warnEl.style.display='flex';
+    }else{
+      warnEl.style.display='none';
+    }
+  }
+
+  // Botones bulk
   const bulk=document.getElementById('bulkActions');
   const btnAdd=document.getElementById('btnAddAll');
   const btnRem=document.getElementById('btnRemoveAll');
@@ -652,12 +688,25 @@ function renderP(){
   }else{
     bulk.style.display='none';
   }
+
   const plist=document.getElementById('plist');
-  if(!list.length){plist.innerHTML='';document.getElementById('pEmpty').style.display=puntos.length?'block':'none';return;}
+  if(!list.length){
+    plist.innerHTML = filtroGeoP ? '<div class="empty" style="padding:24px 14px"><span class="ei">✅</span><p>No hay puntos sin ubicación.</p></div>' : '';
+    document.getElementById('pEmpty').style.display=(puntos.length&&!filtroGeoP)?'block':'none';
+    return;
+  }
   document.getElementById('pEmpty').style.display='none';
   plist.innerHTML=list.map((p,i)=>{
     const s=sel.has(p.id);
-    return `<div class="pi${s?' sel':''}">
+    const geoOk = p.lat && p.lng;
+    const geoErr = !!p.geoErr;
+    const geoPen = !geoOk && !geoErr;
+    const geoBadge = geoOk
+      ? `<span class="geo-tag ok" title="Ubicación en mapa">📍 En mapa</span>`
+      : geoErr
+        ? `<span class="geo-tag err" title="No se pudo ubicar: ${p.geoErr}">⚠️ Sin ubicación</span>`
+        : `<span class="geo-tag pen">⏳ Pendiente</span>`;
+    return `<div class="pi${s?' sel':''}${geoErr?' geo-err':''}">
       <div class="pnum">${i+1}</div>
       <div class="pb">
         <div class="pno">${p.nombre}</div>
@@ -665,10 +714,17 @@ function renderP(){
         <div class="pid">ID: ${p.id}</div>
         ${p.obs?`<div class="pobs">ℹ️ ${p.obs}</div>`:''}
         <span class="ptag ${p.tipo.includes('Venta')?'tv':'tr'}">${p.tipo}</span>
+        ${geoBadge}
+        ${geoErr?`<div style="font-size:10px;color:#f59e0b;margin-top:3px">${p.geoErr}</div>`:''}
       </div>
       <button class="sm ${s?'smg':'smh'}" onclick="toggleSel('${p.id}')">${s?'✓ En ruta':'+ Agregar'}</button>
     </div>`;
   }).join('');
+}
+
+function toggleFiltroGeoP(){
+  filtroGeoP = !filtroGeoP;
+  renderP();
 }
 
 function agregarTodosARuta(){
@@ -694,10 +750,17 @@ function quitarTodosDeRuta(){
 }
 
 function toggleSel(id){
-  if(sel.has(id))sel.delete(id);else sel.add(id);
+  const punto = puntos.find(p=>p.id===id);
+  const agregando = !sel.has(id);
+  if(agregando) sel.add(id); else sel.delete(id);
   lsSet(SK.sel,[...sel]);
   renderP();updStats();
-  showToast(sel.has(id)?'Agregado a la ruta ✓':'Quitado de la ruta');
+  // Aviso especial si está agregando un punto sin ubicación
+  if(agregando && punto && !punto.lat){
+    showToast('⚠️ Agregado, pero este punto NO está en el mapa',true);
+  }else{
+    showToast(agregando?'Agregado a la ruta ✓':'Quitado de la ruta');
+  }
   triggerAutosave();
 }
 
@@ -838,11 +901,11 @@ function renderV(){
   vlist.innerHTML=filtradas.map(({p,i})=>{
     const v=visits[p.id]||{};const pl=v.planilla;
     const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
-    return `<div class="vi${v.done?' dn':''}">
+    return `<div class="vi${v.done?' dn':''}${(!p.lat&&!v.done)?' geo-err':''}">
       <div class="vh">
         <div class="vnum ${v.done?'vd':'vp'}">${i}</div>
         <div class="vb">
-          <div class="va">${p.nombre}</div>
+          <div class="va">${p.nombre}${!p.lat?' <span class="geo-tag err" style="vertical-align:middle">⚠️ Sin mapa</span>':''}</div>
           <div class="vid2">📍 ${p.dir} · ID: ${p.id}</div>
           ${p.obs?`<div style="font-size:10px;color:#94a3b8">ℹ️ ${p.obs}</div>`:''}
           ${pl?`<div style="font-size:11px;color:#10b981;margin-top:4px">📄 ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
