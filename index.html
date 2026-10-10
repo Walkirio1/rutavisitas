@@ -428,17 +428,6 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
 
   <!-- TAB 2: MAPA -->
   <div class="cnt pnl" id="t2" style="position:relative;padding:10px 13px 80px">
-    <div class="card" style="margin-bottom:10px">
-      <span class="stit"><svg class="ico" style="vertical-align:-2px"><use href="#i-settings"/></svg> API Key de Google Geocoding</span>
-      <div style="display:flex;gap:7px;margin-bottom:6px">
-        <input type="text" id="gApiKey" placeholder="Pegá tu API key acá" autocomplete="off"/>
-        <button class="sm sma" onclick="saveApiKey()">💾</button>
-      </div>
-      <div style="font-size:10px;color:#94a3b8;line-height:1.5">
-        <svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> La key se guarda solo en tu dispositivo. <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" style="color:#60a5fa">Obtener key →</a>
-      </div>
-    </div>
-
     <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap">
       <button class="sm sma" onclick="geocodificarTodos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes</button>
       <button class="sm smh" onclick="centrarEnMiUbicacion()"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg> Mi ubicación</button>
@@ -470,7 +459,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
     <span class="stit">Mis planillas PDF guardadas</span>
     <div class="info">
       💡 <strong style="color:#e8edf5">¿Para qué sirve?</strong><br>
-      Guardás tu planilla PDF una sola vez y la nombrás. La próxima vez que completes una visita, la seleccionás de la lista. Máximo 10 planillas guardadas.
+      La app ya trae la planilla oficial y la usa en todas las visitas. Si algún día cambia, guardá la nueva acá y tocá <strong style="color:#e8edf5">Usar</strong>: se aplica a todas las visitas siguientes. Máximo 10 planillas guardadas.
     </div>
     <!-- Subir nueva -->
     <div class="card" id="nuevaPlanCard">
@@ -566,34 +555,6 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
     <div class="plh"><div class="pll">SUBE</div><div class="plsub">Planilla de<br>Verificaciones</div></div>
     <div class="plb">
 
-      <!-- SECCIÓN: elegir planilla PDF -->
-      <div class="plsec">Planilla PDF</div>
-      <div id="plGuardadasSec"></div>
-      <div id="pdfNuevoSec">
-        <label class="foto-btn" style="margin-bottom:8px">
-          <input type="file" accept=".pdf" onchange="loadPdfModal(this)"/>
-          <div style="font-size:18px;margin-bottom:3px">📤</div>
-          <div style="font-size:12px;color:#64748b" id="pdfNuevoLbl">Subir planilla PDF</div>
-        </label>
-      </div>
-      <div id="pdfNuevoOk" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;padding:9px 12px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span>✅</span>
-          <div style="flex:1;font-size:12px;color:#15803d;font-weight:600">PDF nuevo cargado</div>
-          <button style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px" onclick="quitarPdfModal()"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg></button>
-        </div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #bbf7d0">
-          <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleGuardarNueva()">
-            <div id="chkGuardar" style="width:18px;height:18px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff;flex-shrink:0"></div>
-            <span style="font-size:11px;font-weight:600;color:#475569">Guardar esta planilla para usar después</span>
-          </div>
-          <input type="text" id="guardarNuevaNombre" style="display:none;margin-top:7px;background:#fff;border:1.5px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1e293b;outline:none;width:100%" placeholder="Nombre (ej: Planilla Rosario)"/>
-        </div>
-      </div>
-      <div id="pdfWarning" style="display:none;font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:6px;text-align:center;padding:6px;background:#fffbeb;border-radius:7px">
-        <svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin planilla PDF — los datos igualmente se guardan
-      </div>
-
       <!-- DATOS -->
       <div class="plsec">Datos de la visita</div>
       <div class="plg">
@@ -660,12 +621,12 @@ function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',mi
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
   historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
-  apiKey:'sube:apikey',
   clientId:'sube:clientid',
   folderName:'sube:foldername',
   rootFolderId:'sube:rootfolderid',
   autosave:'sube:autosave',
   lastSync:'sube:lastsync',
+  plDef:'sube:pldef',
 };
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){showToast('Storage lleno: borrar historial viejo',true);}}
@@ -678,9 +639,10 @@ let visits   = lsGet(SK.visits)    || {};
 let historial= lsGet(SK.historial) || [];
 let emails   = lsGet(SK.emails)    || [];
 let planillas= lsGet(SK.planillas) || [];
+let plDefId  = lsGet(SK.plDef) || null; // null = planilla oficial incluida
 
 // modal state
-let curId=null, plC={}, fotoData=null, pdfB64Modal=null, pdfSelId=null, guardarNuevaCheck=false;
+let curId=null, plC={}, fotoData=null;
 let dlgCb=null, histOpenIdx=null;
 
 // ── ESTADO UI (declarado antes del init para evitar temporal dead zone)
@@ -1070,22 +1032,31 @@ function borrarHistorial(){
 }
 
 // ── PLANILLAS GUARDADAS
+function setPlDef(id){
+  plDefId=id||null;
+  if(plDefId)lsSet(SK.plDef,plDefId);else lsDel(SK.plDef);
+  renderPlanillas();showToast('Planilla predeterminada actualizada ✓');
+}
+
 function renderPlanillas(){
   const plList=document.getElementById('plList');
   const plEmpty=document.getElementById('plEmpty');
   document.getElementById('plCount').textContent=planillas.length?`(${planillas.length}/10)`:'';
-  if(!planillas.length){plEmpty.style.display='block';plList.innerHTML='';return;}
   plEmpty.style.display='none';
-  plList.innerHTML=planillas.map(pl=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:#0f1520;border:1px solid rgba(255,255,255,.07);border-radius:11px;margin-bottom:6px">
+  const fila=(nombre,sub,activa,onclick,extra)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:#0f1520;border:1px solid ${activa?'rgba(16,185,129,.5)':'rgba(255,255,255,.07)'};border-radius:11px;margin-bottom:6px">
       <span style="flex-shrink:0"><svg class="ico" style="width:30px;height:30px"><use href="#i-file"/></svg></span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pl.nombre}</div>
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px">Guardada el ${pl.fecha}</div>
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(nombre)}</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">${sub}</div>
       </div>
-      <button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>
-    </div>
-  `).join('');
+      ${activa?'<span style="font-size:11px;color:#10b981;font-weight:700">✓ En uso</span>':`<button class="sm sma" onclick="${onclick}">Usar</button>`}
+      ${extra||''}
+    </div>`;
+  const hayDef=plDefId&&planillas.some(x=>x.id===plDefId);
+  plList.innerHTML=
+    fila('Planilla oficial SUBE','Incluida en la app',!hayDef,'setPlDef(null)','')+
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha,hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
@@ -1130,6 +1101,7 @@ function guardarNuevaPlanilla(){
 function borrarPlanilla(id){
   confirm2('¿Eliminar esta planilla guardada?',function(){
     planillas=planillas.filter(p=>p.id!==id);
+    if(plDefId===id){plDefId=null;lsDel(SK.plDef);}
     lsSet(SK.planillas,planillas);
     renderPlanillas();showToast('Planilla eliminada ✓');
   });
@@ -1137,7 +1109,7 @@ function borrarPlanilla(id){
 
 // ── MODAL PLANILLA VISITA
 function openPl(id){
-  curId=id;plC={};fotoData=null;pdfB64Modal=null;pdfSelId=null;guardarNuevaCheck=false;
+  curId=id;plC={};fotoData=null;
   const p=puntos.find(x=>x.id===id)||{};
   const v=visits[id]||{};const pl=v.planilla;
 
@@ -1167,75 +1139,8 @@ function openPl(id){
   document.getElementById('fotoOk').style.display=fotoData?'block':'none';
   document.getElementById('fotoQuit').style.display=fotoData?'block':'none';
 
-  // planillas guardadas
-  renderPlGuardadasModal();
-  updPdfWarning();
-
   document.getElementById('ov').classList.add('show');
   document.body.style.overflow='hidden';
-}
-
-function renderPlGuardadasModal(){
-  const sec=document.getElementById('plGuardadasSec');
-  const nuevoLbl=document.getElementById('pdfNuevoLbl');
-  if(!planillas.length){sec.innerHTML='';nuevoLbl.textContent='Subir planilla PDF';return;}
-  nuevoLbl.textContent='Subir otra planilla PDF';
-  sec.innerHTML=`<div style="margin-bottom:10px">
-    <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px"><svg class="ico" style="vertical-align:-2px"><use href="#i-folder-open"/></svg> Tus planillas guardadas:</div>
-    ${planillas.map(pl=>`
-      <div class="pl-item${pdfSelId===pl.id?' on':''}" onclick="selPdfGuardada('${pl.id}')">
-        <span><svg class="ico" style="width:22px;height:22px"><use href="#i-file"/></svg></span>
-        <div style="flex:1">
-          <div style="font-size:12px;font-weight:700;color:#1e293b">${pl.nombre}</div>
-          <div style="font-size:10px;color:#64748b">Guardada el ${pl.fecha}</div>
-        </div>
-        ${pdfSelId===pl.id?'<span style="font-size:16px;color:#1d6fa4;font-weight:800">✓</span>':''}
-      </div>
-    `).join('')}
-    <div style="text-align:center;font-size:11px;color:#94a3b8;margin:6px 0 4px">— o subí otra —</div>
-  </div>`;
-}
-
-function selPdfGuardada(id){
-  pdfSelId=pdfSelId===id?null:id;
-  if(pdfSelId){pdfB64Modal=null;document.getElementById('pdfNuevoOk').style.display='none';}
-  renderPlGuardadasModal();updPdfWarning();
-}
-
-function loadPdfModal(input){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const bytes=new Uint8Array(e.target.result);let bin='';
-    bytes.forEach(b=>bin+=String.fromCharCode(b));
-    pdfB64Modal=btoa(bin);pdfSelId=null;
-    document.getElementById('pdfNuevoOk').style.display='block';
-    document.getElementById('guardarNuevaNombre').value=file.name.replace(/\.pdf$/i,'').replace(/_/g,' ');
-    renderPlGuardadasModal();updPdfWarning();showToast('PDF cargado ✓');
-  };
-  reader.readAsArrayBuffer(file);input.value='';
-}
-
-function quitarPdfModal(){
-  pdfB64Modal=null;guardarNuevaCheck=false;
-  document.getElementById('pdfNuevoOk').style.display='none';
-  document.getElementById('chkGuardar').innerHTML='';
-  document.getElementById('guardarNuevaNombre').style.display='none';
-  updPdfWarning();
-}
-
-function toggleGuardarNueva(){
-  guardarNuevaCheck=!guardarNuevaCheck;
-  const chk=document.getElementById('chkGuardar');
-  chk.style.background=guardarNuevaCheck?'#1d6fa4':'#fff';
-  chk.style.borderColor=guardarNuevaCheck?'#1d6fa4':'#cbd5e1';
-  chk.innerHTML=guardarNuevaCheck?'<span style="color:#fff;font-size:11px;font-weight:800">✓</span>':'';
-  document.getElementById('guardarNuevaNombre').style.display=guardarNuevaCheck?'block':'none';
-}
-
-function updPdfWarning(){
-  const b64Activa=pdfSelId||pdfB64Modal;
-  document.getElementById('pdfWarning').style.display=b64Activa?'none':'block';
 }
 
 function plT(k,el){plC[k]=!plC[k];el.classList.toggle('on',plC[k]);}
@@ -1264,25 +1169,18 @@ function quitarFoto(){
 }
 
 async function guardarVisita(){
-  // guardar planilla nueva si corresponde
-  if(pdfB64Modal&&guardarNuevaCheck){
-    const nombre=document.getElementById('guardarNuevaNombre').value.trim();
-    if(nombre&&planillas.length<10){
-      planillas=[{id:'pl_'+Date.now(),nombre,b64:pdfB64Modal,fecha:hoy()},...planillas].slice(0,10);
-      lsSet(SK.planillas,planillas);
-      renderPlanillas();showToast(`Planilla "${nombre}" guardada ✓`);
-    }
-  }
   const chC=CN.map((_,i)=>!!plC['c'+i]);
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
   if(!visits[curId])visits[curId]={};
-  // determinar PDF activo: el del modal o el seleccionado de la lista
-  let pdfActivoB64 = pdfB64Modal;
-  let pdfActivoNombre = 'planilla.pdf';
-  if(!pdfActivoB64 && pdfSelId){
-    const pl = planillas.find(x=>x.id===pdfSelId);
-    if(pl){pdfActivoB64 = pl.b64; pdfActivoNombre = (pl.nombre||'planilla')+'.pdf';}
+  // PDF activo: la planilla elegida como predeterminada en Configuración, o la oficial incluida
+  let pdfActivoB64 = null;
+  let pdfActivoNombre = 'Planilla_Verificaciones.pdf';
+  const plDef = plDefId && planillas.find(x=>x.id===plDefId);
+  if(plDef){pdfActivoB64 = plDef.b64; pdfActivoNombre = (plDef.nombre||'planilla')+'.pdf';}
+  if(!pdfActivoB64 && drv.connected){
+    try{ pdfActivoB64 = await planillaPredeterminadaB64(); }
+    catch(e){console.error('planilla predeterminada:',e);}
   }
   visits[curId]={done:true,planilla:{
     chC,chV,ti,obs:document.getElementById('plO').value,
@@ -1392,28 +1290,11 @@ function showToast(msg,err){
 }
 
 // ═══════════════════════════════════════════════════════════
-// ── MAPA Y GEOCODIFICACIÓN (Google Geocoding API)
+// ── MAPA Y GEOCODIFICACIÓN (OpenStreetMap + Georef AR / Nominatim, gratis y sin clave)
 // ═══════════════════════════════════════════════════════════
-let apiKey = lsGet(SK.apiKey) || '';
 let mapa = null;
 let markersLayer = null;
 let geocodingInProgress = false;
-
-// Cargar API key al input al iniciar
-setTimeout(()=>{
-  const inp=document.getElementById('gApiKey');
-  if(inp&&apiKey)inp.value=apiKey;
-},100);
-
-function saveApiKey(){
-  const v=document.getElementById('gApiKey').value.trim();
-  if(!v){showToast('Pegá una API key primero',true);return;}
-  apiKey=v;lsSet(SK.apiKey,v);
-  showToast('API key guardada ✓');
-  // si hay puntos pendientes, ofrecer geocodificar
-  const pend=puntos.filter(p=>!p.lat).length;
-  if(pend>0)setTimeout(()=>geocodificarTodos(true),300);
-}
 
 // Iconos SVG para los pins
 function makeIcon(color){
@@ -1464,7 +1345,7 @@ function renderMapa(){
   if(sinGeo.length&&puntos.length){
     pendList.innerHTML=`<div class="geo-pend">
       ⚠️ <strong>${sinGeo.length}</strong> punto${sinGeo.length>1?'s':''} sin ubicación.
-      ${apiKey?'Tocá "<svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes" para procesarlos.':'Configurá tu API key arriba.'}
+      Tocá "<svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes" para procesarlos.
     </div>`;
   }else{
     pendList.innerHTML='';
@@ -1507,36 +1388,45 @@ function escapeHtml(s){
 }
 
 // Geocodificar un punto via Google Geocoding API
-async function geocodeOne(p){
-  const q=[p.dir, p.localidad, 'Argentina'].filter(Boolean).join(', ');
-  const url=`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=ar&key=${apiKey}`;
+const enArgentina=(lat,lng)=>lat>-56&&lat<-21&&lng>-74&&lng<-53;
+
+async function fetchJson(url){
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),12000);
   try{
-    const r=await fetch(url);
-    const data=await r.json();
-    if(data.status==='OK'&&data.results&&data.results[0]){
-      const loc=data.results[0].geometry.location;
-      return {lat:loc.lat,lng:loc.lng,err:null};
-    }else if(data.status==='ZERO_RESULTS'){
-      return {lat:null,lng:null,err:'No encontrada'};
-    }else if(data.status==='REQUEST_DENIED'){
-      return {lat:null,lng:null,err:'API key inválida: '+(data.error_message||'')};
-    }else if(data.status==='OVER_QUERY_LIMIT'){
-      return {lat:null,lng:null,err:'Cuota excedida'};
-    }else{
-      return {lat:null,lng:null,err:data.status||'Error'};
+    const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  }finally{clearTimeout(t);}
+}
+
+// 1º Georef (datos.gob.ar): muy bueno con calle + altura en Argentina. 2º Nominatim (OpenStreetMap).
+async function geocodeOne(p){
+  let huboRed=false;
+  const dir=(p.dir||'').trim();
+  if(!dir) return {lat:null,lng:null,err:'Sin dirección'};
+  try{
+    let url='https://apis.datos.gob.ar/georef/api/direcciones?max=1&campos=ubicacion&direccion='+encodeURIComponent(dir);
+    if(p.localidad) url+='&localidad_censal='+encodeURIComponent(p.localidad);
+    const d=await fetchJson(url);
+    huboRed=true;
+    const u=d.direcciones&&d.direcciones[0]&&d.direcciones[0].ubicacion;
+    if(u&&u.lat!=null&&enArgentina(u.lat,u.lon)) return {lat:u.lat,lng:u.lon,err:null,fuente:'georef'};
+  }catch(e){console.warn('georef:',e);}
+  try{
+    const q=[dir,p.localidad,'Argentina'].filter(Boolean).join(', ');
+    const d=await fetchJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ar&q='+encodeURIComponent(q));
+    huboRed=true;
+    if(d&&d[0]){
+      const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon);
+      if(enArgentina(lat,lng)) return {lat,lng,err:null,fuente:'osm'};
     }
-  }catch(e){
-    return {lat:null,lng:null,err:'Sin conexión'};
-  }
+  }catch(e){console.warn('nominatim:',e);}
+  return {lat:null,lng:null,err:huboRed?'No encontrada':'Sin conexión',fuente:'osm'};
 }
 
 // Geocodificar todos los puntos pendientes
 async function geocodificarTodos(silent){
   if(geocodingInProgress){showToast('Ya hay un proceso en curso',true);return;}
-  if(!apiKey){
-    if(!silent)showToast('Configurá tu API key primero',true);
-    return;
-  }
   const pendientes=puntos.filter(p=>!p.lat);
   if(!pendientes.length){
     if(!silent)showToast('No hay puntos pendientes ✓');
@@ -1565,19 +1455,11 @@ async function geocodificarTodos(silent){
       }else{
         puntos[idx].geoErr=res.err;
         fail++;
-        if(res.err&&res.err.startsWith('API key inválida')){
-          showToast('API key inválida — revisá la configuración',true);
-          denied=true;
-          break;
-        }
-        if(res.err==='Cuota excedida'){
-          showToast('Cuota de Google excedida',true);
-          break;
-        }
+        if(res.err==='Sin conexión'){showToast('Sin conexión: no se pudo ubicar',true);denied=true;break;}
       }
     }
-    // Pequeño delay para no saturar (Google permite ~50 req/s, vamos cómodos)
-    await new Promise(r=>setTimeout(r,80));
+    // Nominatim pide máx. 1 consulta por segundo; Georef tolera más
+    await new Promise(r=>setTimeout(r,res.fuente==='osm'?1100:150));
   }
 
   lsSet(SK.puntos,puntos);
@@ -1919,6 +1801,18 @@ async function driveUploadFile(nombre, mime, content, parentId){
   return await resp.json();
 }
 
+// Planilla oficial por defecto: se usa si en la visita no se eligió otra
+let _plDefB64=null;
+async function planillaPredeterminadaB64(){
+  if(_plDefB64) return _plDefB64;
+  const r=await fetch('planilla-predeterminada.pdf');
+  if(!r.ok) throw new Error('No se pudo cargar la planilla predeterminada');
+  const bytes=new Uint8Array(await r.arrayBuffer());
+  let bin='';
+  for(let i=0;i<bytes.length;i+=8192) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+  return _plDefB64=btoa(bin);
+}
+
 // Sanea nombres para Drive
 function safeName(s){
   return String(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').substring(0,80);
@@ -1963,12 +1857,14 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
   drawTxt(pl.rubro||'',         157.5, 609.2);
 
   // ── CHECKBOXES IRREGULARIDAD DE CARGA (X grande centrada DENTRO del cuadrado) ──
+  // Ajuste fino de las X de la tabla de carga (en puntos PDF): + derecha / + arriba
+  const AJ_CARGA_X = 2.5, AJ_CARGA_Y = -1.5;
   const yCarga = [529.8, 506.0, 482.3, 458.5, 434.7, 411.0, 387.2, 363.4];
   const chC = pl.chC || [];
   for(let i=0;i<8;i++){
     if(chC[i]){
       // X tamaño 16, ancho aprox 10pt → para centrar en x=478 ponemos x=473
-      page.drawText('X', {x:473, y:yCarga[i]-3, size:16, font:fontBold, color:rgb(0,0,0)});
+      page.drawText('X', {x:473+AJ_CARGA_X, y:yCarga[i]-3+AJ_CARGA_Y, size:16, font:fontBold, color:rgb(0,0,0)});
     }
   }
 
@@ -2026,12 +1922,13 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   const hora = (new Date()).toTimeString().slice(0,5).replace(':','');
   const prefix = `${fechaCarpeta}_${hora}`;
 
+  const fallos = [];
   // Subir foto si hay
   if(visita.planilla && visita.planilla.foto){
     try{
       const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
       visits[curId].planilla.driveFotoUrl = r.webViewLink;
-    }catch(e){console.error('foto:',e);}
+    }catch(e){console.error('foto:',e);fallos.push('la foto');}
   }
   // Subir PDF rellenado si hay planilla base
   if(pdfB64){
@@ -2047,9 +1944,15 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
       const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
       const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
       visits[curId].planilla.drivePdfUrl = r.webViewLink;
-    }catch(e){console.error('pdf:',e);}
+    }catch(e){console.error('pdf:',e);fallos.push('el PDF');}
+  }else{
+    fallos.push('el PDF (no se pudo cargar la planilla predeterminada)');
   }
   lsSet(SK.visits,visits);
+  if(fallos.length){
+    showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No se subió '+fallos.join(' ni '),true);
+    return;
+  }
   showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-cloud"/></svg> Subido a Drive <svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg>');
 }
 
