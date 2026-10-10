@@ -499,7 +499,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
 
   <!-- TAB 5: DRIVE -->
   <div class="cnt pnl" id="t5">
-    <div class="card" style="margin-bottom:10px">
+    <div class="card" id="cidCard" style="margin-bottom:10px">
       <span class="stit"><svg class="ico" style="vertical-align:-2px"><use href="#i-settings"/></svg> Google OAuth Client ID</span>
       <div style="display:flex;gap:7px;margin-bottom:6px">
         <input type="text" id="gClientId" placeholder="123456-abc...apps.googleusercontent.com" autocomplete="off"/>
@@ -513,7 +513,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
     <div class="card" style="margin-bottom:10px">
       <span class="stit">Conexión con Drive</span>
       <div id="drvConnInfo" style="font-size:12px;color:#94a3b8;margin-bottom:9px;line-height:1.6"></div>
-      <button class="btn ba" id="btnConnect" onclick="connectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> Conectar con Google Drive</button>
+      <button class="btn ba" id="btnConnect" onclick="connectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> Entrar con Google</button>
       <button class="btn bd" id="btnDisconnect" style="display:none" onclick="disconnectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-unlock"/></svg> Desconectar</button>
     </div>
 
@@ -1623,9 +1623,12 @@ function centrarEnPuntos(){
 // ── GOOGLE DRIVE: AUTH + UPLOAD + AUTOSAVE JORNADA
 // ═══════════════════════════════════════════════════════════
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+// Client ID público de la app (no es un secreto). Si está cargado, nadie tiene que pegarlo.
+const GOOGLE_CLIENT_ID = '';
+const SK_DRV_USER='sube:drvuser', SK_DRV_ON='sube:drvon';
 
 const drv = {
-  clientId: lsGet(SK.clientId) || '',
+  clientId: GOOGLE_CLIENT_ID || lsGet(SK.clientId) || '',
   folderName: lsGet(SK.folderName) || 'Verificaciones SUBE',
   rootFolderId: lsGet(SK.rootFolderId) || null,
   autosave: lsGet(SK.autosave) || false,
@@ -1699,48 +1702,64 @@ function toggleAutosave(chk){
   }
 }
 
+function initTokenClient(){
+  if(drv.tokenClient) return;
+  drv.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: drv.clientId,
+    scope: DRIVE_SCOPE,
+    callback: async (resp)=>{
+      if(resp.error){
+        console.error(resp);
+        if(drv.silentTry){drv.silentTry=false;return;} // reconexión silenciosa fallida: no molestar
+        showToast('Error de autorización: '+resp.error,true);
+        return;
+      }
+      const silent=drv.silentTry; drv.silentTry=false;
+      drv.accessToken = resp.access_token;
+      drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
+      gapi.client.setToken({access_token: drv.accessToken});
+      drv.connected = true;
+      lsSet(SK_DRV_ON,true);
+      try{
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+          headers:{'Authorization':'Bearer '+drv.accessToken}
+        }).then(r=>r.json());
+        drv.user = userInfo.email || drv.user;
+        if(drv.user) lsSet(SK_DRV_USER,drv.user);
+      }catch(e){}
+      updateDriveBadge();
+      renderDriveTab();
+      if(!silent) showToast('✓ Conectado a Drive');
+      checkJornadaActual();
+    }
+  });
+}
+
 async function connectDrive(){
-  if(!drv.clientId){showToast('Pegá tu Client ID primero',true);return;}
+  if(!drv.clientId){showToast('Falta el Client ID de la app',true);return;}
   showToast('Conectando con Drive...');
   try{
     await waitForGoogleLibs();
-    if(!drv.tokenClient){
-      drv.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: drv.clientId,
-        scope: DRIVE_SCOPE,
-        prompt: '',
-        callback: async (resp)=>{
-          if(resp.error){
-            console.error(resp);
-            showToast('Error de autorización: '+resp.error,true);
-            return;
-          }
-          drv.accessToken = resp.access_token;
-          drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
-          gapi.client.setToken({access_token: drv.accessToken});
-          drv.connected = true;
-          // probar la conexión y conseguir info del usuario
-          try{
-            const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
-              headers:{'Authorization':'Bearer '+drv.accessToken}
-            }).then(r=>r.json());
-            drv.user = userInfo.email || null;
-          }catch(e){}
-          updateDriveBadge();
-          renderDriveTab();
-          showToast('✓ Conectado a Drive');
-          // si hay jornada-actual en Drive, ofrecer cargarla
-          checkJornadaActual();
-        }
-      });
-    }
-    // Forzar prompt de consentimiento la primera vez
-    const hint = drv.user?'':'consent';
-    drv.tokenClient.requestAccessToken({prompt: hint});
+    initTokenClient();
+    drv.silentTry=false;
+    // 'select_account' solo si nunca se conectó; después reutiliza la cuenta
+    drv.tokenClient.requestAccessToken(drv.user ? {prompt:'',login_hint:drv.user} : {prompt:'select_account'});
   }catch(e){
     console.error(e);
-    showToast('Error iniciando OAuth: '+e.message,true);
+    showToast('Error iniciando sesión: '+e.message,true);
   }
+}
+
+// Al abrir la app: si ya había iniciado sesión antes, reconecta sola (sin popups de consentimiento)
+async function reconectarDrive(){
+  if(!drv.clientId || !lsGet(SK_DRV_ON)) return;
+  drv.user = lsGet(SK_DRV_USER) || null;
+  try{
+    await waitForGoogleLibs();
+    initTokenClient();
+    drv.silentTry=true;
+    drv.tokenClient.requestAccessToken({prompt:'',login_hint:drv.user||undefined});
+  }catch(e){console.error('reconectar:',e);}
 }
 
 function disconnectDrive(){
@@ -1748,6 +1767,7 @@ function disconnectDrive(){
     try{google.accounts.oauth2.revoke(drv.accessToken,()=>{});}catch(e){}
   }
   drv.accessToken=null;drv.connected=false;drv.user=null;drv.tokenExpiry=0;
+  lsDel(SK_DRV_ON);lsDel(SK_DRV_USER);
   updateDriveBadge();renderDriveTab();
   showToast('Desconectado de Drive');
 }
@@ -1757,6 +1777,7 @@ async function ensureToken(){
   // Si el token está por vencer, pedirlo de nuevo silenciosamente
   if(Date.now() > drv.tokenExpiry){
     return new Promise((resolve,reject)=>{
+      initTokenClient();
       drv.tokenClient.callback = (resp)=>{
         if(resp.error){reject(resp.error);return;}
         drv.accessToken=resp.access_token;
@@ -1778,6 +1799,8 @@ function updateDriveBadge(){
 }
 
 function renderDriveTab(){
+  const cidCard=document.getElementById('cidCard');
+  if(cidCard)cidCard.style.display=GOOGLE_CLIENT_ID?'none':'block';
   const inp=document.getElementById('gClientId');
   if(inp&&drv.clientId&&!inp.value)inp.value=drv.clientId;
   const fn=document.getElementById('folderName');
@@ -1791,7 +1814,7 @@ function renderDriveTab(){
       document.getElementById('btnConnect').style.display='none';
       document.getElementById('btnDisconnect').style.display='block';
     }else{
-      info.innerHTML='🔴 No conectado. Tocá el botón de abajo para empezar.';
+      info.innerHTML='🔴 No conectado. Tocá <strong>Entrar con Google</strong> y elegí tu cuenta.';
       document.getElementById('btnConnect').style.display='block';
       document.getElementById('btnDisconnect').style.display='none';
     }
@@ -2179,6 +2202,7 @@ async function borrarJornadaActualDrive(){
 setTimeout(()=>{
   updateDriveBadge();
   renderDriveTab();
+  reconectarDrive();
 },300);
 </script>
 </body>
