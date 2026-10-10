@@ -2026,12 +2026,13 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   const hora = (new Date()).toTimeString().slice(0,5).replace(':','');
   const prefix = `${fechaCarpeta}_${hora}`;
 
+  const fallos = [];
   // Subir foto si hay
   if(visita.planilla && visita.planilla.foto){
     try{
       const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
       visits[curId].planilla.driveFotoUrl = r.webViewLink;
-    }catch(e){console.error('foto:',e);}
+    }catch(e){console.error('foto:',e);fallos.push('la foto');}
   }
   // Subir PDF rellenado si hay planilla base
   if(pdfB64){
@@ -2047,9 +2048,15 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
       const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
       const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
       visits[curId].planilla.drivePdfUrl = r.webViewLink;
-    }catch(e){console.error('pdf:',e);}
+    }catch(e){console.error('pdf:',e);fallos.push('el PDF');}
+  }else{
+    fallos.push('el PDF (no elegiste ninguna planilla en esta visita)');
   }
   lsSet(SK.visits,visits);
+  if(fallos.length){
+    showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No se subió '+fallos.join(' ni '),true);
+    return;
+  }
   showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-cloud"/></svg> Subido a Drive <svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg>');
 }
 
