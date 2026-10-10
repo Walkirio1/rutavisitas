@@ -1234,8 +1234,7 @@ function toggleGuardarNueva(){
 }
 
 function updPdfWarning(){
-  const b64Activa=pdfSelId||pdfB64Modal;
-  document.getElementById('pdfWarning').style.display=b64Activa?'none':'block';
+  document.getElementById('pdfWarning').style.display='none'; // hay planilla predeterminada
 }
 
 function plT(k,el){plC[k]=!plC[k];el.classList.toggle('on',plC[k]);}
@@ -1283,6 +1282,12 @@ async function guardarVisita(){
   if(!pdfActivoB64 && pdfSelId){
     const pl = planillas.find(x=>x.id===pdfSelId);
     if(pl){pdfActivoB64 = pl.b64; pdfActivoNombre = (pl.nombre||'planilla')+'.pdf';}
+  }
+  if(!pdfActivoB64 && drv.connected){
+    try{
+      pdfActivoB64 = await planillaPredeterminadaB64();
+      pdfActivoNombre = 'Planilla_Verificaciones.pdf';
+    }catch(e){console.error('planilla predeterminada:',e);}
   }
   visits[curId]={done:true,planilla:{
     chC,chV,ti,obs:document.getElementById('plO').value,
@@ -1919,6 +1924,18 @@ async function driveUploadFile(nombre, mime, content, parentId){
   return await resp.json();
 }
 
+// Planilla oficial por defecto: se usa si en la visita no se eligió otra
+let _plDefB64=null;
+async function planillaPredeterminadaB64(){
+  if(_plDefB64) return _plDefB64;
+  const r=await fetch('planilla-predeterminada.pdf');
+  if(!r.ok) throw new Error('No se pudo cargar la planilla predeterminada');
+  const bytes=new Uint8Array(await r.arrayBuffer());
+  let bin='';
+  for(let i=0;i<bytes.length;i+=8192) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+  return _plDefB64=btoa(bin);
+}
+
 // Sanea nombres para Drive
 function safeName(s){
   return String(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').substring(0,80);
@@ -2050,7 +2067,7 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
       visits[curId].planilla.drivePdfUrl = r.webViewLink;
     }catch(e){console.error('pdf:',e);fallos.push('el PDF');}
   }else{
-    fallos.push('el PDF (no elegiste ninguna planilla en esta visita)');
+    fallos.push('el PDF (no se pudo cargar la planilla predeterminada)');
   }
   lsSet(SK.visits,visits);
   if(fallos.length){
