@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -498,14 +500,20 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
   <!-- TAB 5: DRIVE -->
   <div class="cnt pnl" id="t5">
     <div class="card" style="margin-bottom:10px">
-      <span class="stit"><svg class="ico" style="vertical-align:-2px"><use href="#i-settings"/></svg> Conexión con Drive</span>
-      <input type="text" id="gUserName" placeholder="Tu nombre (ej: Walter)" autocomplete="off" style="margin-bottom:7px"/>
-      <input type="text" id="gScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" style="margin-bottom:6px"/>
-      <div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-bottom:9px">
-        Pegá la URL del script de quien recibe los archivos. No hace falta iniciar sesión en Google en la app.
+      <span class="stit"><svg class="ico" style="vertical-align:-2px"><use href="#i-settings"/></svg> Google OAuth Client ID</span>
+      <div style="display:flex;gap:7px;margin-bottom:6px">
+        <input type="text" id="gClientId" placeholder="123456-abc...apps.googleusercontent.com" autocomplete="off"/>
+        <button class="sm sma" onclick="saveClientId()">💾</button>
       </div>
+      <div style="font-size:10px;color:#94a3b8;line-height:1.5">
+        <svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> Se guarda solo en tu dispositivo. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#60a5fa">Crear Client ID →</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <span class="stit">Conexión con Drive</span>
       <div id="drvConnInfo" style="font-size:12px;color:#94a3b8;margin-bottom:9px;line-height:1.6"></div>
-      <button class="btn ba" id="btnConnect" onclick="connectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> Conectar</button>
+      <button class="btn ba" id="btnConnect" onclick="connectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-lock"/></svg> Conectar con Google Drive</button>
       <button class="btn bd" id="btnDisconnect" style="display:none" onclick="disconnectDrive()"><svg class="ico" style="vertical-align:-2px"><use href="#i-unlock"/></svg> Desconectar</button>
     </div>
 
@@ -513,7 +521,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
       <span class="stit"><svg class="ico" style="vertical-align:-2px"><use href="#i-folder"/></svg> Carpeta destino en Drive</span>
       <input type="text" id="folderName" placeholder="Verificaciones SUBE" style="margin-bottom:7px"/>
       <div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-bottom:8px">
-        Dentro se crean subcarpetas <code style="color:#60a5fa">YYYY-MM-DD/IdPunto_Nombre/</code> con la foto + PDF de cada visita, dentro de una carpeta con tu nombre.
+        Dentro se crean subcarpetas <code style="color:#60a5fa">YYYY-MM-DD/IdPunto_Nombre/</code> con la foto + PDF de cada visita.
       </div>
       <button class="sm sma" onclick="saveFolderName()"><svg class="ico" style="vertical-align:-2px"><use href="#i-save"/></svg> Guardar nombre</button>
     </div>
@@ -653,8 +661,7 @@ const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
   historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
   apiKey:'sube:apikey',
-  scriptUrl:'sube:scripturl',
-  userName:'sube:username',
+  clientId:'sube:clientid',
   folderName:'sube:foldername',
   rootFolderId:'sube:rootfolderid',
   autosave:'sube:autosave',
@@ -1613,47 +1620,65 @@ function centrarEnPuntos(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// ── DRIVE VIA APPS SCRIPT (sin login en la app)
-// La app manda los archivos por POST a un script publicado en la
-// cuenta de quien los recibe; el script los guarda en su Drive.
+// ── GOOGLE DRIVE: AUTH + UPLOAD + AUTOSAVE JORNADA
 // ═══════════════════════════════════════════════════════════
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
 const drv = {
-  url: lsGet(SK.scriptUrl) || '',
-  nombre: lsGet(SK.userName) || '',
+  clientId: lsGet(SK.clientId) || '',
   folderName: lsGet(SK.folderName) || 'Verificaciones SUBE',
+  rootFolderId: lsGet(SK.rootFolderId) || null,
   autosave: lsGet(SK.autosave) || false,
   lastSync: lsGet(SK.lastSync) || null,
+  tokenClient: null,
+  accessToken: null,
+  tokenExpiry: 0,
   connected: false,
   user: null,
+  gapiReady: false,
+  gisReady: false,
   autosaveTimer: null,
   autosavePending: false,
 };
-drv.connected = !!(drv.url && drv.nombre);
-drv.user = drv.connected ? drv.nombre : null;
 
-async function drvPost(payload){
-  if(!drv.connected) throw new Error('Drive no configurado');
-  const resp = await fetch(drv.url,{
-    method:'POST',
-    // text/plain evita el preflight CORS que Apps Script no responde
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({...payload, nombre:drv.nombre, carpeta:drv.folderName}),
+// Esperar a que GAPI y GIS carguen
+function waitForGoogleLibs(){
+  return new Promise((resolve)=>{
+    const check=()=>{
+      const gapiOk = typeof gapi !== 'undefined';
+      const gisOk = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
+      if(gapiOk && gisOk){
+        if(!drv.gapiReady){
+          gapi.load('client',async()=>{
+            await gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
+            drv.gapiReady=true;
+            drv.gisReady=true;
+            resolve();
+          });
+        }else{
+          resolve();
+        }
+      }else{
+        setTimeout(check,200);
+      }
+    };
+    check();
   });
-  if(!resp.ok) throw new Error('HTTP '+resp.status);
-  const j = await resp.json();
-  if(!j.ok) throw new Error(j.error||'Error del script');
-  return j;
 }
 
-// dataURL o base64 plano → base64 puro
-function aB64(content){
-  const m = String(content).match(/^data:[^;]+;base64,([\s\S]+)$/);
-  return (m?m[1]:String(content)).replace(/\s/g,'');
+function saveClientId(){
+  const v=document.getElementById('gClientId').value.trim();
+  if(!v){showToast('Pegá el Client ID primero',true);return;}
+  drv.clientId=v;lsSet(SK.clientId,v);
+  showToast('Client ID guardado ✓');
+  renderDriveTab();
 }
 
 function saveFolderName(){
   const v=document.getElementById('folderName').value.trim()||'Verificaciones SUBE';
   drv.folderName=v;lsSet(SK.folderName,v);
+  // Resetear rootFolderId para que se vuelva a buscar/crear
+  drv.rootFolderId=null;lsDel(SK.rootFolderId);
   showToast('Nombre de carpeta guardado ✓');
 }
 
@@ -1672,39 +1697,76 @@ function toggleAutosave(chk){
   }else{
     showToast('Auto-guardado desactivado');
   }
-  updateDriveBadge();
 }
 
 async function connectDrive(){
-  const nombre=document.getElementById('gUserName').value.trim();
-  const url=document.getElementById('gScriptUrl').value.trim();
-  if(!nombre){showToast('Poné tu nombre primero',true);return;}
-  if(!/^https:\/\/script\.google\.com\/.+\/exec/.test(url)){
-    showToast('La URL debe terminar en /exec (la del script publicado)',true);return;
-  }
-  showToast('Probando conexión...');
-  const prev={url:drv.url,nombre:drv.nombre,connected:drv.connected};
-  drv.url=url;drv.nombre=nombre;drv.connected=true;
+  if(!drv.clientId){showToast('Pegá tu Client ID primero',true);return;}
+  showToast('Conectando con Drive...');
   try{
-    await drvPost({action:'ping'});
+    await waitForGoogleLibs();
+    if(!drv.tokenClient){
+      drv.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: drv.clientId,
+        scope: DRIVE_SCOPE,
+        prompt: '',
+        callback: async (resp)=>{
+          if(resp.error){
+            console.error(resp);
+            showToast('Error de autorización: '+resp.error,true);
+            return;
+          }
+          drv.accessToken = resp.access_token;
+          drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
+          gapi.client.setToken({access_token: drv.accessToken});
+          drv.connected = true;
+          // probar la conexión y conseguir info del usuario
+          try{
+            const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+              headers:{'Authorization':'Bearer '+drv.accessToken}
+            }).then(r=>r.json());
+            drv.user = userInfo.email || null;
+          }catch(e){}
+          updateDriveBadge();
+          renderDriveTab();
+          showToast('✓ Conectado a Drive');
+          // si hay jornada-actual en Drive, ofrecer cargarla
+          checkJornadaActual();
+        }
+      });
+    }
+    // Forzar prompt de consentimiento la primera vez
+    const hint = drv.user?'':'consent';
+    drv.tokenClient.requestAccessToken({prompt: hint});
   }catch(e){
     console.error(e);
-    drv.url=prev.url;drv.nombre=prev.nombre;drv.connected=prev.connected;
-    showToast('No conectó: revisá la URL y que el acceso sea "Cualquier persona"',true);
-    return;
+    showToast('Error iniciando OAuth: '+e.message,true);
   }
-  drv.user=nombre;
-  lsSet(SK.scriptUrl,url);lsSet(SK.userName,nombre);
-  updateDriveBadge();renderDriveTab();
-  showToast('✓ Conectado a Drive');
-  checkJornadaActual();
 }
 
 function disconnectDrive(){
-  drv.url='';drv.connected=false;drv.user=null;
-  lsDel(SK.scriptUrl);
+  if(drv.accessToken){
+    try{google.accounts.oauth2.revoke(drv.accessToken,()=>{});}catch(e){}
+  }
+  drv.accessToken=null;drv.connected=false;drv.user=null;drv.tokenExpiry=0;
   updateDriveBadge();renderDriveTab();
   showToast('Desconectado de Drive');
+}
+
+async function ensureToken(){
+  if(!drv.connected) throw new Error('No conectado a Drive');
+  // Si el token está por vencer, pedirlo de nuevo silenciosamente
+  if(Date.now() > drv.tokenExpiry){
+    return new Promise((resolve,reject)=>{
+      drv.tokenClient.callback = (resp)=>{
+        if(resp.error){reject(resp.error);return;}
+        drv.accessToken=resp.access_token;
+        drv.tokenExpiry=Date.now()+((resp.expires_in||3600)*1000)-60000;
+        gapi.client.setToken({access_token:drv.accessToken});
+        resolve();
+      };
+      drv.tokenClient.requestAccessToken({prompt:''});
+    });
+  }
 }
 
 function updateDriveBadge(){
@@ -1716,10 +1778,8 @@ function updateDriveBadge(){
 }
 
 function renderDriveTab(){
-  const u=document.getElementById('gUserName');
-  if(u&&!u.value)u.value=drv.nombre;
-  const g=document.getElementById('gScriptUrl');
-  if(g&&!g.value)g.value=drv.url;
+  const inp=document.getElementById('gClientId');
+  if(inp&&drv.clientId&&!inp.value)inp.value=drv.clientId;
   const fn=document.getElementById('folderName');
   if(fn)fn.value=drv.folderName;
   const chk=document.getElementById('autosaveChk');
@@ -1727,11 +1787,11 @@ function renderDriveTab(){
   const info=document.getElementById('drvConnInfo');
   if(info){
     if(drv.connected){
-      info.innerHTML=`✅ Conectado como <strong style="color:#10b981">${escapeHtml(drv.user||'')}</strong>`;
+      info.innerHTML=`✅ Conectado como <strong style="color:#10b981">${drv.user||'tu cuenta'}</strong>`;
       document.getElementById('btnConnect').style.display='none';
       document.getElementById('btnDisconnect').style.display='block';
     }else{
-      info.innerHTML='🔴 No conectado. Completá nombre y URL y tocá Conectar.';
+      info.innerHTML='🔴 No conectado. Tocá el botón de abajo para empezar.';
       document.getElementById('btnConnect').style.display='block';
       document.getElementById('btnDisconnect').style.display='none';
     }
@@ -1740,6 +1800,100 @@ function renderDriveTab(){
   if(ls){
     ls.textContent = drv.lastSync ? '⏱️ Última sincronización: '+drv.lastSync : '';
   }
+}
+
+// --- DRIVE API HELPERS ---
+async function driveBuscarCarpeta(nombre, parentId){
+  await ensureToken();
+  const qParts = [
+    "mimeType='application/vnd.google-apps.folder'",
+    "trashed=false",
+    `name='${nombre.replace(/'/g,"\\'")}'`,
+  ];
+  if(parentId) qParts.push(`'${parentId}' in parents`);
+  const resp = await gapi.client.drive.files.list({
+    q: qParts.join(' and '),
+    fields:'files(id,name)',
+    pageSize: 5,
+  });
+  return resp.result.files && resp.result.files[0] ? resp.result.files[0].id : null;
+}
+
+async function driveCrearCarpeta(nombre, parentId){
+  await ensureToken();
+  const metadata = {name:nombre, mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) metadata.parents=[parentId];
+  const resp = await gapi.client.drive.files.create({resource:metadata, fields:'id,name'});
+  return resp.result.id;
+}
+
+async function driveGetOrCreateFolder(nombre, parentId){
+  let id = await driveBuscarCarpeta(nombre, parentId);
+  if(!id) id = await driveCrearCarpeta(nombre, parentId);
+  return id;
+}
+
+async function driveGetRootFolderId(){
+  if(drv.rootFolderId){
+    // verificar que sigue existiendo
+    try{
+      await ensureToken();
+      const r=await gapi.client.drive.files.get({fileId:drv.rootFolderId,fields:'id,trashed'});
+      if(r.result && !r.result.trashed) return drv.rootFolderId;
+    }catch(e){drv.rootFolderId=null;}
+  }
+  const id = await driveGetOrCreateFolder(drv.folderName, null);
+  drv.rootFolderId=id;lsSet(SK.rootFolderId,id);
+  return id;
+}
+
+// Subir archivo (multipart: metadata + bytes). content puede ser dataURL, base64 plano o Blob.
+async function driveUploadFile(nombre, mime, content, parentId){
+  await ensureToken();
+  let bytes;
+  if(typeof content === 'string' && content.startsWith('data:')){
+    // dataURL → blob
+    const m = content.match(/^data:([^;]+);base64,(.+)$/);
+    if(!m) throw new Error('dataURL inválido');
+    if(!mime) mime = m[1];
+    const bin = atob(m[2]);
+    const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    bytes = new Blob([arr],{type:mime});
+  }else if(typeof content === 'string' && /^[A-Za-z0-9+/=\s]+$/.test(content) && content.length > 100){
+    // Base64 plano (sin prefijo data:) → blob binario
+    try{
+      const clean = content.replace(/\s/g,'');
+      const bin = atob(clean);
+      const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+      bytes = new Blob([arr],{type:mime||'application/octet-stream'});
+    }catch(e){
+      // Si falla decode, lo tratamos como texto plano
+      bytes = new Blob([content],{type:mime||'text/plain'});
+    }
+  }else if(typeof content === 'string'){
+    bytes = new Blob([content],{type:mime||'text/plain'});
+  }else{
+    bytes = content;
+  }
+  const metadata = {name:nombre, mimeType:mime};
+  if(parentId) metadata.parents=[parentId];
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+  form.append('file', bytes);
+
+  const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+drv.accessToken},
+    body: form,
+  });
+  if(!resp.ok){
+    const txt=await resp.text();
+    throw new Error('Upload falló: '+txt);
+  }
+  return await resp.json();
 }
 
 // Sanea nombres para Drive
@@ -1840,36 +1994,39 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
 // Subir visita (foto + PDF rellenado) a Drive
 async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   if(!drv.connected) return;
-  const fecha = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
+  const root = await driveGetRootFolderId();
+  const fechaCarpeta = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
+  const dia = await driveGetOrCreateFolder(fechaCarpeta, root);
+  const subNombre = safeName(punto.id+'_'+(punto.nombre||'punto'));
+  const sub = await driveGetOrCreateFolder(subNombre, dia);
+
   const hora = (new Date()).toTimeString().slice(0,5).replace(':','');
-  const prefix = `${fecha}_${hora}`;
-  const files = [];
-  const tipos = [];
+  const prefix = `${fechaCarpeta}_${hora}`;
 
+  // Subir foto si hay
   if(visita.planilla && visita.planilla.foto){
-    files.push({name:`${prefix}_foto.jpg`,mime:'image/jpeg',b64:aB64(visita.planilla.foto)});
-    tipos.push('foto');
-  }
-  if(pdfB64){
-    let pdfFinal = pdfB64;
     try{
-      pdfFinal = await rellenarPlanillaPDF(pdfB64, punto, visita);
-    }catch(e){
-      console.error('Error rellenando PDF, subo el original:',e);
-      showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No pude rellenar el PDF, se sube en blanco',true);
-    }
-    const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
-    files.push({name:`${prefix}_${nombreLimpio}_rellenado.pdf`,mime:'application/pdf',b64:aB64(pdfFinal)});
-    tipos.push('pdf');
+      const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
+      visits[curId].planilla.driveFotoUrl = r.webViewLink;
+    }catch(e){console.error('foto:',e);}
   }
-  if(!files.length) return;
-
-  const r = await drvPost({action:'visita',fecha,sub:safeName(punto.id+'_'+(punto.nombre||'punto')),files});
-  const v = visits[punto.id];
-  if(v && v.planilla){
-    tipos.forEach((t,i)=>{ if(t==='foto') v.planilla.driveFotoUrl=r.urls[i]; else v.planilla.drivePdfUrl=r.urls[i]; });
-    lsSet(SK.visits,visits);
+  // Subir PDF rellenado si hay planilla base
+  if(pdfB64){
+    try{
+      // Rellenar el PDF con los datos antes de subirlo
+      let pdfFinal = pdfB64;
+      try{
+        pdfFinal = await rellenarPlanillaPDF(pdfB64, punto, visita);
+      }catch(e){
+        console.error('Error rellenando PDF, subo el original:',e);
+        showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No pude rellenar el PDF, se sube en blanco',true);
+      }
+      const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
+      const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
+      visits[curId].planilla.drivePdfUrl = r.webViewLink;
+    }catch(e){console.error('pdf:',e);}
   }
+  lsSet(SK.visits,visits);
   showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-cloud"/></svg> Subido a Drive <svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg>');
 }
 
@@ -1888,6 +2045,7 @@ function triggerAutosave(){
 
 async function guardarJornadaActualEnDrive(){
   if(!drv.connected) return;
+  const root = await driveGetRootFolderId();
   const jornada = {
     fecha: hoy(),
     hora: ahora(),
@@ -1896,7 +2054,28 @@ async function guardarJornadaActualEnDrive(){
     sel: [...sel],
     visits: visits,
   };
-  await drvPost({action:'saveJornada',json:JSON.stringify(jornada)});
+  const json = JSON.stringify(jornada);
+  // Buscar si ya existe el archivo
+  await ensureToken();
+  const buscar = await gapi.client.drive.files.list({
+    q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+    fields:'files(id,name)',
+    pageSize:1,
+  });
+  const existing = buscar.result.files && buscar.result.files[0];
+  if(existing){
+    // Update con PATCH multipart
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify({name:'jornada-actual.json',mimeType:'application/json'})],{type:'application/json'}));
+    form.append('file', new Blob([json],{type:'application/json'}));
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart`,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+drv.accessToken},
+      body: form,
+    });
+  }else{
+    await driveUploadFile('jornada-actual.json','application/json',json,root);
+  }
   const now = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
   drv.lastSync = now;
   lsSet(SK.lastSync,now);
@@ -1920,8 +2099,21 @@ async function guardarJornadaAhora(){
 
 async function cargarJornadaDesdeDrive(){
   if(!drv.connected) return null;
-  const r = await drvPost({action:'getJornada'});
-  return r.json ? JSON.parse(r.json) : null;
+  const root = await driveGetRootFolderId();
+  await ensureToken();
+  const buscar = await gapi.client.drive.files.list({
+    q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+    fields:'files(id,name,modifiedTime)',
+    pageSize:1,
+  });
+  const f = buscar.result.files && buscar.result.files[0];
+  if(!f) return null;
+  // Bajar contenido
+  const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{
+    headers:{'Authorization':'Bearer '+drv.accessToken},
+  });
+  if(!resp.ok) throw new Error('No se pudo descargar');
+  return await resp.json();
 }
 
 function aplicarJornada(j){
@@ -1969,11 +2161,21 @@ async function cargarJornadaDesdeManual(){
 
 async function borrarJornadaActualDrive(){
   if(!drv.connected) return;
-  try{ await drvPost({action:'delJornada'}); }
-  catch(e){console.error('borrarJornadaActual:',e);}
+  try{
+    const root = await driveGetRootFolderId();
+    await ensureToken();
+    const buscar = await gapi.client.drive.files.list({
+      q: `name='jornada-actual.json' and '${root}' in parents and trashed=false`,
+      fields:'files(id)',pageSize:1,
+    });
+    const f = buscar.result.files && buscar.result.files[0];
+    if(f){
+      await gapi.client.drive.files.delete({fileId:f.id});
+    }
+  }catch(e){console.error('borrarJornadaActual:',e);}
 }
 
-// Refrescar estado de Drive al iniciar
+// Auto-cargar Client ID al iniciar e intentar reconexión silenciosa si había una activa
 setTimeout(()=>{
   updateDriveBadge();
   renderDriveTab();
