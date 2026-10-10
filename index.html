@@ -441,7 +441,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
       <div id="mapa"></div>
     </div>
 
-    <div class="empty" id="mapaVacio" style="display:none"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-map"/></svg></span><p>Importá un Excel y configurá tu API key<br/>para ver los puntos en el mapa.</p></div>
+    <div class="empty" id="mapaVacio" style="display:none"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-map"/></svg></span><p>Importá un Excel en la pestaña Puntos<br/>para ver los puntos en el mapa.</p></div>
   </div>
 
   <!-- TAB 3: HISTORIAL -->
@@ -1294,6 +1294,9 @@ function showToast(msg,err){
 // ═══════════════════════════════════════════════════════════
 let mapa = null;
 let markersLayer = null;
+let miUbicLayer = null;
+let ubicando = null;      // índice en puntos[] del punto que se está ubicando a mano
+let sinGeoAbierto = false;
 let geocodingInProgress = false;
 
 // Iconos SVG para los pins
@@ -1324,12 +1327,24 @@ function initMapa(){
     attribution:'© OSM'
   }).addTo(mapa);
   markersLayer = L.layerGroup().addTo(mapa);
+  miUbicLayer = L.layerGroup().addTo(mapa);
+  mapa.on('click',e=>{
+    if(ubicando===null) return;
+    const pt=puntos[ubicando];
+    ubicando=null;
+    mapa.getContainer().style.cursor='';
+    if(!pt) return;
+    pt.lat=e.latlng.lat;pt.lng=e.latlng.lng;pt.geoErr=null;
+    lsSet(SK.puntos,puntos);
+    showToast('✓ Ubicado: '+(pt.nombre||pt.dir));
+    renderMapa();
+  });
   // Pequeño delay para que el contenedor calcule bien el tamaño
   setTimeout(()=>mapa.invalidateSize(),200);
 }
 
 // Renderizar markers en el mapa + lista de pendientes
-function renderMapa(){
+function renderMapa(noFit){
   if(!mapa)return;
   markersLayer.clearLayers();
 
@@ -1340,12 +1355,25 @@ function renderMapa(){
   document.getElementById('mapaVacio').style.display = puntos.length?'none':'block';
   document.getElementById('mapa').style.display = puntos.length?'block':'none';
 
-  // lista de puntos sin geocodificar
+  // lista de puntos sin geocodificar (el cartel se puede tocar para ver cuáles son)
   const pendList=document.getElementById('geoPendList');
   if(sinGeo.length&&puntos.length){
+    const items=sinGeo.map(p=>{
+      const i=puntos.indexOf(p);
+      return `<div style="padding:8px 0;border-top:1px solid rgba(212,165,116,.2)">
+        <div style="font-weight:700;color:#e8edf5">${escapeHtml(p.nombre||'(sin nombre)')} <span style="color:#94a3b8;font-weight:500">· ID ${escapeHtml(p.id)}</span></div>
+        <div style="color:#cbd5e1;margin:2px 0">📍 ${escapeHtml(p.dir)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
+        <div style="color:#94a3b8;margin-bottom:6px">Motivo: ${escapeHtml(p.geoErr||'pendiente de geocodificar')}</div>
+        <button class="sm sma" onclick="ubicarManual(${i})">📍 Ubicar tocando el mapa</button>
+      </div>`;
+    }).join('');
     pendList.innerHTML=`<div class="geo-pend">
-      ⚠️ <strong>${sinGeo.length}</strong> punto${sinGeo.length>1?'s':''} sin ubicación.
-      Tocá "<svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes" para procesarlos.
+      <div onclick="toggleSinGeo()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>⚠️ <strong>${sinGeo.length}</strong> punto${sinGeo.length>1?'s':''} sin ubicación</span>
+        <span style="text-decoration:underline">${sinGeoAbierto?'Ocultar ▲':'Ver cuáles ▼'}</span>
+      </div>
+      ${ubicando!==null?`<div style="margin-top:8px;padding:7px;background:rgba(16,185,129,.12);border-radius:8px;color:#10b981;font-weight:600">👆 Tocá el mapa donde está el punto. <a href="#" onclick="cancelarUbicar();return false" style="color:#10b981">Cancelar</a></div>`:''}
+      ${sinGeoAbierto?`<div style="margin-top:8px">${items}</div>`:''}
     </div>`;
   }else{
     pendList.innerHTML='';
@@ -1370,12 +1398,31 @@ function renderMapa(){
     bounds.push([p.lat,p.lng]);
   });
 
-  // Auto-fit a los bounds si hay markers
-  if(bounds.length===1){
+  // Auto-fit a los bounds si hay markers (no al abrir/cerrar el cartel)
+  if(noFit){
+    // sin reencuadrar
+  }else if(bounds.length===1){
     mapa.setView(bounds[0],15);
   }else if(bounds.length>1){
     mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
   }
+}
+
+function toggleSinGeo(){sinGeoAbierto=!sinGeoAbierto;renderMapa(true);}
+
+function ubicarManual(i){
+  if(!puntos[i]) return;
+  ubicando=i;
+  mapa.getContainer().style.cursor='crosshair';
+  showToast('Tocá el mapa donde está: '+(puntos[i].nombre||puntos[i].dir));
+  renderMapa(true);
+  document.getElementById('mapa').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function cancelarUbicar(){
+  ubicando=null;
+  if(mapa)mapa.getContainer().style.cursor='';
+  renderMapa(true);
 }
 
 function toggleSelFromMap(id){
@@ -1443,20 +1490,18 @@ async function geocodificarTodos(silent){
     const p=pendientes[i];
     if(progN)progN.textContent=(i+1)+'/'+pendientes.length;
 
+    if(p.lat) continue; // ya resuelto (misma dirección repetida)
     const res=await geocodeOne(p);
-    // Actualizar el punto en el array principal (por ID)
-    const idx=puntos.findIndex(pp=>pp.id===p.id);
-    if(idx>=0){
-      if(res.lat){
-        puntos[idx].lat=res.lat;
-        puntos[idx].lng=res.lng;
-        puntos[idx].geoErr=null;
-        ok++;
-      }else{
-        puntos[idx].geoErr=res.err;
-        fail++;
-        if(res.err==='Sin conexión'){showToast('Sin conexión: no se pudo ubicar',true);denied=true;break;}
-      }
+    // Se actualiza el punto y cualquier otro pendiente con la misma dirección
+    // (si el Excel repite IDs, buscar por ID dejaba un punto sin ubicar para siempre)
+    const mismos=new Set([p,...puntos.filter(pp=>!pp.lat&&pp.dir===p.dir&&pp.localidad===p.localidad)]);
+    if(res.lat){
+      mismos.forEach(t=>{t.lat=res.lat;t.lng=res.lng;t.geoErr=null;});
+      ok+=mismos.size;
+    }else{
+      mismos.forEach(t=>{t.geoErr=res.err;});
+      fail+=mismos.size;
+      if(res.err==='Sin conexión'){showToast('Sin conexión: no se pudo ubicar',true);denied=true;break;}
     }
     // Nominatim pide máx. 1 consulta por segundo; Georef tolera más
     await new Promise(r=>setTimeout(r,res.fuente==='osm'?1100:150));
@@ -1478,17 +1523,31 @@ async function geocodificarTodos(silent){
 // Centrar mapa en mi ubicación
 function centrarEnMiUbicacion(){
   if(!mapa){showToast('Abrí primero el mapa',true);return;}
-  if(!navigator.geolocation){showToast('Geolocalización no disponible',true);return;}
-  showToast('Obteniendo ubicación...');
-  navigator.geolocation.getCurrentPosition(pos=>{
-    mapa.setView([pos.coords.latitude,pos.coords.longitude],14);
-    L.circleMarker([pos.coords.latitude,pos.coords.longitude],{
-      radius:8,color:'#fff',weight:3,fillColor:'#ef4444',fillOpacity:1
-    }).addTo(markersLayer).bindPopup('Tu ubicación');
+  if(!navigator.geolocation||!window.isSecureContext){
+    showToast('Este navegador no permite ubicación. Abrí la app en Chrome o Safari (no desde WhatsApp)',true);return;
+  }
+  showToast('Buscando tu ubicación...');
+  const ok=pos=>{
+    const ll=[pos.coords.latitude,pos.coords.longitude];
+    miUbicLayer.clearLayers();
+    L.circle(ll,{radius:pos.coords.accuracy||30,color:'#3b82f6',weight:1,fillOpacity:.12}).addTo(miUbicLayer);
+    L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#ef4444',fillOpacity:1}).addTo(miUbicLayer).bindPopup('Tu ubicación');
+    mapa.setView(ll,15);
     showToast('Centrado en tu ubicación ✓');
-  },err=>{
-    showToast('No se pudo obtener la ubicación',true);
-  },{timeout:8000,enableHighAccuracy:true});
+  };
+  const fail=err=>{
+    const msg={
+      1:'Permiso denegado: tocá el candado junto a la dirección → Permisos → Ubicación → Permitir, y recargá',
+      2:'No se detecta la posición: activá el GPS / Ubicación del celular',
+      3:'Tardó demasiado: probá afuera o con mejor señal'
+    }[err&&err.code]||'No se pudo obtener la ubicación';
+    showToast(msg,true);
+  };
+  // 1º intento rápido (red/WiFi); si no, GPS de alta precisión con más tiempo
+  navigator.geolocation.getCurrentPosition(ok,e1=>{
+    if(e1&&e1.code===1){fail(e1);return;}
+    navigator.geolocation.getCurrentPosition(ok,fail,{timeout:20000,enableHighAccuracy:true,maximumAge:0});
+  },{timeout:8000,enableHighAccuracy:false,maximumAge:60000});
 }
 
 // Centrar para ver todos los puntos
