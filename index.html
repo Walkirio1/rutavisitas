@@ -1980,12 +1980,14 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
   drawTxt(pl.rubro||'',         157.5, 609.2);
 
   // ── CHECKBOXES IRREGULARIDAD DE CARGA (X grande centrada DENTRO del cuadrado) ──
+  // Ajuste fino de las X de la tabla de carga (en puntos PDF): + derecha / + arriba
+  const AJ_CARGA_X = 2.5, AJ_CARGA_Y = -1.5;
   const yCarga = [529.8, 506.0, 482.3, 458.5, 434.7, 411.0, 387.2, 363.4];
   const chC = pl.chC || [];
   for(let i=0;i<8;i++){
     if(chC[i]){
       // X tamaño 16, ancho aprox 10pt → para centrar en x=478 ponemos x=473
-      page.drawText('X', {x:473, y:yCarga[i]-3, size:16, font:fontBold, color:rgb(0,0,0)});
+      page.drawText('X', {x:473+AJ_CARGA_X, y:yCarga[i]-3+AJ_CARGA_Y, size:16, font:fontBold, color:rgb(0,0,0)});
     }
   }
 
