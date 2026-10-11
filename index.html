@@ -565,12 +565,15 @@ setTimeout(go,2500);})();</script>
 <div class="firma-full" id="dsDlg">
   <div class="firma-top">
     <div class="firma-tit">Marcá los campos de tu planilla</div>
-    <div class="firma-sub">Elegí qué vas a marcar y tocá la hoja donde va. Tocá una marca para editarla; arrastrala para moverla.</div>
+    <div class="firma-sub">Elegí qué marcar y tocá la hoja donde va. Tocá una marca para elegirla: arrastrala para moverla y, con dos dedos sobre ella, cambiás su tamaño. Con dos dedos en otro lado, zoom.</div>
   </div>
   <div class="ds-tools" id="dsTools"></div>
   <div class="pf-nav"><button class="sm smh" onclick="dsHoja(-1)">◀</button><span id="dsHoja">Hoja 1</span><button class="sm smh" onclick="dsHoja(1)">▶</button>
     <span style="flex:1"></span><button class="sm smh" onclick="dsZoom(.8)">−</button><span id="dsZoomT">100%</span><button class="sm smh" onclick="dsZoom(1.25)">+ Zoom</button></div>
+  <div class="ds-hint" id="dsHint">🤏 Pellizcá con dos dedos para acercar</div>
   <div class="pf-scroll" id="dsScroll"><div class="pf-wrap" id="dsWrap"><canvas id="dsCv"></canvas><div class="ds-capa" id="dsMarcas"></div></div></div>
+  <div class="ds-acc" id="dsAcc" style="display:none"><span id="dsAccTxt"></span>
+    <div><button class="sm sma" id="dsAccEd" onclick="dsAccEditar()">✏️ Editar</button><button class="sm smr" onclick="dsAccBorrar()">🗑️</button><button class="sm smh" onclick="dsAccListo()">✔ Listo</button></div></div>
   <div class="firma-bot" style="grid-template-columns:auto 1fr 1.4fr;align-items:center">
     <span id="dsCuenta" style="font-size:12px;font-weight:700;color:#0d2a78">0 campos</span>
     <button class="btn bd" onclick="cerrarDisenador()">Cancelar</button>
@@ -585,7 +588,11 @@ setTimeout(go,2500);})();</script>
     <div id="dsEdPuntosBox" style="margin-top:8px"><label class="pllb">Puntos que suma si se tilda (opcional)</label><input class="pli" id="dsEdPuntos" type="number" inputmode="decimal" placeholder="Ej: 5"></div>
     <label class="ds-chk" id="dsEdCierraBox" style="margin-top:8px"><input type="checkbox" id="dsEdCierra"> Si se tilda, el punto queda en rojo (cerrado / no se pudo visitar)</label>
     <label class="ds-chk" id="dsEdObligBox" style="margin-top:8px"><input type="checkbox" id="dsEdOblig"> Obligatorio</label>
-    <div id="dsEdSumaBox" style="margin-top:8px"><label class="pllb">Suma estos campos</label><div id="dsEdSuma"></div></div>
+    <div id="dsEdSumaBox" style="margin-top:8px"><label class="pllb">¿Qué suma?</label>
+      <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoLista" onchange="dsEdModoSuma()"> Los campos que yo elijo</label>
+      <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoZona" onchange="dsEdModoSuma()"> Todos los números que marque dentro de una zona (una tira entera)</label>
+      <div id="dsEdSuma"></div>
+      <div id="dsEdZonaBox" style="display:none;margin-top:6px"><div class="pled-nota" id="dsEdZonaEst"></div><button class="sm sma" style="margin-top:6px" onclick="dsMarcarZona()">📐 Marcar la zona en la hoja</button></div></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="sm smh" style="flex:1" onclick="dsEdTamano(.85)">− Más chico</button><button class="sm smh" style="flex:1" onclick="dsEdTamano(1.18)">+ Más grande</button></div>
     <div style="display:grid;gap:8px;margin-top:12px">
       <button class="btn ba" onclick="dsEdGuardar()">Listo</button>
