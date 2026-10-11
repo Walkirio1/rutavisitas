@@ -1,0 +1,7 @@
+/* Pin tapado por otro: anillo que titila suave alrededor, para saber que hay un comercio atrás */
+.leaflet-marker-icon.mk-tapado .pin-marker{animation:mkTitila 1.8s ease-in-out infinite}
+.leaflet-marker-icon.mk-tapado::before{content:"";position:absolute;left:50%;top:16px;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;
+  border:3px solid rgba(100,116,139,.85);box-shadow:0 0 10px rgba(100,116,139,.6);pointer-events:none;animation:mkAnillo 1.8s ease-out infinite}
+@keyframes mkTitila{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes mkAnillo{0%{transform:scale(.7);opacity:.95}100%{transform:scale(2.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.leaflet-marker-icon.mk-tapado .pin-marker,.leaflet-marker-icon.mk-tapado::before{animation:none}.leaflet-marker-icon.mk-tapado::before{opacity:.6}}

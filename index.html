@@ -29,6 +29,7 @@
 <link rel="stylesheet" href="css/07-pantalla-entrada.css">
 <link rel="stylesheet" href="css/08-perfil.css">
 <link rel="stylesheet" href="css/09-plantilla.css">
+<link rel="stylesheet" href="css/10-mapa.css">
 </head>
 <body>
 <div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
@@ -144,6 +145,11 @@
       <button class="cfg-item" id="btnIA" style="display:none" onclick="configurarIA()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg></span>
         <div class="cfg-tx"><div class="cfg-nm">Lector con IA (letra a mano)</div><div class="cfg-ds" id="iaEst"></div></div>
+        <span class="cfg-ar">›</span>
+      </button>
+      <button class="cfg-item" onclick="togglePulsoTapados()">
+        <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg></span>
+        <div class="cfg-tx"><div class="cfg-nm">Avisar puntos tapados</div><div class="cfg-ds" id="pulsoEst"></div></div>
         <span class="cfg-ar">›</span>
       </button>
       <button class="cfg-item" onclick="guardarMapaOffline()">

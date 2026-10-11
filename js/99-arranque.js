@@ -44,6 +44,7 @@ mostrarAppNav();
 
 // de 10-tema-navegacion.js
 actualizarIAEst();
+actualizarPulsoEst();
 
 // de 12-drive-sesion.js
 document.addEventListener('click',()=>{
