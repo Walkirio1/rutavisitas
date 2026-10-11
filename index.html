@@ -615,6 +615,16 @@ html{scroll-behavior:smooth}
 .pl-close-x{top:calc(env(safe-area-inset-top) + 16px);width:46px;height:46px;background:linear-gradient(180deg,#ff8a8a,#e04848);border:1px solid rgba(120,20,20,.45);box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 10px 20px -8px rgba(224,72,72,.8)}
 @media (max-width:520px){.pl-close-x{top:calc(env(safe-area-inset-top) + 16px);right:16px}}
 .cfg-head{padding-top:calc(18px + env(safe-area-inset-top))}
+
+/* ═══════════ Resplandor del ícono: detrás (no encima) y mucho más suave ═══════════ */
+.tab .ti .tabimg{position:relative;z-index:1}
+.tab .ti::before{z-index:0;width:78px;height:78px;margin:-39px 0 0 -39px;
+  background:radial-gradient(circle,rgba(96,165,250,.30) 0,rgba(96,165,250,.26) 14%,rgba(96,165,250,.18) 30%,rgba(96,165,250,.10) 46%,rgba(96,165,250,.04) 60%,rgba(96,165,250,0) 72%);
+  transition:opacity .6s ease}
+:root[data-theme="dark"] .tab .ti::before{background:radial-gradient(circle,rgba(120,180,255,.34) 0,rgba(120,180,255,.28) 14%,rgba(96,165,250,.19) 30%,rgba(96,165,250,.10) 46%,rgba(96,165,250,.04) 60%,rgba(96,165,250,0) 72%)}
+/* pastilla más fina y suave */
+.tabs::before{box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 8px 18px -12px rgba(37,99,235,.35),0 0 0 1px rgba(96,165,250,.28)}
+:root[data-theme="dark"] .tabs::before{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 8px 20px -12px rgba(37,99,235,.55),0 0 0 1px rgba(96,165,250,.28)}
 </style>
 </head>
 <body>
@@ -3298,7 +3308,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · w';
+const APP_VERSION='2026-10-11 · x';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
