@@ -1,0 +1,44 @@
+/* Envíos pendientes, pantalla de entrada, ajustes para celular */
+/* ── ENVÍOS PENDIENTES + PANTALLA DE ENTRADA ── */
+.pend-bar{background:linear-gradient(180deg,rgba(245,158,11,.14),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.4);border-radius:12px;padding:11px 13px;margin-bottom:10px;font-size:12px;color:#fcd34d;line-height:1.5}
+.pend-bar .pb-btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.gate{display:none;position:fixed;inset:0;z-index:3000;background:var(--bg-deep);align-items:center;justify-content:center;padding:28px;text-align:center}
+.gate.show{display:flex}
+.gate .gw{max-width:340px;width:100%}
+.gate img{width:96px;height:96px;border-radius:22px;margin-bottom:18px;box-shadow:0 12px 40px -10px rgba(0,0,0,.7)}
+.gate h1{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:30px;margin-bottom:10px;color:var(--text)}
+.gate p{font-size:14px;line-height:1.55;color:var(--text-soft);margin-bottom:22px}
+.gate .gerr{color:var(--err);font-size:12.5px;line-height:1.5;margin-top:14px;min-height:18px}
+
+/* ── AJUSTES PARA CELULAR ── */
+.inst-bar{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));max-width:456px;margin:0 auto;z-index:900;display:none;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(180deg,#1f2632,#161b24);border:1px solid var(--line-warm);border-radius:14px;box-shadow:var(--shadow-deep)}
+.inst-bar.show{display:flex}
+.inst-bar img{width:40px;height:40px;border-radius:9px;flex-shrink:0}
+.inst-bar .it{flex:1;min-width:0;font-size:12px;line-height:1.35;color:var(--text)}
+.inst-bar .it b{display:block;font-size:13px}
+.inst-bar .ix{background:none;border:none;color:var(--text-mute);font-size:20px;padding:6px 8px;cursor:pointer}
+html{-webkit-text-size-adjust:100%}
+html,body{overscroll-behavior:none}               /* evita recargar sin querer al deslizar hacia abajo */
+.cnt{overscroll-behavior-y:contain}
+button,.tab,.sm,.btn,label{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.app{position:fixed;top:0;right:0;bottom:0;left:0;height:auto;margin:0 auto}  /* cubre toda la pantalla, también bajo la barra de inicio del iPhone */
+html{background:var(--bg-deep)}
+/* El fondo va en una capa fija a pantalla completa (antes estaba en body, que en iPhone queda más corto que la pantalla) */
+body{background:none}
+html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -20%, rgba(var(--acc),.07), transparent 60%),radial-gradient(ellipse 60% 40% at 100% 100%, rgba(122,155,118,.04), transparent 60%)}
+#mapa{height:calc(100vh - 200px);height:calc(100dvh - 200px)}
+.hdr{padding-top:max(14px,env(safe-area-inset-top))}
+.cnt{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+.drv-badge{white-space:nowrap}
+@media (pointer:coarse){
+  .sm{min-height:40px;padding:9px 13px}           /* botones fáciles de tocar con el dedo */
+  .btn,.plbt{min-height:46px}
+}
+@media (max-width:520px){
+  /* 16px evita el zoom automático de iPhone al tocar un campo */
+  input,select,textarea,input.pli,.pli{font-size:16px!important}
+  .plh{padding-right:68px}                        /* que la X de cerrar no tape el título */
+  #fechaHdr{display:none}
+}
+
