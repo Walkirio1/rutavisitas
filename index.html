@@ -1008,9 +1008,41 @@ function renderV(){
       ${!v.done?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
         <button class="sm smb" onclick="openPl('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-list"/></svg> Planilla</button>
         <button class="sm smh" onclick="markDone('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar hecha</button>
-      </div>`:`<div style="font-size:11px;color:#10b981;margin-top:6px"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · ${pl?pl.fecha+' '+pl.hora:''}</div>`}
+      </div>`:`<div style="font-size:11px;color:#10b981;margin-top:6px"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · ${pl?pl.fecha+' '+pl.hora:''}${pl&&pl.drivePdfUrl?' · ☁️ en Drive':''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="sm smb" onclick="openPl('${p.id}')">✏️ Editar planilla</button>
+        <button class="sm sma" onclick="reenviarADrive('${p.id}')">☁️ Reenviar a Drive</button>
+        <button class="sm smh" onclick="reabrirVisita('${p.id}')">↩️ Reabrir</button>
+      </div>`}
     </div>`;
   }).join('');
+}
+
+// Vuelve a mandar a Drive la foto y la planilla rellenada de una visita ya hecha
+async function reenviarADrive(id){
+  if(!drv.connected){showToast('Conectá Drive primero (⚙ → Google Drive)',true);return;}
+  const punto=puntos.find(p=>p.id===id), v=visits[id];
+  if(!punto||!v||!v.planilla){showToast('Esta visita no tiene planilla para enviar: tocá "Editar planilla"',true);return;}
+  showToast('Enviando a Drive...');
+  try{
+    const r=await pdfParaVisita();
+    await subirVisitaADrive(punto,v,r.b64,r.nombre);
+    renderV();
+  }catch(e){
+    console.error('reenviar:',e);
+    showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No se pudo enviar a Drive',true);
+  }
+}
+
+// Una visita hecha vuelve a Pendiente (se conserva la planilla cargada)
+function reabrirVisita(id){
+  confirm2('¿Reabrir esta visita? Vuelve a Pendiente y la planilla guardada se conserva.',function(){
+    if(visits[id]) visits[id].done=false;
+    lsSet(SK.visits,visits);
+    renderV();updStats();
+    showToast('Visita reabierta');
+    triggerAutosave();
+  });
 }
 
 function markDone(id){
@@ -1171,8 +1203,8 @@ function openPl(id){
   if(pl&&pl.chC) CN.forEach((_,i)=>{if(pl.chC[i])plC['c'+i]=true;});
   if(pl&&pl.chV) VN.forEach((_,i)=>{if(pl.chV[i])plC['v'+i]=true;});
 
-  document.getElementById('plF').value=hoy();
-  document.getElementById('plH').value=ahora();
+  document.getElementById('plF').value=(pl&&pl.fecha)||hoy();
+  document.getElementById('plH').value=(pl&&pl.hora)||ahora();
   document.getElementById('plI').value=p.id||'';
   document.getElementById('plD').value=p.dir||'';
   document.getElementById('plR').value=(pl&&pl.rubro)||p.tipo||'';
@@ -1216,24 +1248,26 @@ function quitarFoto(){
   document.getElementById('fotoQuit').style.display='none';
 }
 
+// PDF activo: la planilla elegida como predeterminada en Configuración, o la oficial incluida
+async function pdfParaVisita(){
+  const plDef = plDefId && planillas.find(x=>x.id===plDefId);
+  if(plDef) return {b64:plDef.b64,nombre:(plDef.nombre||'planilla')+'.pdf'};
+  try{ return {b64:await planillaPredeterminadaB64(),nombre:'Planilla_Verificaciones.pdf'}; }
+  catch(e){console.error('planilla predeterminada:',e);return {b64:null,nombre:'Planilla_Verificaciones.pdf'};}
+}
+
 async function guardarVisita(){
   const chC=CN.map((_,i)=>!!plC['c'+i]);
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
+  const previa=visits[curId]&&visits[curId].planilla; // si se está editando una visita ya hecha, se conserva su fecha y hora
   if(!visits[curId])visits[curId]={};
-  // PDF activo: la planilla elegida como predeterminada en Configuración, o la oficial incluida
-  let pdfActivoB64 = null;
-  let pdfActivoNombre = 'Planilla_Verificaciones.pdf';
-  const plDef = plDefId && planillas.find(x=>x.id===plDefId);
-  if(plDef){pdfActivoB64 = plDef.b64; pdfActivoNombre = (plDef.nombre||'planilla')+'.pdf';}
-  if(!pdfActivoB64 && drv.connected){
-    try{ pdfActivoB64 = await planillaPredeterminadaB64(); }
-    catch(e){console.error('planilla predeterminada:',e);}
-  }
+  let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
+  if(drv.connected){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
     chC,chV,ti,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
-    foto:fotoData,fecha:hoy(),hora:ahora(),
+    foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     driveFotoUrl:null,drivePdfUrl:null,
   }};
   lsSet(SK.visits,visits);
@@ -2279,7 +2313,7 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   if(visita.planilla && visita.planilla.foto){
     try{
       const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
-      visits[curId].planilla.driveFotoUrl = r.webViewLink;
+      if(visits[punto.id]&&visits[punto.id].planilla) visits[punto.id].planilla.driveFotoUrl = r.webViewLink;
     }catch(e){console.error('foto:',e);fallos.push('la foto');}
   }
   // Subir PDF rellenado si hay planilla base
@@ -2295,7 +2329,7 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
       }
       const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
       const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
-      visits[curId].planilla.drivePdfUrl = r.webViewLink;
+      if(visits[punto.id]&&visits[punto.id].planilla) visits[punto.id].planilla.drivePdfUrl = r.webViewLink;
     }catch(e){console.error('pdf:',e);fallos.push('el PDF');}
   }else{
     fallos.push('el PDF (no se pudo cargar la planilla predeterminada)');
@@ -2454,7 +2488,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · j';
+const APP_VERSION='2026-10-11 · k';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
