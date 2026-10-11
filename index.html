@@ -784,6 +784,11 @@ html{scroll-behavior:smooth}
         <div class="cfg-tx"><div class="cfg-nm">App de navegación</div><div class="cfg-ds" id="navActual"></div></div>
         <span class="cfg-ar">›</span>
       </button>
+      <button class="cfg-item" onclick="configurarIA()">
+        <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg></span>
+        <div class="cfg-tx"><div class="cfg-nm">Lector con IA (letra a mano)</div><div class="cfg-ds" id="iaEst"></div></div>
+        <span class="cfg-ar">›</span>
+      </button>
       <button class="cfg-item" onclick="guardarMapaOffline()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-map"/></svg></span>
         <div class="cfg-tx"><div class="cfg-nm">Mapa sin señal</div><div class="cfg-ds" id="mapaOffEst">Guarda el mapa de tus puntos en el celular</div></div>
@@ -822,7 +827,7 @@ html{scroll-behavior:smooth}
       <div style="font-size:22px;margin-bottom:4px">📷</div>
       <div style="font-size:12px;color:var(--text-mute)">O sacale foto a una lista de direcciones</div>
     </label>
-    <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()">✍️ Escribir o pegar una lista (letra a mano)</button>
+    <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()">✍️ Escribir o pegar una lista</button>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span class="stit" style="margin:0">Lista de puntos</span>
       <div style="display:flex;gap:6px;align-items:center">
@@ -1391,6 +1396,61 @@ function importXL(input){
   input.value='';
 }
 
+// ── LECTOR CON IA (letra a mano): usa la clave que cada persona pega en Ajustes (queda solo en su celular)
+const SK_IA='sube:iakey';
+const PROMPT_IA='Esta foto es una lista de direcciones de la ciudad de Rosario, Argentina (puede estar escrita a mano). Transcribila: una dirección por línea, en formato "Calle Altura" (por ejemplo "Pedro Medrano 2870"). Si una línea trae un ID o un nombre de local, ponelo antes separado con " ; " (ID ; nombre ; dirección). No numeres las líneas, no agregues explicaciones ni texto extra: solo las líneas. Si no podés leer una palabra, escribí tu mejor intento.';
+async function fotoParaIA(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
+    const r=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*r);c.height=Math.round(img.naturalHeight*r);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',.85).split(',')[1];
+  }finally{URL.revokeObjectURL(url);}
+}
+async function leerConIA(file,key){
+  const b64=await fotoParaIA(file);
+  if(key.startsWith('AIza')){
+    let ult=null;
+    for(const m of ['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest']){
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent?key='+encodeURIComponent(key),{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:PROMPT_IA}]}]})});
+      if(r.status===404){ult=r;continue;}
+      if(!r.ok) throw new Error(errorIA(r.status));
+      const d=await r.json();
+      return ((d.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('\n');
+    }
+    throw new Error(errorIA(ult?ult.status:0));
+  }
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:1500,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:PROMPT_IA}]}]})});
+  if(!r.ok) throw new Error(errorIA(r.status));
+  const d=await r.json();
+  return (d.content||[]).map(x=>x.text||'').join('\n');
+}
+function errorIA(st){
+  if(st===401||st===403||st===400) return 'La clave no sirve o no tiene permiso. Revisala en Ajustes → Lector con IA.';
+  if(st===429) return 'Se pasó el límite de uso de la clave. Probá en un rato.';
+  if(st===402) return 'La clave no tiene saldo.';
+  return 'El servicio de IA no respondió (código '+st+').';
+}
+function configurarIA(){
+  closeCfg();
+  const act=lsGet(SK_IA);
+  const k=prompt('Lector con IA para letra a mano.\n\nPegá tu clave:\n• Gratis: de Google AI Studio (empieza con AIza)\n• O de Anthropic (empieza con sk-ant-)\n\nQueda guardada solo en este celular. Dejá vacío para quitarla.',act||'');
+  if(k===null) return;
+  const v=k.trim();
+  if(!v){lsDel(SK_IA);actualizarIAEst();showToast('Lector con IA desactivado');return;}
+  if(!/^(AIza|sk-ant-)/.test(v)){showToast('Esa clave no parece válida (AIza… o sk-ant-…)',true);return;}
+  lsSet(SK_IA,v);actualizarIAEst();showToast('Lector con IA activado ✓');
+}
+function actualizarIAEst(){const e=document.getElementById('iaEst');if(e)e.textContent=lsGet(SK_IA)?'Activado ✓ (lee letra a mano)':'Sin activar · tocá para configurar';}
+
 // ── LISTA DE DIRECCIONES DESDE UNA FOTO (OCR en el celular con Tesseract, gratis)
 let _tessP=null;
 function cargarTesseract(){
@@ -1444,6 +1504,19 @@ async function ocrArchivo(input){
   txt.value='';ok.disabled=true;dlg.classList.add('show');
   document.getElementById('ocrBar').style.display='block';
   try{
+    const claveIA=lsGet(SK_IA);
+    if(claveIA){
+      ocrEstado('Leyendo la lista con IA (aguantá unos segundos)…',.4);
+      try{
+        const t=await leerConIA(file,claveIA);
+        txt.value=t.split(/\r?\n/).map(l=>l.replace(/^[\s\-•*]+/,'').replace(/^\d{1,3}\s*[.)]\s+(?=\D)/,'').trim()).filter(l=>l.length>=4).join('\n');
+        ocrEstado(txt.value?'Listo. Revisá el texto y corregí lo que haga falta.':'La IA no encontró direcciones. Probá con otra foto.',1);
+        ok.disabled=false;return;
+      }catch(e){
+        console.error('ia:',e);
+        ocrEstado((e&&e.message?e.message:'Error con la IA')+' Probando con el lector común…',.1);
+      }
+    }
     ocrEstado('Preparando la foto…',.03);
     const canvas=await prepararFotoOCR(file);
     ocrEstado('Cargando el lector (la primera vez baja unos 10 MB)…',.06);
@@ -1546,7 +1619,7 @@ async function exportarCopia(){
     const datos={};
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
-      if(k&&k.startsWith('sube:')&&k!==SK_DRV_ON&&k!==SK_DRV_USER) datos[k]=localStorage.getItem(k);
+      if(k&&k.startsWith('sube:')&&k!==SK_DRV_ON&&k!==SK_DRV_USER&&k!==SK_IA) datos[k]=localStorage.getItem(k);
     }
     const fotos={};
     for(const id of Object.keys(visits||{})){
@@ -2466,7 +2539,7 @@ function elegirAppNav(){
   mostrarDlgEnvio('¿Con qué app querés navegar? Funciona también en la pantalla del auto (Apple CarPlay / Android Auto) si el celular está conectado.',
     Object.keys(NAV_APPS).map(k=>({txt:(appNav()===k?'✓ ':'')+NAV_APPS[k].nombre,cls:appNav()===k?'ba':'bd',fn:()=>{lsSet('sube:nav',k);mostrarAppNav();showToast('Navegación con '+NAV_APPS[k].nombre);}})).concat([{txt:'Cancelar',cls:'bd'}]));
 }
-mostrarAppNav();
+mostrarAppNav();actualizarIAEst();
 
 function distKm(a,b,c,d){
   const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b);
@@ -3601,7 +3674,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 10';
+const APP_VERSION='2026-10-11 · 11';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3679,7 +3752,7 @@ setTimeout(go,2500);})();</script>
     <div id="ocrEst" style="font-size:12px;color:var(--text-mute);margin-bottom:10px;line-height:1.5"></div>
     <div id="ocrBar" style="height:6px;border-radius:6px;background:rgba(120,150,200,.25);overflow:hidden;margin-bottom:10px"><div id="ocrBarIn" style="height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#60a5fa);transition:width .3s"></div></div>
     <textarea id="ocrTxt" rows="9" spellcheck="false" style="width:100%;border-radius:12px;border:1px solid var(--line-2);background:rgba(255,255,255,.55);color:inherit;font:13px/1.5 'Inter Tight',sans-serif;padding:10px;resize:vertical" placeholder="Una dirección por línea"></textarea>
-    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.<br><b>Letra a mano:</b> la foto no la lee bien. En el iPhone tocá y mantené sobre la caja → <b>Escanear texto</b> (cámara) y apuntá a tu lista: ese lector de Apple sí lee letra manuscrita.</div>
+    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.<br><b>Letra a mano:</b> activá el <b>Lector con IA</b> en ⚙ Ajustes (con una clave gratis de Google) y la foto se lee bien.</div>
     <div style="display:grid;gap:8px">
       <button class="btn ba" id="ocrOk" onclick="ocrArmarRuta()">Armar la ruta</button>
       <button class="btn bd" onclick="ocrCerrar()">Cancelar</button>
