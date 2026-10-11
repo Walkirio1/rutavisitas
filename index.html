@@ -1343,6 +1343,8 @@ let markersLayer = null;
 let miUbicLayer = null;
 let ubicando = null;      // índice en puntos[] del punto que se está ubicando a mano
 let sinGeoAbierto = false;
+let manualQ = {};          // texto escrito en el buscador manual, por índice de punto
+let manualRes = {};        // resultados de la búsqueda manual, por índice de punto
 let geocodingInProgress = false;
 
 // Iconos SVG para los pins
@@ -1380,7 +1382,7 @@ function initMapa(){
     ubicando=null;
     mapa.getContainer().style.cursor='';
     if(!pt) return;
-    pt.lat=e.latlng.lat;pt.lng=e.latlng.lng;pt.geoErr=null;
+    pt.lat=e.latlng.lat;pt.lng=e.latlng.lng;pt.geoErr=null;pt.geoProbadas=null;
     lsSet(SK.puntos,puntos);
     showToast('✓ Ubicado: '+(pt.nombre||pt.dir));
     renderMapa();
@@ -1410,7 +1412,13 @@ function renderMapa(noFit){
         <div style="font-weight:700;color:#e8edf5">${escapeHtml(p.nombre||'(sin nombre)')} <span style="color:#94a3b8;font-weight:500">· ID ${escapeHtml(p.id)}</span></div>
         <div style="color:#cbd5e1;margin:2px 0">📍 ${escapeHtml(p.dir)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
         <div style="color:#94a3b8;margin-bottom:6px">Motivo: ${escapeHtml(p.geoErr||'pendiente de geocodificar')}${p.geoProbadas&&p.geoProbadas.length?'<br>Probé: '+escapeHtml(p.geoProbadas.join(' · ')):''}</div>
-        <button class="sm sma" onclick="ubicarManual(${i})">📍 Ubicar tocando el mapa</button>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <input type="text" value="${escapeHtml(manualQ[i]!==undefined?manualQ[i]:(p.dir||''))}" placeholder="Corregí la dirección o escribí el nombre del lugar"
+                 oninput="manualQ[${i}]=this.value" onkeydown="if(event.key==='Enter')buscarManual(${i})" style="flex:1;min-width:0"/>
+          <button class="sm sma" onclick="buscarManual(${i})">🔎 Buscar</button>
+        </div>
+        ${htmlResultadosManual(i)}
+        <button class="sm smh" onclick="ubicarManual(${i})">📍 Ubicar tocando el mapa</button>
       </div>`;
     }).join('');
     pendList.innerHTML=`<div class="geo-pend">
@@ -1452,6 +1460,78 @@ function renderMapa(noFit){
   }else if(bounds.length>1){
     mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
   }
+}
+
+// Resultados de la búsqueda manual de un punto
+function htmlResultadosManual(i){
+  const r=manualRes[i];
+  if(r===undefined) return '';
+  if(r==='buscando') return '<div style="color:#94a3b8;margin-bottom:6px">⏳ Buscando…</div>';
+  if(r==='sinred')   return '<div style="color:#f59e0b;margin-bottom:6px">Sin conexión: probá de nuevo en un momento</div>';
+  if(!r.length)      return '<div style="color:#f59e0b;margin-bottom:6px">No encontré nada. Probá con otra forma de escribirla o tocá el mapa.</div>';
+  return '<div style="margin-bottom:6px;color:#94a3b8">Elegí el correcto:'+r.map((x,j)=>
+    `<button class="sm smh" style="display:block;width:100%;text-align:left;margin-top:5px;white-space:normal" onclick="elegirResultado(${i},${j})">📍 ${escapeHtml(x.label)}</button>`
+  ).join('')+'</div>';
+}
+
+// Busca candidatos para un texto libre (dirección corregida o nombre del lugar), siempre dentro de Rosario
+async function buscarCandidatos(texto){
+  const out=[],vistos=new Set();
+  let hubo=false;
+  const add=(lat,lng,label)=>{
+    if(lat==null||lng==null||!enRosario(lat,lng)) return;
+    const k=lat.toFixed(4)+','+lng.toFixed(4);
+    if(vistos.has(k)) return;
+    vistos.add(k);out.push({lat,lng,label});
+  };
+  const {calle,altura}=partirDireccion(texto);
+  const cands=calle?variantesCalle(calle):[];
+  for(const c of cands.slice(0,4)){
+    try{
+      const url='https://apis.datos.gob.ar/georef/api/direcciones?max=3&provincia=Santa%20Fe&localidad_censal=Rosario&direccion='+encodeURIComponent(c+(altura?' '+altura:''));
+      const d=await fetchJson(url);hubo=true;
+      for(const r of (d&&d.direcciones)||[]){
+        const u=r.ubicacion;
+        if(u){
+          const et=r.nomenclatura||(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura));
+          add(u.lat,u.lon,/rosario/i.test(et)?et:et+', Rosario');
+        }
+      }
+    }catch(e){console.warn('manual georef:',e);}
+  }
+  const b=ROSARIO_BOX,vb=[b.lngMin,b.latMax,b.lngMax,b.latMin].join(',');
+  const pedidos=['&q='+encodeURIComponent(texto+', Rosario, Santa Fe')];
+  if(cands[0]) pedidos.unshift('&street='+encodeURIComponent((altura?altura+' ':'')+cands[0])+'&city=Rosario&state=Santa%20Fe');
+  for(const extra of pedidos){
+    try{
+      await esperarOsm();
+      const d=await fetchJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ar&bounded=1&viewbox='+vb+extra);hubo=true;
+      for(const r of d||[]) add(parseFloat(r.lat),parseFloat(r.lon),(r.display_name||'').split(',').slice(0,4).join(','));
+    }catch(e){console.warn('manual nominatim:',e);}
+  }
+  return {lista:out.slice(0,6),hubo};
+}
+
+async function buscarManual(i){
+  const pt=puntos[i];if(!pt) return;
+  const texto=(manualQ[i]!==undefined?manualQ[i]:pt.dir||'').trim();
+  if(!texto){showToast('Escribí una dirección o un lugar',true);return;}
+  manualRes[i]='buscando';renderMapa(true);
+  const {lista,hubo}=await buscarCandidatos(texto);
+  manualRes[i]=lista.length?lista:(hubo?[]:'sinred');
+  renderMapa(true);
+}
+
+// Al elegir un resultado el punto sale de "sin ubicación" y aparece en el mapa
+function elegirResultado(i,j){
+  const pt=puntos[i],x=manualRes[i]&&manualRes[i][j];
+  if(!pt||!x) return;
+  pt.lat=x.lat;pt.lng=x.lng;pt.geoErr=null;pt.geoProbadas=null;pt.geoUsada='manual: '+x.label;
+  delete manualRes[i];delete manualQ[i];
+  lsSet(SK.puntos,puntos);
+  renderMapa();
+  mapa.setView([pt.lat,pt.lng],17);
+  showToast('✓ Ubicado en el mapa: '+(pt.nombre||pt.dir));
 }
 
 function toggleSinGeo(){sinGeoAbierto=!sinGeoAbierto;renderMapa(true);}
@@ -2329,7 +2409,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · g';
+const APP_VERSION='2026-10-11 · h';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
