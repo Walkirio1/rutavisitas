@@ -529,8 +529,9 @@ input[type=checkbox]:checked::after{transform:translateX(20px)}
 
 /* ═══════════ Fondos de cristal (imagen desenfocada + velo para que el texto se lea) ═══════════ */
 body,:root[data-theme="light"] body{background:transparent!important}
-:root[data-theme="light"]::before{background:linear-gradient(180deg,rgba(247,251,255,.34),rgba(240,247,253,.22)),url(icons/bg-claro.webp) center/cover no-repeat}
-:root[data-theme="dark"]::before{background:linear-gradient(180deg,rgba(4,9,22,.34),rgba(3,7,18,.26)),url(icons/bg-oscuro.webp) center/cover no-repeat}
+:root[data-theme="dark"]{--glass-bg:rgba(14,25,52,.72)}
+:root[data-theme="light"]::before{background:linear-gradient(180deg,rgba(247,251,255,.16),rgba(240,247,253,.08)),url(icons/bg-claro.webp) center/cover no-repeat}
+:root[data-theme="dark"]::before{background:linear-gradient(180deg,rgba(4,9,22,.26),rgba(3,7,18,.2)),url(icons/bg-oscuro.webp) center/cover no-repeat}
 </style>
 </head>
 <body>
@@ -3207,7 +3208,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · t';
+const APP_VERSION='2026-10-11 · u';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
