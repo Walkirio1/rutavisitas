@@ -5,7 +5,9 @@ const POS_FIRMA={final:'Posición: pegada al final de la planilla',pie_izq:'Posi
 let plExtra={}; // valores de la visita que se está completando: {idCampo: valor}
 
 function camposActivos(){
-  return modoPlanilla()==='general'?((plantilla().campos)||[]):[];
+  if(modoPlanilla()==='general') return (plantilla().campos)||[];
+  if(firmaDePlanillaPdf()) return [{id:'firma_pdf',tipo:'firma',etiqueta:'Firma',obligatorio:false,pos:'final'}]; // planilla PDF con firma
+  return [];
 }
 function idCampoNuevo(){return 'f'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);}
 

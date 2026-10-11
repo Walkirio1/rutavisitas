@@ -25,7 +25,7 @@ function renderPlanillas(){
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha,hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.firma?' · ✍️ con firma':''),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
@@ -65,6 +65,7 @@ function guardarNuevaPlanilla(){
   document.getElementById('pdfDropZone').style.display='';
   document.getElementById('pdfOkZone').style.display='none';
   renderPlanillas();showToast(`Planilla "${nombre}" guardada ✓`);
+  setTimeout(()=>preguntarFirmaPlanilla(np[0].id),600);
 }
 
 function borrarPlanilla(id){

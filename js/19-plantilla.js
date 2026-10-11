@@ -101,7 +101,7 @@ function plEdRestablecer(){
 function plEdCerrar(){document.getElementById('plEditDlg').classList.remove('show');}
 
 // Recorta el espacio en blanco de la firma y la dibuja a 2,25 veces el tamaño que tenía al principio (+50 % sobre el último ajuste) en la misma caja
-async function firmaRecortada(doc,dataUrl,cajaW,cajaH){
+async function firmaRecortada(doc,dataUrl,cajaW,cajaH,ajustar){
   const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=dataUrl;});
   const cw=img.naturalWidth,ch=img.naturalHeight;
   const c=document.createElement('canvas');c.width=cw;c.height=ch;
@@ -116,6 +116,7 @@ async function firmaRecortada(doc,dataUrl,cajaW,cajaH){
   r.getContext('2d').drawImage(c,x0,y0,bw,bh,0,0,bw,bh);
   const im=await doc.embedPng(Uint8Array.from(atob(r.toDataURL('image/png').split(',')[1]),ch2=>ch2.charCodeAt(0)));
   // escala de antes: la imagen entera entraba en la caja; ahora la tinta mide 2,25 veces lo que medía
+  if(ajustar){const e2=Math.min(cajaW/bw,cajaH/bh);return {im,w:bw*e2,h:bh*e2};} // firma que entra justo en un recuadro elegido por el usuario
   const s0=Math.min(cajaH/ch,cajaW/cw),esc=s0*2.25;
   let w=bw*esc,h=bh*esc;
   const tope=cajaW*2.25;if(w>tope){h*=tope/w;w=tope;}
