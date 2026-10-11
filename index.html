@@ -666,6 +666,8 @@ html{scroll-behavior:smooth}
 .gate::after{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.36) 0,rgba(255,255,255,.07) 18%,rgba(52,211,153,.12) 55%,rgba(52,211,153,.05) 100%)!important}
 .gate::before,.gate::after{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 @media (prefers-reduced-motion:reduce){.gate .gb{animation:none!important}}
+.plbr .plgo{grid-column:1/-1}
+.plbt.plsv{font-size:12px;background:linear-gradient(180deg,#fff,#e8f1fe);color:#1d4fb8;border:1px solid #bcd3f5;box-shadow:0 6px 14px -8px rgba(37,99,235,.5)}
 </style>
 </head>
 <body>
@@ -993,6 +995,7 @@ html{scroll-behavior:smooth}
     </div>
     <div class="plbr">
       <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">💾 Guardar visita</button>
+      <button class="plbt plsv" id="btnSoloGuardar" onclick="guardarVisita(true)">💾 Solo guardar</button>
       <button class="plbt plcl" onclick="closeOv()"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg> Cancelar</button>
     </div>
   </div>
@@ -1790,6 +1793,8 @@ function openPl(id){
 
   // Con Drive conectado el botón también envía: se llama "Enviar"
   const bg=document.getElementById('btnGuardarVisita');
+  const bs=document.getElementById('btnSoloGuardar');
+  if(bs) bs.style.display=drv.connected?'':'none'; // sin Drive, el botón principal ya solo guarda
   if(bg) bg.innerHTML=drv.connected?(v.done?'☁️ Reenviar':'☁️ Enviar visita'):'💾 Guardar visita';
 
   document.getElementById('ov').classList.add('show');
@@ -1832,14 +1837,14 @@ async function pdfParaVisita(){
   catch(e){console.error('planilla predeterminada:',e);return {b64:null,nombre:'Planilla_Verificaciones.pdf'};}
 }
 
-async function guardarVisita(){
+async function guardarVisita(soloGuardar){
   const chC=CN.map((_,i)=>!!plC['c'+i]);
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
   const previa=visits[curId]&&visits[curId].planilla; // si se está editando una visita ya hecha, se conserva su fecha y hora
   if(!visits[curId])visits[curId]={};
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
-  if(drv.connected){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
+  if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
     chC,chV,ti,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
@@ -1849,12 +1854,14 @@ async function guardarVisita(){
   guardarVisits();
   if(fotoData){ const idv=curId; guardarFotoSegura(idv,fotoData).then(ok=>{if(ok)guardarVisits();}); }
   else{ fotoDel(curId); fotosEnIDB.delete(String(curId)); }
-  renderV();updStats();closeOv();showToast('Visita guardada ✓');
+  renderV();updStats();closeOv();showToast(soloGuardar?'Visita guardada (sin enviar) ✓':'Visita guardada ✓');
 
   // Enviar a Drive; si no se puede, queda pendiente y se avisa
   const idv=curId;
   const punto = puntos.find(p=>p.id===idv);
-  if(punto){
+  if(soloGuardar){
+    // solo guardada en la app: no se envía ni queda pendiente
+  }else if(punto){
     if(drv.connected){
       subirVisitaADrive(punto, visits[idv], pdfActivoB64, pdfActivoNombre)
         .then(ok=>{if(!ok)avisarNoEnviado(idv);})
@@ -3357,7 +3364,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 2';
+const APP_VERSION='2026-10-11 · 3';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
