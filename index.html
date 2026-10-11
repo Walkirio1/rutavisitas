@@ -822,6 +822,7 @@ html{scroll-behavior:smooth}
       <div style="font-size:22px;margin-bottom:4px">📷</div>
       <div style="font-size:12px;color:var(--text-mute)">O sacale foto a una lista de direcciones</div>
     </label>
+    <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()">✍️ Escribir o pegar una lista (letra a mano)</button>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span class="stit" style="margin:0">Lista de puntos</span>
       <div style="display:flex;gap:6px;align-items:center">
@@ -1427,6 +1428,13 @@ async function prepararFotoOCR(file){
 function ocrEstado(msg,pct){
   const e=document.getElementById('ocrEst');if(e)e.textContent=msg;
   const b=document.getElementById('ocrBarIn');if(b&&pct!=null)b.style.width=Math.round(pct*100)+'%';
+}
+function ocrEscribir(){
+  const dlg=document.getElementById('ocrDlg'),txt=document.getElementById('ocrTxt');
+  txt.value='';document.getElementById('ocrOk').disabled=false;
+  document.getElementById('ocrBar').style.display='none';
+  ocrEstado('Escribí o pegá una dirección por línea (calle y altura).',null);
+  dlg.classList.add('show');setTimeout(()=>txt.focus(),300);
 }
 function ocrCerrar(){document.getElementById('ocrDlg').classList.remove('show');}
 async function ocrArchivo(input){
@@ -3593,7 +3601,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 9';
+const APP_VERSION='2026-10-11 · 10';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3671,7 +3679,7 @@ setTimeout(go,2500);})();</script>
     <div id="ocrEst" style="font-size:12px;color:var(--text-mute);margin-bottom:10px;line-height:1.5"></div>
     <div id="ocrBar" style="height:6px;border-radius:6px;background:rgba(120,150,200,.25);overflow:hidden;margin-bottom:10px"><div id="ocrBarIn" style="height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#60a5fa);transition:width .3s"></div></div>
     <textarea id="ocrTxt" rows="9" spellcheck="false" style="width:100%;border-radius:12px;border:1px solid var(--line-2);background:rgba(255,255,255,.55);color:inherit;font:13px/1.5 'Inter Tight',sans-serif;padding:10px;resize:vertical" placeholder="Una dirección por línea"></textarea>
-    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.</div>
+    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.<br><b>Letra a mano:</b> la foto no la lee bien. En el iPhone tocá y mantené sobre la caja → <b>Escanear texto</b> (cámara) y apuntá a tu lista: ese lector de Apple sí lee letra manuscrita.</div>
     <div style="display:grid;gap:8px">
       <button class="btn ba" id="ocrOk" onclick="ocrArmarRuta()">Armar la ruta</button>
       <button class="btn bd" onclick="ocrCerrar()">Cancelar</button>
