@@ -89,6 +89,16 @@ async function detectarCampos(pdf){
       if(!/\$\s*[_\.]*\s*$/.test(s.s.trim())) continue;
       const solo=s.s.replace(/[$_\.\s:]/g,'').length===0;
       let nom='Importe';
+      const hermanos=frases.filter(q=>q!==s&&/\$\s*[_\.]*\s*$/.test(q.s.trim())&&Math.abs(q.y-s.y)<=3);
+      if(hermanos.length){ // varias columnas de importes en la misma fila: nombre de la fila + encabezado de la columna
+        const fil=frases.filter(q=>Math.abs(q.y-s.y)<=3&&!/\$/.test(q.s)&&q.x+q.w<=Math.min(s.x,...hermanos.map(h=>h.x))+2).sort((a,b)=>a.x-b.x)[0];
+        const enc=frases.filter(q=>q.y>s.y&&q.y-s.y<120&&Math.abs(q.x+q.w/2-(s.x+s.w/2))<70&&q.s.length<28&&!/\$/.test(q.s)).sort((a,b)=>a.y-b.y)[0];
+        const col=enc?limpiarEt(enc.s):'Importe '+(1+[s,...hermanos].sort((a,b)=>a.x-b.x).indexOf(s));
+        nom=(fil?limpiarEt(fil.s)+' · ':'')+col;usadas.add(s);if(fil)usadas.add(fil);if(enc)usadas.add(enc);
+        const x=s.x+s.w+3,w=Math.max(40,Math.min(90,vp.width-30-x));
+        campos.push({id:nid(),tipo:/total|suma|puntaje/i.test(nom)?'suma':'numero',moneda:true,etiqueta:nom,pag:p,x,y:s.y-2.5,w,h:14});
+        continue;
+      }
       if(!solo){const n=limpiarEt(s.s.replace(/\$/g,'').trim());if(n.length>=2) nom=n;usadas.add(s);}
       else{
         const izq=frases.filter(q=>q!==s&&Math.abs(q.y-s.y)<=4&&q.x+q.w<=s.x+2&&s.x-(q.x+q.w)<260).sort((a,b)=>(b.x+b.w)-(a.x+a.w))[0];
@@ -114,15 +124,20 @@ async function detectarCampos(pdf){
       if(/total|puntaje|suma/i.test(base)){campos.push({id:nid(),tipo:'suma',etiqueta:base,pag:p,x,y:s.y-2.5,w:Math.min(w,60),h:14});continue;}
       if(base.length>=3&&base.length<=40) campos.push({id:nid(),tipo:/cantidad|n[uú]mero|importe|monto|edad|\bn[°º]/i.test(base)?'numero':'texto',etiqueta:base,pag:p,x,y:s.y-2.5,w,h:14});
     }
+    const hs=frases.map(f=>f.h).sort((a,b)=>a-b),hMed=hs[Math.floor(hs.length/2)]||10;
     // sección de cada campo: el título (en mayúsculas) más cercano por encima
-    const pcs=campos.filter(k=>k.pag===p),tits=frases.filter(s=>!usadas.has(s)&&esTituloSec(s.s)&&!pcs.some(k=>Math.abs(k.y-s.y)<8));
+    const pcs=campos.filter(k=>k.pag===p),tits=frases.filter(s=>!usadas.has(s)&&esTituloSec(s,hMed)&&!pcs.some(k=>Math.abs(k.y-s.y)<8));
     pcs.forEach(k=>{const e=tits.filter(s=>s.y>=k.y+Math.min(k.h,16)-2).sort((a,b)=>a.y-b.y)[0];if(e) k.seccion=limpiarEt(e.s);});
   }
   // lo que queda sin título en una hoja sigue en la sección de la anterior
   let ult='';campos.forEach(k=>{if(k.seccion) ult=k.seccion;else if(ult&&!campos.some(o=>o.pag===k.pag&&o.seccion)) k.seccion=ult;});
   return campos;
 }
-function esTituloSec(t){t=t.trim();return t.length>=3&&t.length<=45&&!/[:_]\s*$/.test(t)&&!/\d{3,}/.test(t)&&/[A-ZÁÉÍÓÚÑ]{3}/.test(t)&&t===t.toUpperCase();}
+function esTituloSec(f,hMed){ // título de sección: todo en mayúsculas, o con letra más grande que el resto
+  const t=f.s.trim();
+  if(t.length<3||t.length>45||/[:_]\s*$/.test(t)||/\d{3,}/.test(t)||!/[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}/.test(t)) return false;
+  return (/[A-ZÁÉÍÓÚÑ]{3}/.test(t)&&t===t.toUpperCase())||f.h>=hMed*1.2;
+}
 
 // ── PDF rellenable (con campos reales de formulario)
 async function camposDeFormulario(bytes,pdf){

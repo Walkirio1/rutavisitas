@@ -26,7 +26,7 @@ function renderPlanillas(){
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button>${planillas.some(o=>o.id!==pl.id&&o.campos&&o.campos.length)?`<button class="sm smh" onclick="cpAbrir('${pl.id}')">📋 Copiar</button>`:''}<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
@@ -251,3 +251,23 @@ function closeOv(){
 }
 // Cerrar la planilla con ESC (en PC)
 /* (se ejecuta al final, en js/99-arranque.js) */
+
+// Copiar los campos de otra planilla (para planillas parecidas: no se prepara una por una)
+let _cpDest=null;
+function cpAbrir(id){
+  _cpDest=id;const dest=planillas.find(p=>p.id===id);
+  const fuentes=planillas.filter(p=>p.id!==id&&p.campos&&p.campos.length);
+  document.getElementById('cpTxt').textContent='Elegí de cuál planilla copiar los campos para «'+dest.nombre+'».'+(dest.campos&&dest.campos.length?' Los que tiene ahora se reemplazan.':'')+' Después podés ajustarlos en 🧩 Campos.';
+  document.getElementById('cpLista').innerHTML=fuentes.map(p=>`<button class="btn ba" onclick="cpHacer('${p.id}')">${escapeHtml(p.nombre)} · ${p.campos.length} campos</button>`).join('');
+  document.getElementById('cpDlg').classList.add('show');
+}
+function cpCerrar(){document.getElementById('cpDlg').classList.remove('show');}
+function cpHacer(idOrigen){
+  const o=planillas.find(p=>p.id===idOrigen),d=planillas.find(p=>p.id===_cpDest);if(!o||!d) return;
+  let n=0;d.campos=o.campos.map(c=>({...c,id:'c'+Date.now().toString(36)+(n++)}));
+  // las sumas que apuntan a otros campos se reenlazan a las copias
+  const mapa={};o.campos.forEach((c,i)=>{mapa[c.id]=d.campos[i].id;});
+  d.campos.forEach(c=>{if(Array.isArray(c.suma)) c.suma=c.suma.map(x=>mapa[x]||x);});
+  delete d.firma;lsSet(SK.planillas,planillas);cpCerrar();renderPlanillas();
+  showToast('Campos copiados ✓ ('+d.campos.length+')');
+}
