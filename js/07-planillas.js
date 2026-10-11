@@ -11,21 +11,22 @@ function renderPlanillas(){
   const plEmpty=document.getElementById('plEmpty');
   document.getElementById('plCount').textContent=planillas.length?`(${planillas.length}/10)`:'';
   plEmpty.style.display='none';
-  const fila=(nombre,sub,activa,onclick,extra)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--bg-2);border:1px solid ${activa?'rgba(16,185,129,.5)':'var(--line-2)'};border-radius:11px;margin-bottom:6px">
+  const fila=(nombre,sub,activa,onclick,extra,abajo)=>`
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:11px 13px;background:var(--bg-2);border:1px solid ${activa?'rgba(16,185,129,.5)':'var(--line-2)'};border-radius:11px;margin-bottom:6px">
       <span style="flex-shrink:0"><svg class="ico" style="width:30px;height:30px"><use href="#i-file"/></svg></span>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:110px">
         <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(nombre)}</div>
         <div style="font-size:10px;color:var(--text-mute);margin-top:2px">${sub}</div>
       </div>
-      ${activa?'<span style="font-size:11px;color:#10b981;font-weight:700">✓ En uso</span>':`<button class="sm sma" onclick="${onclick}">Usar</button>`}
+      ${activa?'<span style="font-size:11px;color:#10b981;font-weight:700;white-space:nowrap">✓ En uso</span>':`<button class="sm sma" onclick="${onclick}">Usar</button>`}
       ${extra||''}
+      ${abajo?`<div style="flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap">${abajo}</div>`:''}
     </div>`;
   const hayDef=plDefId&&planillas.some(x=>x.id===plDefId),modo=modoPlanilla();
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;

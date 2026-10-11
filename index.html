@@ -390,8 +390,6 @@
       <div id="plVenta"></div>
 
       <div class="plsec" id="plExtraTit" style="display:none">Datos adicionales</div>
-      <div id="plHojaBar" style="display:none;display:none"><button class="sm smh" id="plHojaToggle" onclick="hvToggleVista()">☰ Ver como lista</button><button class="sm smh" onclick="hvZoom(.8)">🔍 −</button><button class="sm smh" onclick="hvZoom(1.25)">🔍 +</button></div>
-      <div id="plHojaBox" style="display:none"></div>
       <div id="plExtraBox"></div>
 
       <!-- OBS -->
@@ -457,7 +455,6 @@
 <script src="js/21-firma-pdf.js"></script>
 <script src="js/22-disenador-pdf.js"></script>
 <script src="js/23-detector-pdf.js"></script>
-<script src="js/24-hoja-visita.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -615,13 +612,6 @@ setTimeout(go,2500);})();</script>
       <button class="btn bd" onclick="revAjustar()">Ajustar sobre la hoja</button>
       <button class="btn bd" onclick="revCerrar()">Cancelar</button>
     </div>
-  </div>
-</div>
-<div class="dlg alto" id="hvEdDlg">
-  <div class="dlgw" style="max-width:340px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:10px" id="hvEdTit">Campo</div>
-    <div style="display:flex;align-items:center;gap:8px"><span id="hvEdMon" style="font-size:24px;font-weight:800;color:#0d2a78;display:none">$</span><input class="pli" id="hvEdIn" type="text" style="flex:1" onkeydown="if(event.key==='Enter')hvEdListo()"></div>
-    <div style="display:grid;gap:8px;margin-top:12px"><button class="btn ba" onclick="hvEdListo()">Listo</button><button class="btn bd" onclick="document.getElementById('hvEdDlg').classList.remove('show')">Cancelar</button></div>
   </div>
 </div>
 <div class="dlg" id="envioDlg">
