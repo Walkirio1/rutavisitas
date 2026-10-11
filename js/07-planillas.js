@@ -171,6 +171,8 @@ function confirmarDesmarcar(){
 }
 
 async function guardarVisita(soloGuardar,confirmado){
+  const modoLocal=lsGet(SK_MODO)==='local'&&!drv.connected;
+  if(modoLocal) soloGuardar=true; // sin cuenta de Google no hay envío a Drive
   // Editando una visita ya hecha y sin nada marcado ni escrito: probablemente se marcó por error
   const yaHecha=visits[curId]&&visits[curId].done;
   if(yaHecha&&!confirmado&&!Object.values(plC).some(Boolean)&&!document.getElementById('plO').value.trim()&&!fotoData){
@@ -204,6 +206,10 @@ async function guardarVisita(soloGuardar,confirmado){
   const punto = puntos.find(p=>p.id===idv);
   if(soloGuardar){
     // solo guardada en la app: no se envía ni queda pendiente
+    if(modoLocal) mostrarDlgEnvio('Visita guardada en la app. ¿Querés guardar también el PDF y la foto en el celular?',[
+      {txt:'📂 Guardar en el celular',cls:'ba',fn:()=>guardarEnCelular([idv])},
+      {txt:'Más tarde',cls:'bd'}
+    ]);
   }else if(punto){
     if(drv.connected){
       subirVisitaADrive(punto, visits[idv], pdfActivoB64, pdfActivoNombre)
