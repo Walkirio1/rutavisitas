@@ -67,7 +67,8 @@ function pintarMarcas(){
     }
     if(c.pag===_ds.pag){
       const t=TOOLS_DS[c.tipo]||TOOLS_DS.texto,sel=_ds.sel&&_ds.sel.i===i&&_ds.sel.parte==='campo';
-      h+=`<div class="ds-m ds-${c.tipo}${sel?' ds-sel':''}" data-i="${i}" data-p="campo" style="--c:${t.c};${pos(c)}"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span>${sel?manijas():''}</div>`;
+      const gr=_ds.todos&&_ds.grupo&&_ds.grupo.includes(i);
+      h+=`<div class="ds-m ds-${c.tipo}${sel?' ds-sel':''}${gr?' ds-grupo':''}" data-i="${i}" data-p="campo" style="--c:${t.c};${pos(c)}"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span>${sel?manijas():''}</div>`;
     }
     return h;
   }).join('');
@@ -78,18 +79,30 @@ function pintarMarcas(){
     acc.style.display='';
     document.getElementById('dsAccTxt').textContent=_ds.sel.parte==='zona'?'Zona de suma: arrastrá las esquinas para cubrir los números y movela con un dedo':'«'+(c.etiqueta||'campo')+'»: arrastrá una esquina para darle la forma que quieras';
     document.getElementById('dsAccEd').style.display=_ds.sel.parte==='zona'?'none':'';
+    const bt=document.getElementById('dsAccTodos'),n=(_ds.grupo||[]).length;
+    bt.style.display=n>1?'':'none';bt.textContent='👥 Editar todos ('+n+')';bt.classList.toggle('sma',!!_ds.todos);bt.classList.toggle('smh',!_ds.todos);
   }else acc.style.display='none';
 }
+// campos del mismo tipo alineados con el elegido (misma fila o misma columna): se pueden editar todos juntos
+function calcGrupo(){
+  _ds.grupo=[];
+  if(!_ds.sel||_ds.sel.parte!=='campo') return;
+  const s=_ds.campos[_ds.sel.i],mismos=_ds.campos.map((c,i)=>i).filter(i=>{const c=_ds.campos[i];return c.pag===s.pag&&c.tipo===s.tipo;});
+  const fila=mismos.filter(i=>Math.abs(_ds.campos[i].y-s.y)<=6),col=mismos.filter(i=>Math.abs(_ds.campos[i].x-s.x)<=6);
+  const g=fila.length>=col.length?fila:col;
+  _ds.grupo=g.length>1?g:[];
+}
 const manijas=()=>['nw','ne','sw','se'].map(k=>`<i class="ds-h ${k}" data-h="${k}"></i>`).join('');
-function dsSel(i,parte){_ds.sel=i===null?null:{i,parte:parte||'campo'};pintarMarcas();}
+function dsSel(i,parte){_ds.sel=i===null?null:{i,parte:parte||'campo'};calcGrupo();pintarMarcas();}
+function dsTodos(){_ds.todos=!_ds.todos;pintarMarcas();}
 function dsAccEditar(){if(_ds.sel) dsEditar(_ds.sel.i);}
 function dsAccBorrar(){
   if(!_ds.sel) return;
   if(_ds.sel.parte==='zona'){delete _ds.campos[_ds.sel.i].zona;}
   else _ds.campos.splice(_ds.sel.i,1);
-  _ds.sel=null;pintarMarcas();
+  _ds.sel=null;_ds.grupo=[];pintarMarcas();
 }
-function dsAccListo(){_ds.sel=null;pintarMarcas();}
+function dsAccListo(){_ds.sel=null;_ds.grupo=[];pintarMarcas();}
 function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c.zona:c;}
 
 // ── Gestos: tocar = seleccionar / agregar · arrastrar una marca = moverla · arrastrar la hoja = desplazarla
@@ -151,11 +164,23 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
       let x0=Math.min(fx,p.x),x1=Math.max(fx,p.x),y0=Math.min(fy,p.y),y1=Math.max(fy,p.y);
       x0=Math.max(0,x0);x1=Math.min(_ds.pw,x1);y0=Math.max(0,y0);y1=Math.min(_ds.ph,y1);
       if(x1-x0<8) x1=x0+8; if(y1-y0<8) y1=y0+8;
-      r.x=x0;r.y=y0;r.w=x1-x0;r.h=y1-y0;pintarMarcas();
+      const w0=r.w,h0=r.h;
+      r.x=x0;r.y=y0;r.w=x1-x0;r.h=y1-y0;
+      if(_ds.todos&&_ds.grupo&&_ds.sel.parte==='campo'){ // todos los alineados toman la misma forma
+        _ds.grupo.forEach(gi=>{if(gi===_ds.sel.i) return;const m=_ds.campos[gi];
+          const nx=down.res.includes('w')?(m.x+m.w)-r.w:m.x,ny=down.res.includes('s')?(m.y+m.h)-r.h:m.y;
+          m.w=r.w;m.h=r.h;m.x=Math.max(0,Math.min(_ds.pw-m.w,nx));m.y=Math.max(0,Math.min(_ds.ph-m.h,ny));});
+      }
+      pintarMarcas();
     }else if(down.m){ // mover la marca
-      if(!_ds.sel||_ds.sel.i!==down.m.i||_ds.sel.parte!==down.m.parte) _ds.sel={i:down.m.i,parte:down.m.parte};
-      const r=rectSel(),p=pt(e.clientX,e.clientY);
-      r.x=Math.max(0,Math.min(_ds.pw-r.w,p.x-down.dx));r.y=Math.max(0,Math.min(_ds.ph-r.h,p.y-down.dy));pintarMarcas();
+      if(!_ds.sel||_ds.sel.i!==down.m.i||_ds.sel.parte!==down.m.parte){_ds.sel={i:down.m.i,parte:down.m.parte};calcGrupo();}
+      const r=rectSel(),p=pt(e.clientX,e.clientY),ox=r.x,oy=r.y;
+      r.x=Math.max(0,Math.min(_ds.pw-r.w,p.x-down.dx));r.y=Math.max(0,Math.min(_ds.ph-r.h,p.y-down.dy));
+      if(_ds.todos&&_ds.grupo&&_ds.sel.parte==='campo'&&_ds.grupo.includes(_ds.sel.i)){ // se mueven todos juntos
+        const dx=r.x-ox,dy=r.y-oy;
+        _ds.grupo.forEach(gi=>{if(gi===_ds.sel.i) return;const m=_ds.campos[gi];m.x=Math.max(0,Math.min(_ds.pw-m.w,m.x+dx));m.y=Math.max(0,Math.min(_ds.ph-m.h,m.y+dy));});
+      }
+      pintarMarcas();
     }else{ // desplazar la hoja
       sc().scrollLeft-=e.clientX-down.lx;sc().scrollTop-=e.clientY-down.ly;
     }
@@ -185,7 +210,7 @@ function dsAgregar(p){
   const c={id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),tipo:_ds.tool,etiqueta:'',pag:_ds.pag,w:t.w,h:t.h,x:p.x-t.w/2,y:p.y-t.h/2};
   c.x=Math.max(0,Math.min(_ds.pw-c.w,c.x));c.y=Math.max(0,Math.min(_ds.ph-c.h,c.y));
   if(c.tipo==='auto') c.fuente='fecha';
-  _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};_ds.tool=null;pintarHerramientas(); // cada toque agrega un solo campo: la herramienta se apaga
+  _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};calcGrupo();_ds.tool=null;pintarHerramientas(); // cada toque agrega un solo campo: la herramienta se apaga
   pintarMarcas();dsEditar(_ds.campos.length-1,true);
 }
 
@@ -261,7 +286,7 @@ function dsEdGuardar(){
   }
   document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
 }
-function dsEdTamano(f){const c=_ds.campos[_dsEdI];if(!c) return;const cx=c.x+c.w/2,cy=c.y+c.h/2;c.w*=f;c.h*=f;c.x=Math.max(0,Math.min(_ds.pw-c.w,cx-c.w/2));c.y=Math.max(0,Math.min(_ds.ph-c.h,cy-c.h/2));pintarMarcas();}
+function dsEdTamano(f){const ids=(_ds.todos&&_ds.grupo&&_ds.grupo.includes(_dsEdI))?_ds.grupo:[_dsEdI];ids.forEach(i=>{const c=_ds.campos[i];if(!c) return;const cx=c.x+c.w/2,cy=c.y+c.h/2;c.w*=f;c.h*=f;c.x=Math.max(0,Math.min(_ds.pw-c.w,cx-c.w/2));c.y=Math.max(0,Math.min(_ds.ph-c.h,cy-c.h/2));});pintarMarcas();}
 function dsEdBorrar(){
   _ds.sel=null;_ds.campos.splice(_dsEdI,1);document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
 }
