@@ -772,9 +772,9 @@ function renderP(){
     const noSel = puntos.filter(p=>!sel.has(p.id)).length;
     const siSel = puntos.length - noSel;
     btnAdd.style.display = noSel>0 ? '' : 'none';
-    btnAdd.textContent = noSel===puntos.length ? '<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Cargar todas a la ruta' : `➕ Cargar ${noSel} restantes`;
+    btnAdd.innerHTML = noSel===puntos.length ? '<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Cargar todas a la ruta' : `<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Cargar ${noSel} restantes`;
     btnRem.style.display = siSel>0 ? '' : 'none';
-    btnRem.textContent = siSel===puntos.length ? '<svg class="ico" style="vertical-align:-2px"><use href="#i-minus"/></svg> Quitar todas' : `➖ Quitar ${siSel} de la ruta`;
+    btnRem.innerHTML = siSel===puntos.length ? '<svg class="ico" style="vertical-align:-2px"><use href="#i-minus"/></svg> Quitar todas' : `<svg class="ico" style="vertical-align:-2px"><use href="#i-minus"/></svg> Quitar ${siSel} de la ruta`;
   }else{
     bulk.style.display='none';
   }
@@ -1327,10 +1327,16 @@ function closeDlg(){document.getElementById('dlg').classList.remove('show');dlgC
 
 // ── TOAST
 // (toastTm ya declarado arriba)
+// Escapa el texto y deja pasar sólo los íconos propios de la app (<svg class="ico" ...><use href="#i-xxx"/></svg>)
+function htmlConIconos(msg){
+  const esc=String(msg).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/&lt;svg class="ico" style="vertical-align:-2px"&gt;&lt;use href="#(i-[a-z-]+)"\/&gt;&lt;\/svg&gt;/g,
+    '<svg class="ico" style="vertical-align:-2px"><use href="#$1"/></svg>');
+}
 function showToast(msg,err){
   if(toastTm)clearTimeout(toastTm);
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.toggle('err',!!err);
+  t.innerHTML=htmlConIconos(msg);t.classList.toggle('err',!!err);
   t.classList.add('show');
   toastTm=setTimeout(()=>t.classList.remove('show'),3000);
 }
@@ -2409,7 +2415,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · h';
+const APP_VERSION='2026-10-11 · i';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
