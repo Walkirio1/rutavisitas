@@ -26,8 +26,9 @@ async function abrirDisenador(id){
     await cargarPdfJs();
     const bin=atob(pl.b64.replace(/\s/g,''));const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
     const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
-    _ds={id,pdf,pag:0,pw:0,ph:0,zoom:1,tool:'tilde',campos:JSON.parse(JSON.stringify(pl.campos||[]))};
+    _ds={id,pdf,pag:0,pw:0,ph:0,zoom:1,tool:'tilde',sel:null,campos:JSON.parse(JSON.stringify(pl.campos||[]))};
     document.getElementById('dsDlg').classList.add('show');
+    document.getElementById('dsHint').style.display=lsGet('sube:dszoomvisto')?'none':'';
     pintarHerramientas();
     await pintarPagDs();
   }catch(e){console.error('diseñador:',e);showToast(e.message||'No se pudo abrir la planilla',true);cerrarDisenador();}
@@ -57,38 +58,116 @@ async function dsHoja(d){const n=Math.max(0,Math.min(_ds.pdf.numPages-1,_ds.pag+
 async function dsZoom(f){_ds.zoom=Math.max(1,Math.min(4,_ds.zoom*f));await pintarPagDs();}
 
 function pintarMarcas(){
-  const lay=document.getElementById('dsMarcas');
+  const lay=document.getElementById('dsMarcas'),pos=(c)=>`left:${c.x/_ds.pw*100}%;top:${(1-(c.y+c.h)/_ds.ph)*100}%;width:${c.w/_ds.pw*100}%;height:${c.h/_ds.ph*100}%`;
   lay.innerHTML=_ds.campos.map((c,i)=>{
-    if(c.pag!==_ds.pag) return '';
-    const t=TOOLS_DS[c.tipo]||TOOLS_DS.texto;
-    return `<div class="ds-m ds-${c.tipo}" data-i="${i}" style="--c:${t.c};left:${c.x/_ds.pw*100}%;top:${(1-(c.y+c.h)/_ds.ph)*100}%;width:${c.w/_ds.pw*100}%;height:${c.h/_ds.ph*100}%"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span></div>`;
+    let h='';
+    if(c.tipo==='suma'&&c.zona&&c.zona.pag===_ds.pag){
+      const z=c.zona,sel=_ds.sel&&_ds.sel.i===i&&_ds.sel.parte==='zona';
+      h+=`<div class="ds-m ds-zona${sel?' ds-sel':''}" data-i="${i}" data-p="zona" style="--c:#d97706;${pos(z)}"><span>Σ zona de suma</span></div>`;
+    }
+    if(c.pag===_ds.pag){
+      const t=TOOLS_DS[c.tipo]||TOOLS_DS.texto,sel=_ds.sel&&_ds.sel.i===i&&_ds.sel.parte==='campo';
+      h+=`<div class="ds-m ds-${c.tipo}${sel?' ds-sel':''}" data-i="${i}" data-p="campo" style="--c:${t.c};${pos(c)}"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span></div>`;
+    }
+    return h;
   }).join('');
   document.getElementById('dsCuenta').textContent=_ds.campos.length+' campo'+(_ds.campos.length===1?'':'s');
+  const acc=document.getElementById('dsAcc');
+  if(_ds.sel){
+    const c=_ds.campos[_ds.sel.i];
+    acc.style.display='';
+    document.getElementById('dsAccTxt').textContent=_ds.sel.parte==='zona'?'Zona de suma: pellizcá para cambiar el tamaño y arrastrala sobre los números':'«'+(c.etiqueta||'campo')+'»: pellizcá con dos dedos para cambiar su tamaño';
+    document.getElementById('dsAccEd').style.display=_ds.sel.parte==='zona'?'none':'';
+  }else acc.style.display='none';
 }
+function dsSel(i,parte){_ds.sel=i===null?null:{i,parte:parte||'campo'};pintarMarcas();}
+function dsAccEditar(){if(_ds.sel) dsEditar(_ds.sel.i);}
+function dsAccBorrar(){
+  if(!_ds.sel) return;
+  if(_ds.sel.parte==='zona'){delete _ds.campos[_ds.sel.i].zona;}
+  else _ds.campos.splice(_ds.sel.i,1);
+  _ds.sel=null;pintarMarcas();
+}
+function dsAccListo(){_ds.sel=null;pintarMarcas();}
+function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c.zona:c;}
 
-// ── Tocar la hoja = nuevo campo; tocar una marca = editarla; arrastrar = moverla
+// ── Gestos: tocar = seleccionar / agregar · arrastrar una marca = moverla · arrastrar la hoja = desplazarla
+//           dos dedos sobre la marca elegida = cambiar su tamaño · dos dedos en otro lado = zoom
 (function(){
-  let arr=null;
-  const pt=e=>{const r=document.getElementById('dsWrap').getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*_ds.pw,y:(1-(e.clientY-r.top)/r.height)*_ds.ph};};
+  const ptrs=new Map();let down=null,pinch=null;
+  const wrap=()=>document.getElementById('dsWrap'),sc=()=>document.getElementById('dsScroll');
+  const pt=(x,y)=>{const r=wrap().getBoundingClientRect();return {x:(x-r.left)/r.width*_ds.pw,y:(1-(y-r.top)/r.height)*_ds.ph};};
+  const activo=()=>_ds&&document.getElementById('dsDlg').classList.contains('show');
+  function dentroSel(x,y){
+    if(!_ds.sel) return false;
+    const r=rectSel(),a=pt(x,y),mx=Math.max(30,_ds.pw*.04);
+    return a.x>=r.x-mx&&a.x<=r.x+r.w+mx&&a.y>=r.y-mx&&a.y<=r.y+r.h+mx;
+  }
   document.addEventListener('pointerdown',e=>{
-    if(!_ds||!document.getElementById('dsDlg').classList.contains('show')) return;
-    const wrap=document.getElementById('dsWrap');if(!wrap.contains(e.target)) return;
-    const m=e.target.closest&&e.target.closest('.ds-m'),p=pt(e);
-    if(m){const c=_ds.campos[+m.dataset.i];arr={i:+m.dataset.i,dx:p.x-c.x,dy:p.y-c.y,sx:e.clientX,sy:e.clientY,mov:false};}
-    else arr={nuevo:true,p,sx:e.clientX,sy:e.clientY};
+    if(!activo()||!sc().contains(e.target)) return; // también se puede pellizcar sobre el fondo gris
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===1){
+      const m=e.target.closest&&e.target.closest('.ds-m');
+      down={sx:e.clientX,sy:e.clientY,lx:e.clientX,ly:e.clientY,mov:false,cancel:false,m:m?{i:+m.dataset.i,parte:m.dataset.p}:null};
+      if(down.m){const r=down.m.parte==='zona'?_ds.campos[down.m.i].zona:_ds.campos[down.m.i],p=pt(e.clientX,e.clientY);down.dx=p.x-r.x;down.dy=p.y-r.y;}
+    }else if(ptrs.size===2){
+      if(down) down.cancel=true;
+      const [a,b]=[...ptrs.values()];
+      const w0=wrap().getBoundingClientRect();
+      pinch={dx0:Math.max(30,Math.abs(a.x-b.x)),dy0:Math.max(30,Math.abs(a.y-b.y)),d0:Math.hypot(a.x-b.x,a.y-b.y),zoom0:_ds.zoom,
+        modo:(_ds.sel&&dentroSel(a.x,a.y)&&dentroSel(b.x,b.y))?'tam':'zoom',
+        r0:_ds.sel?{...rectSel()}:null,fx:((a.x+b.x)/2-w0.left)/w0.width,fy:((a.y+b.y)/2-w0.top)/w0.height};
+    }
   });
   document.addEventListener('pointermove',e=>{
-    if(!arr||arr.nuevo||!_ds) return;
-    if(!arr.mov&&Math.hypot(e.clientX-arr.sx,e.clientY-arr.sy)<6) return;
-    arr.mov=true;const p=pt(e),c=_ds.campos[arr.i];
-    c.x=Math.max(0,Math.min(_ds.pw-c.w,p.x-arr.dx));c.y=Math.max(0,Math.min(_ds.ph-c.h,p.y-arr.dy));pintarMarcas();
+    if(!activo()||!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&ptrs.size>=2){
+      const [a,b]=[...ptrs.values()];
+      if(pinch.modo==='tam'){
+        const r=rectSel(),rx=Math.max(30,Math.abs(a.x-b.x))/pinch.dx0,ry=Math.max(30,Math.abs(a.y-b.y))/pinch.dy0;
+        const cx=pinch.r0.x+pinch.r0.w/2,cy=pinch.r0.y+pinch.r0.h/2;
+        r.w=Math.max(8,Math.min(_ds.pw-10,pinch.r0.w*rx));r.h=Math.max(8,Math.min(_ds.ph-10,pinch.r0.h*ry));
+        r.x=Math.max(0,Math.min(_ds.pw-r.w,cx-r.w/2));r.y=Math.max(0,Math.min(_ds.ph-r.h,cy-r.h/2));
+        pintarMarcas();
+      }else{
+        const base=document.getElementById('dsScroll').clientWidth-16||360,z=Math.max(1,Math.min(5,pinch.zoom0*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d0));
+        _ds.zoom=z;wrap().style.width=Math.min(base*z,2400)+'px';
+        const w1=wrap().getBoundingClientRect(),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+        sc().scrollLeft+=(w1.left+pinch.fx*w1.width)-cx;sc().scrollTop+=(w1.top+pinch.fy*w1.height)-cy;
+        document.getElementById('dsZoomT').textContent=Math.round(z*100)+'%';
+        lsSet('sube:dszoomvisto',true);document.getElementById('dsHint').style.display='none';
+      }
+      return;
+    }
+    if(!down||down.cancel) return;
+    if(!down.mov&&Math.hypot(e.clientX-down.sx,e.clientY-down.sy)<7) return;
+    down.mov=true;
+    if(down.m){ // mover la marca
+      if(!_ds.sel||_ds.sel.i!==down.m.i||_ds.sel.parte!==down.m.parte) _ds.sel={i:down.m.i,parte:down.m.parte};
+      const r=rectSel(),p=pt(e.clientX,e.clientY);
+      r.x=Math.max(0,Math.min(_ds.pw-r.w,p.x-down.dx));r.y=Math.max(0,Math.min(_ds.ph-r.h,p.y-down.dy));pintarMarcas();
+    }else{ // desplazar la hoja
+      sc().scrollLeft-=e.clientX-down.lx;sc().scrollTop-=e.clientY-down.ly;
+    }
+    down.lx=e.clientX;down.ly=e.clientY;
   });
-  document.addEventListener('pointerup',e=>{
-    if(!arr||!_ds){arr=null;return;}
-    const a=arr;arr=null;
-    if(Math.hypot(e.clientX-a.sx,e.clientY-a.sy)>=6) return; // fue un arrastre
-    if(a.nuevo) dsAgregar(a.p); else dsEditar(a.i);
-  });
+  function fin(e){
+    if(!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if(pinch&&ptrs.size<2){
+      const era=pinch.modo;pinch=null;
+      if(era==='zoom'&&activo()) pintarPagDs(); // se vuelve a dibujar nítida al nuevo zoom
+    }
+    if(ptrs.size===0&&down){
+      const d=down;down=null;
+      if(!activo()||d.cancel||d.mov) return;
+      if(d.m) dsSel(d.m.i,d.m.parte);
+      else if(_ds.sel) dsSel(null);
+      else{const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);}
+    }
+  }
+  document.addEventListener('pointerup',fin);document.addEventListener('pointercancel',fin);
 })();
 
 function dsAgregar(p){
@@ -96,7 +175,7 @@ function dsAgregar(p){
   const c={id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),tipo:_ds.tool,etiqueta:'',pag:_ds.pag,w:t.w,h:t.h,x:p.x-t.w/2,y:p.y-t.h/2};
   c.x=Math.max(0,Math.min(_ds.pw-c.w,c.x));c.y=Math.max(0,Math.min(_ds.ph-c.h,c.y));
   if(c.tipo==='auto') c.fuente='fecha';
-  _ds.campos.push(c);pintarMarcas();dsEditar(_ds.campos.length-1,true);
+  _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};pintarMarcas();dsEditar(_ds.campos.length-1,true);
 }
 
 // ── Editar un campo
@@ -119,11 +198,35 @@ function dsEditar(i,nuevo){
   // suma: de qué campos
   const sb=document.getElementById('dsEdSumaBox');
   if(c.tipo==='suma'){
+    document.getElementById('dsEdModoZona').checked=!!c.zona;document.getElementById('dsEdModoLista').checked=!c.zona;
+    dsEdModoSuma();
     const fuentes=_ds.campos.filter(x=>x!==c&&(x.tipo==='numero'||(x.tipo==='tilde'&&x.puntos)));
     sb.style.display='';
     document.getElementById('dsEdSuma').innerHTML=fuentes.length?fuentes.map(x=>`<label class="ds-chk"><input type="checkbox" value="${x.id}" ${(!c.suma||c.suma.includes(x.id))?'checked':''}> ${escapeHtml(x.etiqueta||'(sin nombre)')}${x.tipo==='tilde'?' · '+x.puntos+' pts':''}</label>`).join(''):'<div class="pled-nota">Todavía no marcaste campos de número ni tildes con puntos. Marcalos y volvé a editar este total.</div>';
   }else sb.style.display='none';
   document.getElementById('dsEdDlg').classList.add('show');
+}
+function dsEdModoSuma(){
+  const z=document.getElementById('dsEdModoZona').checked;
+  document.getElementById('dsEdSuma').style.display=z?'none':'';
+  document.getElementById('dsEdZonaBox').style.display=z?'':'none';
+  const c=_ds.campos[_dsEdI];
+  document.getElementById('dsEdZonaEst').textContent=c&&c.zona?'✓ Zona marcada. Tocá el botón para moverla o cambiarla.':'Todavía no marcaste la zona.';
+}
+// pasa a marcar la zona sobre la hoja (se mueve y se estira con los dedos)
+function dsMarcarZona(){
+  const c=_ds.campos[_dsEdI];
+  if(!document.getElementById('dsEdNom').value.trim()){showToast('Primero escribí el nombre del total',true);return;}
+  c.etiqueta=document.getElementById('dsEdNom').value.trim();
+  if(!c.zona){
+    const sc=document.getElementById('dsScroll'),w=document.getElementById('dsWrap').getBoundingClientRect(),r=sc.getBoundingClientRect();
+    const cx=((r.left+r.width/2-w.left)/w.width)*_ds.pw,cy=(1-((r.top+r.height/2-w.top)/w.height))*_ds.ph;
+    const zw=_ds.pw*.55,zh=_ds.ph*.07;
+    c.zona={pag:_ds.pag,w:zw,h:zh,x:Math.max(0,Math.min(_ds.pw-zw,cx-zw/2)),y:Math.max(0,Math.min(_ds.ph-zh,cy-zh/2))};
+  }
+  _ds.pag=c.zona.pag;document.getElementById('dsEdDlg').classList.remove('show');
+  _ds.sel={i:_dsEdI,parte:'zona'};pintarPagDs();
+  showToast('Estirá la zona con dos dedos y arrastrala sobre los números a sumar');
 }
 function dsEdGuardar(){
   const c=_ds.campos[_dsEdI];
@@ -136,18 +239,23 @@ function dsEdGuardar(){
   if(c.tipo==='tilde'){c.puntos=parseFloat(document.getElementById('dsEdPuntos').value)||0;if(!c.puntos)delete c.puntos;c.cierra=document.getElementById('dsEdCierra').checked;}
   if(c.tipo!=='auto'&&c.tipo!=='suma') c.obligatorio=document.getElementById('dsEdOblig').checked;
   if(c.tipo==='suma'){
-    const marc=[...document.querySelectorAll('#dsEdSuma input:checked')].map(i=>i.value),todos=document.querySelectorAll('#dsEdSuma input').length;
-    c.suma=marc.length===todos?null:marc; // null = todos
-    if(c.suma===null) delete c.suma;
+    if(document.getElementById('dsEdModoZona').checked){
+      if(!c.zona){showToast('Marcá la zona de suma o elegí «Campos que elijo»',true);return;}
+      delete c.suma;
+    }else{
+      delete c.zona;
+      const marc=[...document.querySelectorAll('#dsEdSuma input:checked')].map(i=>i.value),todos=document.querySelectorAll('#dsEdSuma input').length;
+      if(marc.length===todos) delete c.suma; else c.suma=marc; // sin lista = todos
+    }
   }
   document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
 }
 function dsEdTamano(f){const c=_ds.campos[_dsEdI];if(!c) return;const cx=c.x+c.w/2,cy=c.y+c.h/2;c.w*=f;c.h*=f;c.x=Math.max(0,Math.min(_ds.pw-c.w,cx-c.w/2));c.y=Math.max(0,Math.min(_ds.ph-c.h,cy-c.h/2));pintarMarcas();}
 function dsEdBorrar(){
-  _ds.campos.splice(_dsEdI,1);document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
+  _ds.sel=null;_ds.campos.splice(_dsEdI,1);document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
 }
 function dsEdCancelar(){
-  if(_dsEdNuevo&&!_ds.campos[_dsEdI].etiqueta&&_ds.campos[_dsEdI].tipo!=='auto') _ds.campos.splice(_dsEdI,1);
+  if(_dsEdNuevo&&!_ds.campos[_dsEdI].etiqueta&&_ds.campos[_dsEdI].tipo!=='auto'){_ds.campos.splice(_dsEdI,1);_ds.sel=null;}
   document.getElementById('dsEdDlg').classList.remove('show');pintarMarcas();
 }
 
@@ -162,7 +270,11 @@ function guardarDisenador(){
 
 // ── Cálculo de sumas (en el formulario y en el PDF)
 function valorSuma(c,valores,campos){
-  const fuentes=campos.filter(x=>x!==c&&(c.suma?c.suma.includes(x.id):(x.tipo==='numero'||(x.tipo==='tilde'&&x.puntos))));
+  let fuentes;
+  if(c.zona){ // zona de la hoja: se suman todos los números (y tildes con puntos) cuyo centro cae adentro
+    const z=c.zona;
+    fuentes=campos.filter(x=>x!==c&&(x.tipo==='numero'||(x.tipo==='tilde'&&x.puntos))&&(x.pag||0)===z.pag&&x.x+x.w/2>=z.x&&x.x+x.w/2<=z.x+z.w&&x.y+x.h/2>=z.y&&x.y+x.h/2<=z.y+z.h);
+  }else fuentes=campos.filter(x=>x!==c&&(c.suma?c.suma.includes(x.id):(x.tipo==='numero'||(x.tipo==='tilde'&&x.puntos))));
   let t=0;
   fuentes.forEach(x=>{
     if(x.tipo==='numero') t+=parseFloat(String(valores[x.id]).replace(',','.'))||0;
