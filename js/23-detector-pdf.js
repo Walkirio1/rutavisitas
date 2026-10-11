@@ -132,8 +132,8 @@ async function cuadradosPorImagen(pg){
   return res;
 }
 
-const RX_AUTO=[[/^fecha/i,'fecha'],[/^hora/i,'hora'],[/^(direcci[oó]n|domicilio)/i,'direccion'],[/^(local|comercio|nombre del (local|comercio|establecimiento)|raz[oó]n social|establecimiento|punto de venta)/i,'nombre'],[/^(id|c[oó]digo|n[uú]mero de (local|punto))/i,'id'],[/^(rubro|tipo)/i,'rubro']];
-function limpiarEt(s){return String(s).replace(/[:_\.]+\s*$/,'').replace(/\s+/g,' ').trim();}
+const RX_AUTO=[[/^fecha/i,'fecha'],[/^hora/i,'hora'],[/^(direcci[oó]n|domicilio)/i,'direccion'],[/^(local|comercio|nombre del (local|comercio|establecimiento)|raz[oó]n social|establecimiento|punto de venta)/i,'nombre'],[/^(id|c[oó]digo|n[uú]mero de (local|punto))/i,'id'],[/^(rubro|tipo( de (local|comercio|negocio|establecimiento))?$)/i,'rubro']];
+function limpiarEt(s){return String(s).replace(/[\s:_\.]+$/,'').replace(/\s+/g,' ').trim();}
 function puntosDe(s){const m=String(s).match(/\(?\s*(\d+(?:[.,]\d+)?)\s*(?:pts?\.?|puntos?)\s*\)?/i);return m?{p:parseFloat(m[1].replace(',','.')),s:s.replace(m[0],'').replace(/[\s\-–:]+$/,'').trim()}:{p:0,s};}
 
 // ── detecta todo y devuelve la lista de campos propuestos
@@ -211,7 +211,7 @@ async function detectarCampos(pdf){
       const auto=RX_AUTO.find(r=>r[0].test(base));
       if(auto){campos.push({id:nid(),tipo:'auto',etiqueta:FUENTES_AUTO[auto[1]],fuente:auto[1],pag:p,x,y:s.y-2.5,w,h:14});continue;}
       if(/total|puntaje|suma/i.test(base)){campos.push({id:nid(),tipo:'suma',etiqueta:base,pag:p,x,y:s.y-2.5,w:Math.min(w,60),h:14});continue;}
-      if(base.length>=3&&base.length<=40) campos.push({id:nid(),tipo:/cantidad|n[uú]mero|importe|monto|edad|\bn[°º]/i.test(base)?'numero':'texto',etiqueta:base,pag:p,x,y:s.y-2.5,w,h:14});
+      if(base.length>=3&&base.length<=40) campos.push({id:nid(),tipo:/cantidad|n[uú]mero|importe|monto|edad|\bn[°º]|\((m|m2|m²|cm|kg|mts?)\)|altura|ancho|largo|superficie|a[nñ]o\b|niveles|pisos/i.test(base)?'numero':'texto',etiqueta:base,pag:p,x,y:s.y-2.5,w,h:14});
     }
     const hs=frases.map(f=>f.h).sort((a,b)=>a-b),hMed=hs[Math.floor(hs.length/2)]||10;
     // sección de cada campo: el título (en mayúsculas) más cercano por encima

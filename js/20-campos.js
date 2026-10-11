@@ -15,7 +15,7 @@ function idCampoNuevo(){return 'f'+Date.now().toString(36)+Math.floor(Math.rando
 // ── Formulario (dentro de la planilla de la visita)
 function pintarCamposExtra(pl){
   const cont=document.getElementById('plExtraBox'),tit=document.getElementById('plExtraTit'),campos=camposActivos();
-  plExtra={};
+  plExtra={};_plAutoRef=pl||null;
   // valores previos: se buscan por id (si el campo se quitó de la planilla después, no se muestra)
   if(pl&&pl.extra) campos.forEach(c=>{if(pl.extra[c.id]!==undefined)plExtra[c.id]=pl.extra[c.id];});
   tit.style.display=campos.length?'':'none';
@@ -35,27 +35,44 @@ function htmlCampo(c,compacto){
   if(c.tipo==='suma') return `<div class="plcampo${num}${compacto?' tot':''}">${lab}<div class="plsuma" id="plsuma_${c.id}">0</div></div>`;
   return '';
 }
-// Planilla PDF con campos: tarjetas por sección, en el orden en que están en la hoja
+// Planilla PDF con campos: tarjetas por sección, con los campos en el mismo orden y en las mismas filas que la hoja
+let _plAutoRef=null;
+function autoValor(f){
+  const pl=_plAutoRef,p=puntos.find(x=>x.id===curId)||{};
+  return ({fecha:(pl&&pl.fecha)||hoy(),hora:(pl&&pl.hora)||ahora(),id:p.id||'',direccion:(p.dir||'')+(p.localidad?' - '+p.localidad:''),nombre:p.nombre||'',rubro:(pl&&pl.rubro)||p.tipo||''})[f]||'';
+}
+function chipTilde(k,etq){return `<div class="sc-chip${plExtra[k.id]==='Sí'?' on':''}" onclick="plTilde('${k.id}',this)">${escapeHtml(etq)}${k.puntos?` · ${k.puntos} pts`:''}</div>`;}
+function filaHtml(fila){
+  const c0=fila[0],req=c=>c.obligatorio?' <span class="plreq">*</span>':'';
+  const solo=fila.every(c=>c.tipo==='tilde');
+  if(solo){
+    if(fila.length===1) return `<div class="sc-f" onclick="plTilde('${c0.id}',this.querySelector('.sc-ck'))"><div class="sc-n">${escapeHtml(c0.etiqueta)}${c0.puntos?` <span class="sc-pts">· ${c0.puntos} pts</span>`:''}${req(c0)}</div><div class="sc-ck${plExtra[c0.id]==='Sí'?' on':''}">✕</div></div>`;
+    if(fila.every(c=>c.etiqueta.includes(' · '))){ // columnas Sí / No: el nombre de la fila y un botón por columna
+      const nom=c0.etiqueta.split(' · ')[0];
+      return `<div class="sc-f"><div class="sc-n">${escapeHtml(nom)}${c0.puntos?` <span class="sc-pts">· ${c0.puntos} pts</span>`:''}${req(c0)}</div>${fila.map(k=>chipTilde(k,k.etiqueta.split(' · ').pop())).join('')}</div>`;
+    }
+    return `<div class="sc-f sc-opc">${fila.map(k=>chipTilde(k,k.etiqueta)).join('')}</div>`; // varias casillas en la misma fila, cada una con su texto
+  }
+  if(fila.length===1){
+    if(c0.tipo==='auto') return `<div class="plcampo sc-auto"><div class="pllb">${escapeHtml(c0.etiqueta)}</div><div class="sc-av">${escapeHtml(autoValor(c0.fuente))||'—'}</div></div>`;
+    return htmlCampo(c0,true);
+  }
+  // varios campos en la misma fila de la hoja: van uno al lado del otro
+  return `<div class="sc-row">${fila.map(c=>`<div class="sc-cell">${c.tipo==='tilde'?`<div style="padding-top:18px">${chipTilde(c,c.etiqueta)}</div>`:(c.tipo==='auto'?`<div class="plcampo sc-auto"><div class="pllb">${escapeHtml(c.etiqueta)}</div><div class="sc-av">${escapeHtml(autoValor(c.fuente))||'—'}</div></div>`:htmlCampo(c,false))}</div>`).join('')}</div>`;
+}
 function seccionesHtml(campos){
-  const ord=campos.filter(c=>c.tipo!=='auto').sort((a,b)=>(a.pag||0)-(b.pag||0)||Math.round(b.y/6)-Math.round(a.y/6)||a.x-b.x);
+  const ord=campos.slice().sort((a,b)=>(a.pag||0)-(b.pag||0)||(Math.abs(a.y-b.y)>5?b.y-a.y:a.x-b.x));
   const grupos=[];
   ord.forEach(c=>{
     const t=c.seccion||'';let g=grupos[grupos.length-1];
-    if(!g||g.t!==t){g={t,items:[]};grupos.push(g);}
-    const it=g.items[g.items.length-1];
-    if(c.tipo==='tilde'&&it&&it.tilde&&it.pag===(c.pag||0)&&Math.abs(it.y-c.y)<5) it.campos.push(c);
-    else g.items.push({tilde:c.tipo==='tilde',pag:c.pag||0,y:c.y,campos:[c]});
+    if(!g||g.t!==t){g={t,filas:[]};grupos.push(g);}
+    const f=g.filas[g.filas.length-1];
+    if(f&&f.pag===(c.pag||0)&&Math.abs(f.y-c.y)<=5) f.c.push(c);
+    else g.filas.push({pag:c.pag||0,y:c.y,c:[c]});
   });
   const unico=grupos.length===1&&!grupos[0].t;
-  return grupos.map((g,i)=>{
-    const filas=g.items.map(it=>{
-      const c=it.campos[0];
-      if(!it.tilde) return htmlCampo(c,true);
-      const req=c.obligatorio?' <span class="plreq">*</span>':'';
-      if(it.campos.length===1) return `<div class="sc-f" onclick="plTilde('${c.id}',this.querySelector('.sc-ck'))"><div class="sc-n">${escapeHtml(c.etiqueta)}${c.puntos?` <span class="sc-pts">· ${c.puntos} pts</span>`:''}${req}</div><div class="sc-ck${plExtra[c.id]==='Sí'?' on':''}">✕</div></div>`;
-      const nom=c.etiqueta.split(' · ')[0];
-      return `<div class="sc-f"><div class="sc-n">${escapeHtml(nom)}${c.puntos?` <span class="sc-pts">· ${c.puntos} pts</span>`:''}${req}</div>${it.campos.map(k=>{const p=k.etiqueta.split(' · ');return `<div class="sc-chip${plExtra[k.id]==='Sí'?' on':''}" onclick="plTilde('${k.id}',this)">${escapeHtml(p.length>1?p[p.length-1]:'✓')}</div>`;}).join('')}</div>`;
-    }).join('');
+  return grupos.map(g=>{
+    const filas=g.filas.map(f=>filaHtml(f.c.sort((a,b)=>a.x-b.x))).join('');
     return `<div class="sc">${g.t?`<div class="sc-t">${escapeHtml(g.t)}</div>`:(unico?'':`<div class="sc-t">Otros datos</div>`)}${filas}</div>`;
   }).join('');
 }
