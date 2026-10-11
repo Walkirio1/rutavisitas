@@ -784,7 +784,7 @@ html{scroll-behavior:smooth}
         <div class="cfg-tx"><div class="cfg-nm">App de navegación</div><div class="cfg-ds" id="navActual"></div></div>
         <span class="cfg-ar">›</span>
       </button>
-      <button class="cfg-item" onclick="configurarIA()">
+      <button class="cfg-item" id="btnIA" style="display:none" onclick="configurarIA()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg></span>
         <div class="cfg-tx"><div class="cfg-nm">Lector con IA (letra a mano)</div><div class="cfg-ds" id="iaEst"></div></div>
         <span class="cfg-ar">›</span>
@@ -1398,6 +1398,7 @@ function importXL(input){
 
 // ── LECTOR CON IA (letra a mano): usa la clave que cada persona pega en Ajustes (queda solo en su celular)
 const SK_IA='sube:iakey';
+const FUNC_IA=false; // lector con IA: se deja apagado; se activará más adelante para quienes quieran la versión paga
 const PROMPT_IA='Esta foto es una lista de direcciones de la ciudad de Rosario, Argentina (puede estar escrita a mano). Transcribila: una dirección por línea, en formato "Calle Altura" (por ejemplo "Pedro Medrano 2870"). Si una línea trae un ID o un nombre de local, ponelo antes separado con " ; " (ID ; nombre ; dirección). No numeres las líneas, no agregues explicaciones ni texto extra: solo las líneas. Si no podés leer una palabra, escribí tu mejor intento.';
 async function fotoParaIA(file){
   const url=URL.createObjectURL(file);
@@ -1449,7 +1450,7 @@ function configurarIA(){
   if(!/^(AIza|sk-ant-)/.test(v)){showToast('Esa clave no parece válida (AIza… o sk-ant-…)',true);return;}
   lsSet(SK_IA,v);actualizarIAEst();showToast('Lector con IA activado ✓');
 }
-function actualizarIAEst(){const e=document.getElementById('iaEst');if(e)e.textContent=lsGet(SK_IA)?'Activado ✓ (lee letra a mano)':'Sin activar · tocá para configurar';}
+function actualizarIAEst(){const b=document.getElementById('btnIA');if(b&&FUNC_IA)b.style.display='';const e=document.getElementById('iaEst');if(e)e.textContent=lsGet(SK_IA)?'Activado ✓ (lee letra a mano)':'Sin activar · tocá para configurar';}
 
 // ── LISTA DE DIRECCIONES DESDE UNA FOTO (OCR en el celular con Tesseract, gratis)
 let _tessP=null;
@@ -1504,7 +1505,7 @@ async function ocrArchivo(input){
   txt.value='';ok.disabled=true;dlg.classList.add('show');
   document.getElementById('ocrBar').style.display='block';
   try{
-    const claveIA=lsGet(SK_IA);
+    const claveIA=FUNC_IA&&lsGet(SK_IA);
     if(claveIA){
       ocrEstado('Leyendo la lista con IA (aguantá unos segundos)…',.4);
       try{
@@ -3674,7 +3675,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 11';
+const APP_VERSION='2026-10-11 · 12';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3752,7 +3753,7 @@ setTimeout(go,2500);})();</script>
     <div id="ocrEst" style="font-size:12px;color:var(--text-mute);margin-bottom:10px;line-height:1.5"></div>
     <div id="ocrBar" style="height:6px;border-radius:6px;background:rgba(120,150,200,.25);overflow:hidden;margin-bottom:10px"><div id="ocrBarIn" style="height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#60a5fa);transition:width .3s"></div></div>
     <textarea id="ocrTxt" rows="9" spellcheck="false" style="width:100%;border-radius:12px;border:1px solid var(--line-2);background:rgba(255,255,255,.55);color:inherit;font:13px/1.5 'Inter Tight',sans-serif;padding:10px;resize:vertical" placeholder="Una dirección por línea"></textarea>
-    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.<br><b>Letra a mano:</b> activá el <b>Lector con IA</b> en ⚙ Ajustes (con una clave gratis de Google) y la foto se lee bien.</div>
+    <div style="font-size:11px;color:var(--text-mute);margin:6px 0 12px;line-height:1.45">Una dirección por línea. Corregí lo que haya leído mal antes de armar la ruta. Opcional: <b>ID ; nombre ; dirección</b>.<br>La foto funciona con listas <b>impresas o tipeadas</b>. Si está escrita a mano, escribila o pegala acá.</div>
     <div style="display:grid;gap:8px">
       <button class="btn ba" id="ocrOk" onclick="ocrArmarRuta()">Armar la ruta</button>
       <button class="btn bd" onclick="ocrCerrar()">Cancelar</button>
