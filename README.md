@@ -17,6 +17,7 @@ css/                    Estilos, en orden (cada archivo pisa al anterior)
   07-pantalla-entrada.css pantalla de entrada animada
   08-perfil.css           foto de perfil y ventana de perfil
   09-plantilla.css        editor de la planilla general
+  10-mapa.css             pines tapados que titilan
 js/                     Lógica, en orden (comparten el mismo ámbito global)
   00-errores.js           registro de errores (se carga primero)
   01-base.js              constantes, fechas, almacenamiento, fotos (IndexedDB)

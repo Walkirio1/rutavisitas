@@ -50,6 +50,7 @@ function initMapa(){
     attribution:'© OSM'
   }).addTo(mapa);
   markersLayer = L.layerGroup().addTo(mapa);
+  mapa.on('zoomend',marcarTapados);
   miUbicLayer = L.layerGroup().addTo(mapa);
   mapa.on('click',e=>{
     if(ubicando===null) return;
@@ -124,7 +125,10 @@ function renderMapa(noFit){
     const enRuta = sel.has(p.id);
     const est = estadoVisita(p.id);
     const icon = est==='ok'?ICON_DONE():(est?ICON_CERRADO():(enRuta?ICON_SEL():ICON_DEF()));
-    const marker = L.marker([p.lat,p.lng],{icon}).addTo(markersLayer);
+    // los colores (voy / visitado / cerrado) quedan por encima de los grises
+    const prio = (est||enRuta)?1:0;
+    const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:prio*1000}).addTo(markersLayer);
+    marker._puntoId=p.id;marker._prio=prio;
     const gmUrl = urlNavegar(p.lat,p.lng);
     const popup = `
       <div class="popup-title">${escapeHtml(p.nombre)}</div>
@@ -140,6 +144,8 @@ function renderMapa(noFit){
     }
     bounds.push([p.lat,p.lng]);
   });
+
+  marcarTapados();
 
   // Auto-fit a los bounds si hay markers (no al abrir/cerrar el cartel)
   if(noFit){
@@ -239,3 +245,32 @@ function cancelarUbicar(){
   if(mapa)mapa.getContainer().style.cursor='';
   renderMapa(true);
 }
+
+// ── PUNTOS TAPADOS: si un pin queda tapado (≥85 %) por otro, el de abajo titila suave para saber que hay un comercio ahí atrás
+function pulsoTapadosActivo(){return lsGet('sube:mkpulso')!==false;}
+function marcarTapados(){
+  if(!mapa||!markersLayer) return;
+  const items=[];
+  markersLayer.eachLayer(mk=>{
+    if(mk._puntoId===undefined||!mk.getElement) return;
+    const el=mk.getElement();if(!el) return;
+    el.classList.remove('mk-tapado');
+    items.push({el,p:mapa.latLngToLayerPoint(mk.getLatLng()),prio:mk._prio||0});
+  });
+  if(!pulsoTapadosActivo()) return;
+  const W=34,H=48; // tamaño del pin
+  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+    const a=items[i],b=items[j],dx=Math.abs(a.p.x-b.p.x),dy=Math.abs(a.p.y-b.p.y);
+    if(dx>=W||dy>=H) continue;
+    if((W-dx)*(H-dy)/(W*H)<0.85) continue;
+    // abajo queda el de menor prioridad (gris); si son iguales, el más al norte (Leaflet dibuja encima al de más al sur)
+    const abajo=a.prio!==b.prio?(a.prio<b.prio?a:b):(a.p.y<=b.p.y?a:b);
+    abajo.el.classList.add('mk-tapado');
+  }
+}
+function togglePulsoTapados(){
+  lsSet('sube:mkpulso',!pulsoTapadosActivo());
+  marcarTapados();actualizarPulsoEst();
+  showToast(pulsoTapadosActivo()?'Los puntos tapados titilan en el mapa':'Aviso de puntos tapados desactivado');
+}
+function actualizarPulsoEst(){const e=document.getElementById('pulsoEst');if(e)e.textContent=pulsoTapadosActivo()?'Activado · el pin de abajo titila':'Desactivado';}
