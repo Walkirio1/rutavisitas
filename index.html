@@ -634,13 +634,14 @@ html{scroll-behavior:smooth}
 @keyframes gBub1{50%{transform:translate(40px,50px) scale(1.12)}}
 @keyframes gBub2{50%{transform:translate(-45px,-40px) scale(1.1)}}
 .gate .gw{position:relative;z-index:1}
-.gate.show .gw>*{opacity:0;animation:gRise .8s cubic-bezier(.22,1,.36,1) forwards}
-.gate.show .gw>img{animation:gPop .9s cubic-bezier(.2,1.3,.4,1) 0s forwards,gFloat 5s ease-in-out 1.3s infinite}
-.gate.show .gw>h1{animation-delay:.15s}
-.gate.show .gw>.tagline{animation-delay:.22s}
-.gate.show .gw>p{animation-delay:.3s}
-.gate.show .gw>.btn{animation-delay:.4s;position:relative;overflow:hidden}
-.gate.show .gw>.gerr{animation-delay:.5s}
+.gate .gw>*{opacity:0}
+.gate.go .gw>*{animation:gRise .8s cubic-bezier(.22,1,.36,1) forwards}
+.gate.go .gw>img{animation:gPop .9s cubic-bezier(.2,1.3,.4,1) 0s forwards,gFloat 5s ease-in-out 1.3s infinite}
+.gate.go .gw>h1{animation-delay:.15s}
+.gate.go .gw>.tagline{animation-delay:.22s}
+.gate.go .gw>p{animation-delay:.3s}
+.gate.go .gw>.btn{animation-delay:.4s;position:relative;overflow:hidden}
+.gate.go .gw>.gerr{animation-delay:.5s}
 @keyframes gRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 @keyframes gPop{0%{opacity:0;transform:scale(.4) rotate(-8deg)}100%{opacity:1;transform:none}}
 @keyframes gFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
@@ -3391,7 +3392,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 6';
+const APP_VERSION='2026-10-11 · 7';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
