@@ -304,6 +304,12 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
 .ei .ico{width:46px;height:46px;stroke-width:1.2;opacity:.4}
 
 /* ── AJUSTES PARA CELULAR ── */
+.inst-bar{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));max-width:456px;margin:0 auto;z-index:900;display:none;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(180deg,#1f2632,#161b24);border:1px solid var(--line-warm);border-radius:14px;box-shadow:var(--shadow-deep)}
+.inst-bar.show{display:flex}
+.inst-bar img{width:40px;height:40px;border-radius:9px;flex-shrink:0}
+.inst-bar .it{flex:1;min-width:0;font-size:12px;line-height:1.35;color:var(--text)}
+.inst-bar .it b{display:block;font-size:13px}
+.inst-bar .ix{background:none;border:none;color:var(--text-mute);font-size:20px;padding:6px 8px;cursor:pointer}
 html{-webkit-text-size-adjust:100%}
 html,body{overscroll-behavior:none}               /* evita recargar sin querer al deslizar hacia abajo */
 .cnt{overscroll-behavior-y:contain}
@@ -2201,6 +2207,18 @@ window.addEventListener('appinstalled',()=>{_instalarEvt=null;const b=document.g
 if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){
   setTimeout(()=>{const b=document.getElementById('btnInstalar');if(b)b.style.display='none';},0);
 }
+function cerrarInstBar(recordar){
+  document.getElementById('instBar').classList.remove('show');
+  if(recordar) lsSet('sube:instdismiss',Date.now());
+}
+// Aviso para instalar: una vez, unos segundos después de abrir; si lo cierran no vuelve por 14 días
+setTimeout(()=>{
+  const ya=navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  const cerrado=lsGet('sube:instdismiss');
+  if(ya||(cerrado&&Date.now()-cerrado<14*864e5)) return;
+  document.getElementById('instBar').classList.add('show');
+},4000);
+
 async function instalarApp(){
   if(_instalarEvt){
     _instalarEvt.prompt();
@@ -2224,5 +2242,11 @@ setTimeout(()=>{
   reconectarDrive();
 },300);
 </script>
+<div class="inst-bar" id="instBar">
+  <img src="icons/icon-192.png" alt="">
+  <div class="it"><b>Instalá la app</b>Ícono en tu pantalla y sin barra del navegador</div>
+  <button class="sm sma" onclick="instalarApp();cerrarInstBar()">Instalar</button>
+  <button class="ix" onclick="cerrarInstBar(true)" aria-label="Cerrar">✕</button>
+</div>
 </body>
 </html>
