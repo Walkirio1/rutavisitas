@@ -90,9 +90,44 @@ async function cuadradosDePagina(pg){
   }
   // casillas escritas como carácter (☐ □ …)
   try{(await itemsDePagina(pg)).glifos.forEach(g=>res.push(g));}catch(e){}
+  // casillas que se ven en la imagen aunque el PDF las dibuje de otra manera
+  try{(await cuadradosPorImagen(pg)).forEach(r=>res.push(r));}catch(e){console.warn('casillas por imagen:',e);}
   // sin duplicados (mismo cuadrado dibujado dos veces: relleno y borde)
   const u=[];res.forEach(r=>{if(!u.some(q=>Math.abs(q.x-r.x)<3&&Math.abs(q.y-r.y)<3)) u.push(r);});
   return u;
+}
+
+// Casillas buscadas en la imagen de la hoja: sirve aunque estén dibujadas de cualquier manera (imagen, trazos raros, fuente…).
+// Se busca un contorno cuadrado, hueco y aislado (si toca otras líneas, como en una tabla, no se toma).
+async function cuadradosPorImagen(pg){
+  const v1=pg.getViewport({scale:1}),esc=Math.min(3,2600/Math.max(v1.width,v1.height)),vp=pg.getViewport({scale:esc});
+  const W=Math.round(vp.width),H=Math.round(vp.height),cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  await pg.render({canvasContext:ctx,viewport:vp}).promise;
+  const d=ctx.getImageData(0,0,W,H).data,N=W*H,osc=new Uint8Array(N);
+  for(let i=0,j=0;j<N;i+=4,j++) osc[j]=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)<190?1:0;
+  const vis=new Uint8Array(N),pila=new Int32Array(N),mn=Math.round(5*esc),mx=Math.round(28*esc),band=Math.max(1,Math.round(esc*.9)),res=[];
+  const frac=(x0,y0,x1,y1)=>{let o=0,t=0;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){t++;o+=osc[y*W+x];}return t?o/t:0;};
+  for(let y0=0;y0<H;y0++)for(let x0=0;x0<W;x0++){
+    const i0=y0*W+x0;if(!osc[i0]||vis[i0]) continue;
+    let sp=0,x1=x0,x2=x0,y1=y0,y2=y0;pila[sp++]=i0;vis[i0]=1;
+    while(sp){
+      const p=pila[--sp],px=p%W,py=(p/W)|0;
+      if(px<x1)x1=px;if(px>x2)x2=px;if(py<y1)y1=py;if(py>y2)y2=py;
+      for(let dy=-1;dy<=1;dy++){const qy=py+dy;if(qy<0||qy>=H) continue;
+        for(let dx=-1;dx<=1;dx++){const qx=px+dx;if(qx<0||qx>=W) continue;const q=qy*W+qx;if(osc[q]&&!vis[q]){vis[q]=1;pila[sp++]=q;}}}
+    }
+    const w=x2-x1+1,h=y2-y1+1;
+    if(w<mn||w>mx||h<mn||h>mx||Math.max(w,h)/Math.min(w,h)>1.35) continue;
+    const lado=(h,a,b,c)=>{let m=0;for(let k=0;k<band;k++){const f=h?frac(b,a+k,c,a+k):frac(a+k,b,a+k,c);if(f>m)m=f;}return m;};
+    const arr=lado(true,y1,x1,x2)>=.85&&lado(true,y2-band+1,x1,x2)>=.85&&lado(false,x1,y1,y2)>=.85&&lado(false,x2-band+1,y1,y2)>=.85;
+    if(!arr) continue;
+    const ins=band+1;if(w-2*ins<2||h-2*ins<2) continue;
+    if(frac(x1+ins,y1+ins,x2-ins,y2-ins)>.08) continue; // el interior tiene que estar vacío
+    const a=vp.convertToPdfPoint(x1,y2+1),b=vp.convertToPdfPoint(x2+1,y1);
+    res.push({x:a[0],y:a[1],w:b[0]-a[0],h:b[1]-a[1]});
+  }
+  return res;
 }
 
 const RX_AUTO=[[/^fecha/i,'fecha'],[/^hora/i,'hora'],[/^(direcci[oó]n|domicilio)/i,'direccion'],[/^(local|comercio|nombre del (local|comercio|establecimiento)|raz[oó]n social|establecimiento|punto de venta)/i,'nombre'],[/^(id|c[oó]digo|n[uú]mero de (local|punto))/i,'id'],[/^(rubro|tipo)/i,'rubro']];
