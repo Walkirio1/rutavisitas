@@ -2,7 +2,8 @@
 // - Archivos de la app: red primero (siempre la versión nueva), con respaldo en caché.
 // - Librerías externas (mapas, Excel, PDF, fuentes): caché primero.
 // - Todo lo demás (Google Drive, geocodificación, mapa base) va directo a la red.
-const CACHE = 'sube-v5';
+const CACHE = 'sube-v6';
+const TILES = 'sube-tiles'; // mapa guardado para usar sin señal (no se borra al actualizar)
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './icons/icon-192.png'];
 const CDN = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -13,7 +14,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== TILES).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -44,6 +45,15 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     e.respondWith(redPrimero(req));
+  } else if (url.hostname.endsWith('tile.openstreetmap.org')) {
+    // mapa: primero lo guardado, si no hay, la red (y se guarda para la próxima)
+    const clave = 'https://tile.openstreetmap.org' + url.pathname;
+    e.respondWith(
+      caches.open(TILES).then(c => c.match(clave).then(m => m || fetch(clave, { mode: 'cors' }).then(res => {
+        if (res.ok) c.put(clave, res.clone()).catch(() => {});
+        return res;
+      }).catch(() => fetch(req))))
+    );
   } else if (CDN.includes(url.hostname)) {
     e.respondWith(
       caches.match(req).then(m => m || fetch(req).then(res => { guardar(req, res); return res; }))
