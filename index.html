@@ -455,8 +455,7 @@ body{background:var(--bg-deep);background-image:radial-gradient(ellipse 80% 45% 
     radial-gradient(circle 210px at 2% 94%,rgba(255,255,255,.9) 0,rgba(190,235,222,.42) 55%,rgba(255,255,255,0) 73%),
     radial-gradient(circle 70px at 94% 52%,rgba(255,255,255,.9) 0,rgba(185,215,255,.32) 58%,rgba(255,255,255,0) 74%),
     radial-gradient(circle 60px at 5% 32%,rgba(255,255,255,.9) 0,rgba(198,238,226,.3) 58%,rgba(255,255,255,0) 74%)}
-.app::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.9;
-  background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27%23a9c8f5%27/%3E%3C/svg%3E") right 22px top 128px/15px 15px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27%23a6ddd0%27/%3E%3C/svg%3E") left 16px top 330px/10px 10px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27%23b9d0f7%27/%3E%3C/svg%3E") right 40px bottom 210px/12px 12px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27%239fd8cf%27/%3E%3C/svg%3E") left 30px bottom 150px/9px 9px no-repeat}
+.app::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.9}
 :root[data-theme="dark"] .app::before{opacity:.35;filter:brightness(1.6)}
 
 /* Tarjetas de cristal */
@@ -487,7 +486,6 @@ body{background:var(--bg-deep);background-image:radial-gradient(ellipse 80% 45% 
 .ba,.sma,.btn.ba{background:linear-gradient(180deg,#4f8ff7 0%,#2563eb 52%,#1d4ed8 100%);color:#fff;border:1px solid rgba(20,60,170,.5);
   box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 -3px 8px rgba(0,20,100,.28) inset,0 14px 26px -12px rgba(37,99,235,.85),0 3px 8px -3px rgba(29,78,216,.5)}
 .ba::before,.sma::before{background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 46%,rgba(255,255,255,0) 52%,rgba(0,0,60,.12) 100%)}
-.btn.ba::after{content:'';position:absolute;right:14px;top:3px;width:15px;height:15px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27white%27/%3E%3C/svg%3E") center/contain no-repeat;opacity:.9;pointer-events:none;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 .sma::after{display:none}
 .btn.ba{font-family:'Montserrat','Inter Tight',sans-serif;font-weight:700;font-size:14px}
 /* Botón secundario: cristal con borde azul claro */
@@ -602,7 +600,6 @@ html{scroll-behavior:smooth}
 .plgo{background:linear-gradient(180deg,#4f8ff7 0%,#2563eb 52%,#1d4ed8 100%);color:#fff;border:1px solid rgba(20,60,170,.5);text-shadow:0 1px 0 rgba(0,0,60,.3);
   box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 -3px 8px rgba(0,20,100,.28) inset,0 14px 26px -12px rgba(37,99,235,.85)}
 .plgo::before{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.12) 46%,rgba(255,255,255,0) 52%,rgba(0,0,60,.12))}
-.plgo::after{content:'';position:absolute;right:16px;top:3px;width:15px;height:15px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M12%200c.7%206.3%205.7%2011.3%2012%2012-6.3.7-11.3%205.7-12%2012-.7-6.3-5.7-11.3-12-12C6.3%2011.3%2011.3%206.3%2012%200z%27%20fill%3D%27white%27/%3E%3C/svg%3E") center/contain no-repeat;opacity:.9;pointer-events:none}
 .plcl{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(232,242,255,.85));color:#1d4ed8;border:1.5px solid rgba(96,165,250,.7);text-shadow:none;box-shadow:0 1px 0 #fff inset,0 10px 20px -12px rgba(37,99,235,.45)}
 .foto-btn{border:1.5px dashed rgba(96,165,250,.7);border-radius:18px;background:linear-gradient(180deg,#fff,#eef5ff)}
 .foto-btn:hover{border-color:#2563eb;background:#eaf2ff}
@@ -650,6 +647,15 @@ html{scroll-behavior:smooth}
 .gate .btn.ba::before{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:gShine 3.2s ease-in-out 1.6s infinite}
 @keyframes gShine{0%{left:-70%}45%,100%{left:130%}}
 @media (prefers-reduced-motion:reduce){.gate *,.gate::before,.gate::after{animation:none!important}.gate .gw>*{opacity:1!important}}
+.gate .hero-light{mix-blend-mode:normal!important}
+.gate .hero-light,.gate .hero-dark{filter:drop-shadow(0 14px 26px rgba(30,90,200,.35))}
+.gate::before,.gate::after{filter:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.38);
+  box-shadow:inset 0 0 40px rgba(255,255,255,.14),inset 12px 14px 30px rgba(255,255,255,.28),inset -14px -18px 36px rgba(0,30,90,.10),0 20px 50px -20px rgba(20,60,160,.35)}
+.gate::before{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.55) 0,rgba(255,255,255,.12) 18%,rgba(96,165,250,.22) 55%,rgba(59,130,246,.10) 100%)}
+.gate::after{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.5) 0,rgba(255,255,255,.1) 18%,rgba(52,211,153,.20) 55%,rgba(52,211,153,.09) 100%)}
+.logo .hlogo,:root[data-theme="light"] .logo .hlogo{border-radius:0;box-shadow:none;object-fit:contain;width:36px;height:36px;filter:drop-shadow(0 4px 8px rgba(37,99,235,.35))}
+.inst-bar img{border-radius:0;object-fit:contain}
 </style>
 </head>
 <body>
@@ -689,7 +695,7 @@ html{scroll-behavior:smooth}
 
   <!-- HEADER -->
   <div class="hdr">
-    <div class="logo"><img class="hlogo" src="icons/icon-192.png" alt="">Verific.<span>SUBE</span></div>
+    <div class="logo"><img class="hlogo" src="icons/hero.webp" alt="">Verific.<span>SUBE</span></div>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="drv-badge" id="drvBadge" onclick="showTab(5)" style="cursor:pointer"><span class="drv-dot"></span><span id="drvBadgeTxt">Drive off</span></span>
       <span id="fechaHdr" style="font-size:10px;color:var(--text-mute)"></span>
@@ -3341,7 +3347,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · z';
+const APP_VERSION='2026-10-11 · 1';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3411,7 +3417,7 @@ actualizarGate();
 <div class="gate" id="gate">
   <div class="gw">
     <img class="hero-light" src="icons/hero.webp" alt="">
-    <img class="hero-dark" src="icons/icon-192.png" alt="">
+    <img class="hero-dark" src="icons/hero.webp" alt="">
     <h1>Verific</h1>
     <div class="tagline">Seguro · Rápido · Verificado</div>
     <p>Entrá con tu cuenta de Google para que tu trabajo quede guardado en tu Drive.</p>
@@ -3429,7 +3435,7 @@ actualizarGate();
 </div>
 
 <div class="inst-bar" id="instBar">
-  <img src="icons/icon-192.png" alt="">
+  <img src="icons/hero.webp" alt="">
   <div class="it"><b>Instalá la app</b>Ícono en tu pantalla y sin barra del navegador</div>
   <button class="sm sma" onclick="instalarApp();cerrarInstBar()">Instalar</button>
   <button class="ix" onclick="cerrarInstBar(true)" aria-label="Cerrar">✕</button>
