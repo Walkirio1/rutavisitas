@@ -100,12 +100,12 @@ async function cuadradosDePagina(pg){
 // Casillas buscadas en la imagen de la hoja: sirve aunque estén dibujadas de cualquier manera (imagen, trazos raros, fuente…).
 // Se busca un contorno cuadrado, hueco y aislado (si toca otras líneas, como en una tabla, no se toma).
 async function cuadradosPorImagen(pg){
-  const v1=pg.getViewport({scale:1}),esc=Math.min(3,2600/Math.max(v1.width,v1.height)),vp=pg.getViewport({scale:esc});
+  const v1=pg.getViewport({scale:1}),esc=Math.min(4,3400/Math.max(v1.width,v1.height)),vp=pg.getViewport({scale:esc});
   const W=Math.round(vp.width),H=Math.round(vp.height),cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
   await pg.render({canvasContext:ctx,viewport:vp}).promise;
   const d=ctx.getImageData(0,0,W,H).data,N=W*H,osc=new Uint8Array(N);
-  for(let i=0,j=0;j<N;i+=4,j++) osc[j]=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)<190?1:0;
+  for(let i=0,j=0;j<N;i+=4,j++) osc[j]=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)<225?1:0;
   const vis=new Uint8Array(N),pila=new Int32Array(N),mn=Math.round(5*esc),mx=Math.round(28*esc),band=Math.max(1,Math.round(esc*.9)),res=[];
   const frac=(x0,y0,x1,y1)=>{let o=0,t=0;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){t++;o+=osc[y*W+x];}return t?o/t:0;};
   for(let y0=0;y0<H;y0++)for(let x0=0;x0<W;x0++){
@@ -118,14 +118,16 @@ async function cuadradosPorImagen(pg){
         for(let dx=-1;dx<=1;dx++){const qx=px+dx;if(qx<0||qx>=W) continue;const q=qy*W+qx;if(osc[q]&&!vis[q]){vis[q]=1;pila[sp++]=q;}}}
     }
     const w=x2-x1+1,h=y2-y1+1;
-    if(w<mn||w>mx||h<mn||h>mx||Math.max(w,h)/Math.min(w,h)>1.35) continue;
+    if(w<mn||w>mx||h<mn||h>mx||Math.max(w,h)/Math.min(w,h)>1.5) continue;
     const lado=(h,a,b,c)=>{let m=0;for(let k=0;k<band;k++){const f=h?frac(b,a+k,c,a+k):frac(a+k,b,a+k,c);if(f>m)m=f;}return m;};
-    const arr=lado(true,y1,x1,x2)>=.85&&lado(true,y2-band+1,x1,x2)>=.85&&lado(false,x1,y1,y2)>=.85&&lado(false,x2-band+1,y1,y2)>=.85;
-    if(!arr) continue;
+    const lados=[lado(true,y1,x1,x2),lado(true,y2-band+1,x1,x2),lado(false,x1,y1,y2),lado(false,x2-band+1,y1,y2)];
     const ins=band+1;if(w-2*ins<2||h-2*ins<2) continue;
-    if(frac(x1+ins,y1+ins,x2-ins,y2-ins)>.08) continue; // el interior tiene que estar vacío
+    const inter=frac(x1+ins,y1+ins,x2-ins,y2-ins);
+    const firme=lados.every(f=>f>=.85)&&inter<=.08&&Math.max(w,h)/Math.min(w,h)<=1.35;
+    const flojo=!firme&&lados.filter(f=>f>=.7).length>=3&&inter<=.15; // línea muy fina o cortada: solo vale si está pegada a un texto
+    if(!firme&&!flojo) continue;
     const a=vp.convertToPdfPoint(x1,y2+1),b=vp.convertToPdfPoint(x2+1,y1);
-    res.push({x:a[0],y:a[1],w:b[0]-a[0],h:b[1]-a[1]});
+    res.push({x:a[0],y:a[1],w:b[0]-a[0],h:b[1]-a[1],flojo});
   }
   return res;
 }
@@ -141,6 +143,9 @@ async function detectarCampos(pdf){
     const pg=await pdf.getPage(p+1),vp=pg.getViewport({scale:1}),frases=await frasesDePagina(pg),cuad=await cuadradosDePagina(pg);
     const usadas=new Set();
     // casillas: filas con 1 o varias casillas
+    // las casillas dudosas (línea muy fina o cortada) solo valen si están separadas un poco de una frase, a su lado
+    for(let q=cuad.length-1;q>=0;q--){const c=cuad[q];
+      if(c.flojo&&!frases.some(f=>f.y>=c.y-3&&f.y<=c.y+c.h+3&&((f.x>=c.x+c.w&&f.x-(c.x+c.w)<=16)||(c.x>=f.x+f.w&&c.x-(f.x+f.w)<=16)))) cuad.splice(q,1);}
     cuad.sort((a,b)=>b.y-a.y||a.x-b.x);
     const filas=[];cuad.forEach(c=>{const f=filas.find(f=>Math.abs(f.y-c.y)<5);if(f)f.c.push(c);else filas.push({y:c.y,c:[c]});});
     for(const f of filas){
