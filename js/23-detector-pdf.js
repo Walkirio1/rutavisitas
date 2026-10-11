@@ -2,8 +2,28 @@
 // Si el PDF es un formulario rellenable, se usan sus campos reales. El usuario solo revisa la lista (nada de marcar a mano).
 
 // ── texto de la hoja agrupado en frases (con su posición en puntos del PDF)
+const RX_GLIFO=/[☐□▢❏❐❑❒◻⬜🔲]/;
+// elementos de texto de la hoja; los caracteres de casilla (☐ □ …) se separan: quedan como casillas aparte
+async function itemsDePagina(pg){
+  const tc=await pg.getTextContent(),it=[],glifos=[];
+  for(const i of tc.items){
+    const str=i.str||'';if(!str.trim()) continue;
+    const x=i.transform[4],y=i.transform[5],h=Math.abs(i.transform[3])||i.height||9;
+    if(!RX_GLIFO.test(str)){it.push({s:str,x,y,w:i.width,h});continue;}
+    const cw=i.width/Math.max(1,str.length);let buf='',bx=x;
+    [...str].forEach((ch,j)=>{
+      const cx=x+j*cw;
+      if(RX_GLIFO.test(ch)){
+        if(buf.trim()) it.push({s:buf,x:bx,y,w:cx-bx,h});buf='';bx=cx+cw;
+        const t=Math.min(cw,h)*.8;glifos.push({x:cx+(cw-t)/2,y:y-h*.05,w:t,h:t});
+      }else{if(!buf) bx=cx;buf+=ch;}
+    });
+    if(buf.trim()) it.push({s:buf,x:bx,y,w:x+i.width-bx,h});
+  }
+  return {it,glifos};
+}
 async function frasesDePagina(pg){
-  const tc=await pg.getTextContent(),it=tc.items.filter(i=>(i.str||'').trim()).map(i=>({s:i.str,x:i.transform[4],y:i.transform[5],w:i.width,h:Math.abs(i.transform[3])||i.height||9}));
+  const it=(await itemsDePagina(pg)).it;
   it.sort((a,b)=>Math.abs(b.y-a.y)>2.5?b.y-a.y:a.x-b.x);
   const out=[];
   for(const t of it){
@@ -16,14 +36,21 @@ async function frasesDePagina(pg){
 
 // ── rectángulos pequeños y cuadrados (casillas) a partir de las instrucciones de dibujo del PDF
 async function cuadradosDePagina(pg){
-  const OPS=window.pdfjsLib.OPS,ol=await pg.getOperatorList(),res=[];
+  const OPS=window.pdfjsLib.OPS,ol=await pg.getOperatorList(),res=[],segs=[];
   const mul=(m,n)=>[m[0]*n[0]+m[1]*n[2],m[0]*n[1]+m[1]*n[3],m[2]*n[0]+m[3]*n[2],m[2]*n[1]+m[3]*n[3],m[4]*n[0]+m[5]*n[2]+n[4],m[4]*n[1]+m[5]*n[3]+n[5]];
   let ctm=[1,0,0,1,0,0];const pila=[];
   const aplicar=(x,y)=>[ctm[0]*x+ctm[2]*y+ctm[4],ctm[1]*x+ctm[3]*y+ctm[5]];
+  const MIN=5,MAX=28;
+  const cuadrado=(x0,y0,x1,y1)=>{const w=x1-x0,h=y1-y0;if(w>=MIN&&w<=MAX&&h>=MIN&&h<=MAX&&Math.max(w,h)/Math.min(w,h)<=1.4) res.push({x:x0,y:y0,w,h});};
   const agregar=pts=>{
     const P=pts.map(p=>aplicar(p[0],p[1])),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
-    const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),w=x1-x0,h=y1-y0;
-    if(w>=6&&w<=26&&h>=6&&h<=26&&Math.max(w,h)/Math.min(w,h)<=1.4) res.push({x:x0,y:y0,w,h});
+    cuadrado(Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys));
+  };
+  // un trazo recto (horizontal o vertical) corto: puede ser el lado de una casilla dibujada con 4 líneas
+  const trazo=(p,q)=>{
+    const A=aplicar(p[0],p[1]),B=aplicar(q[0],q[1]);
+    if(Math.abs(A[1]-B[1])<.6&&Math.abs(A[0]-B[0])>=MIN&&Math.abs(A[0]-B[0])<=MAX) segs.push({h:true,c:(A[1]+B[1])/2,a:Math.min(A[0],B[0]),b:Math.max(A[0],B[0])});
+    else if(Math.abs(A[0]-B[0])<.6&&Math.abs(A[1]-B[1])>=MIN&&Math.abs(A[1]-B[1])<=MAX) segs.push({h:false,c:(A[0]+B[0])/2,a:Math.min(A[1],B[1]),b:Math.max(A[1],B[1])});
   };
   for(let i=0;i<ol.fnArray.length;i++){
     const fn=ol.fnArray[i],a=ol.argsArray[i];
@@ -31,19 +58,38 @@ async function cuadradosDePagina(pg){
     else if(fn===OPS.restore) ctm=pila.pop()||[1,0,0,1,0,0];
     else if(fn===OPS.transform) ctm=mul(a,ctm);
     else if(fn===OPS.constructPath){
-      const ops=a[0],co=a[1];let k=0,sub=[];
-      const cerrar=()=>{if(sub.length>=4&&sub.length<=5){const xs=sub.map(p=>p[0]),ys=sub.map(p=>p[1]),axis=sub.every((p,j)=>j===0||Math.abs(p[0]-sub[j-1][0])<.5||Math.abs(p[1]-sub[j-1][1])<.5);if(axis)agregar(sub);}sub=[];};
+      const ops=a[0],co=a[1];let k=0,sub=[],lineas=0,curvas=0;
+      const cerrar=()=>{
+        if(sub.length===2) trazo(sub[0],sub[1]);
+        else if(sub.length>=4&&sub.length<=5&&!curvas){const axis=sub.every((p,j)=>j===0||Math.abs(p[0]-sub[j-1][0])<.5||Math.abs(p[1]-sub[j-1][1])<.5);if(axis)agregar(sub);}
+        else if(curvas&&curvas<=8&&lineas>=3&&sub.length<=13) agregar(sub); // casilla con esquinas redondeadas
+        sub=[];lineas=0;curvas=0;
+      };
       for(const op of ops){
-        if(op===OPS.rectangle){agregar([[co[k],co[k+1]],[co[k]+co[k+2],co[k+1]],[co[k]+co[k+2],co[k+1]+co[k+3]],[co[k],co[k+1]+co[k+3]]]);k+=4;}
+        if(op===OPS.rectangle){
+          const x=co[k],y=co[k+1],w=co[k+2],h=co[k+3];k+=4;
+          if(Math.min(Math.abs(w),Math.abs(h))<1.2) trazo([x,y],[x+w,y+h]); // borde dibujado como rectángulo finito
+          else agregar([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]);
+        }
         else if(op===OPS.moveTo){cerrar();sub=[[co[k],co[k+1]]];k+=2;}
-        else if(op===OPS.lineTo){sub.push([co[k],co[k+1]]);k+=2;}
-        else if(op===OPS.curveTo){k+=6;sub=[];}
-        else if(op===OPS.curveTo2||op===OPS.curveTo3){k+=4;sub=[];}
+        else if(op===OPS.lineTo){sub.push([co[k],co[k+1]]);lineas++;k+=2;}
+        else if(op===OPS.curveTo){sub.push([co[k+4],co[k+5]]);curvas++;k+=6;}
+        else if(op===OPS.curveTo2||op===OPS.curveTo3){sub.push([co[k+2],co[k+3]]);curvas++;k+=4;}
         else if(op===OPS.closePath) cerrar();
       }
       cerrar();
     }
   }
+  // casillas dibujadas con cuatro líneas sueltas: dos horizontales y dos verticales que forman un cuadrado
+  const H=segs.filter(s=>s.h),V=segs.filter(s=>!s.h);
+  for(const t of H)for(const u of H){
+    const d=u.c-t.c;if(d<MIN||d>MAX||Math.abs(t.a-u.a)>2||Math.abs(t.b-u.b)>2) continue;
+    if(Math.abs((t.b-t.a)-d)>Math.max(2.5,d*.25)) continue;
+    const izq=V.some(v=>Math.abs(v.c-t.a)<2.5&&Math.abs(v.a-t.c)<2.5&&Math.abs(v.b-u.c)<2.5),der=V.some(v=>Math.abs(v.c-t.b)<2.5&&Math.abs(v.a-t.c)<2.5&&Math.abs(v.b-u.c)<2.5);
+    if(izq&&der) cuadrado(t.a,t.c,t.b,u.c);
+  }
+  // casillas escritas como carácter (☐ □ …)
+  try{(await itemsDePagina(pg)).glifos.forEach(g=>res.push(g));}catch(e){}
   // sin duplicados (mismo cuadrado dibujado dos veces: relleno y borde)
   const u=[];res.forEach(r=>{if(!u.some(q=>Math.abs(q.x-r.x)<3&&Math.abs(q.y-r.y)<3)) u.push(r);});
   return u;
@@ -66,14 +112,17 @@ async function detectarCampos(pdf){
       f.c.sort((a,b)=>a.x-b.x);
       const enFila=frases.filter(s=>s.y>=f.y-5&&s.y<=f.y+f.c[0].h+3);
       const izq=enFila.filter(s=>s.x+s.w<=f.c[0].x+3).sort((a,b)=>(b.x+b.w)-(a.x+a.w));
+      const der=c=>enFila.filter(s=>s.x>=c.x+c.w-2&&s.x-(c.x+c.w)<=16).sort((a,b)=>a.x-b.x)[0]||null;
+      const dere=f.c.map(der),modoDer=dere.every(Boolean); // casilla + texto a su derecha (varias por fila, en columnas)
       for(let j=0;j<f.c.length;j++){
         const c=f.c[j];let fila=null;
-        if(f.c.length===1){fila=izq[0]||enFila.filter(s=>s.x>=c.x+c.w-3).sort((a,b)=>a.x-b.x)[0]||null;}
+        if(modoDer) fila=dere[j];
+        else if(f.c.length===1){fila=izq[0]||dere[0]||null;}
         else{ // varias casillas en la fila: el texto de la fila + el encabezado de la columna (Sí / No, etc.)
           fila=enFila.filter(s=>s.x+s.w<=f.c[0].x+3).sort((a,b)=>a.x-b.x)[0]||null;
         }
-        let et=fila?fila.s:'';if(fila) usadas.add(fila);
-        if(f.c.length>1){
+        let et=fila?fila.s:'';if(fila&&!(modoDer&&/[:_]\s*$/.test(et))) usadas.add(fila);
+        if(f.c.length>1&&!modoDer){
           const cx=c.x+c.w/2,enc=frases.filter(s=>s.y>c.y+c.h&&s.y-c.y<220&&Math.abs(s.x+s.w/2-cx)<=Math.max(30,s.w/2+8)&&s.s.length<24).sort((a,b)=>a.y-b.y)[0];
           if(enc){et=(et?et+' · ':'')+enc.s;usadas.add(enc);}
         }
