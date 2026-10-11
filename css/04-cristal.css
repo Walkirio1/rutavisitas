@@ -85,3 +85,9 @@ input[type=checkbox]:checked::after{transform:translateX(20px)}
 .gate .tagline{font-size:12.5px;letter-spacing:.04em;color:var(--text-mute);margin:-4px 0 18px}
 .gate p{color:var(--text-soft)}
 
+
+/* Panel de configuración: al cerrarlo no queda nada a la vista (en iPhone el desenfoque dejaba la imagen pegada) */
+.cfg-overlay,.cfg-panel{visibility:hidden;transition:opacity .35s var(--ease-premium),transform .42s var(--ease-premium),visibility 0s linear .45s}
+.cfg-overlay.show,.cfg-panel.show{visibility:visible;transition-delay:0s}
+.cfg-overlay:not(.show){-webkit-backdrop-filter:none;backdrop-filter:none}
+.cfg-panel:not(.show){-webkit-backdrop-filter:none;backdrop-filter:none}
