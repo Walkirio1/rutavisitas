@@ -116,6 +116,7 @@ function safeName(s){
 // en las coordenadas exactas mapeadas del PDF oficial SUBE.
 // ═══════════════════════════════════════════════════════════
 async function rellenarPlanillaPDF(pdfB64, punto, visita){
+  if(pdfB64==='GENERAL') return generarPlanillaGeneralPDF(punto,visita); // planilla general de la app
   if(!window.PDFLib){throw new Error('pdf-lib no cargó');}
   const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
 

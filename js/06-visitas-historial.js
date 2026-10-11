@@ -61,7 +61,7 @@ function renderV(){
 
   vlist.innerHTML=filtradas.map(({p,i})=>{
     const v=visits[p.id]||{};const pl=v.planilla;
-    const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
+    const irregs=irregsDe(pl);
     return `<div class="vi${v.done?' dn':''}${(!p.lat&&!v.done)?' geo-err':''}">
       <div class="vh">
         <div class="vnum ${v.done?'vd':'vp'}">${i}</div>
@@ -121,7 +121,7 @@ function renderH(){
     const rows=(h.puntos||[]).map(p=>{
       const v=h.visits&&h.visits[p.id]||{};
       const pl=v.planilla;
-      const irregs=pl?CN.filter((_,j)=>pl.chC&&pl.chC[j]).concat(VN.filter((_,j)=>pl.chV&&pl.chV[j])):[];
+      const irregs=irregsDe(pl);
       return `<div style="padding:7px 10px;background:var(--bg-2);border-radius:8px;margin-bottom:4px;border:1px solid var(--line)">
         <div style="display:flex;gap:6px">
           <span>${v.done?'✅':'⏳'}</span>

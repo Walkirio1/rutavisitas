@@ -3,7 +3,7 @@
 function setPlDef(id){
   plDefId=id||null;
   if(plDefId)lsSet(SK.plDef,plDefId);else lsDel(SK.plDef);
-  renderPlanillas();showToast('Planilla predeterminada actualizada ✓');
+  aplicarPlantilla();renderPlanillas();showToast('Planilla predeterminada actualizada ✓');
 }
 
 function renderPlanillas(){
@@ -21,9 +21,10 @@ function renderPlanillas(){
       ${activa?'<span style="font-size:11px;color:#10b981;font-weight:700">✓ En uso</span>':`<button class="sm sma" onclick="${onclick}">Usar</button>`}
       ${extra||''}
     </div>`;
-  const hayDef=plDefId&&planillas.some(x=>x.id===plDefId);
+  const hayDef=plDefId&&planillas.some(x=>x.id===plDefId),modo=modoPlanilla();
   plList.innerHTML=
-    fila('Planilla oficial SUBE','Incluida en la app',!hayDef,'setPlDef(null)','')+
+    fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
+    fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
     planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha,hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
@@ -81,15 +82,25 @@ function openPl(id){
   const p=puntos.find(x=>x.id===id)||{};
   const v=visits[id]||{};const pl=v.planilla;
 
-  // checkboxes
+  // marcas (por nombre, así editar la planilla después no las corre)
+  const _ic=(pl&&pl.itemsC)||CN,_iv=(pl&&pl.itemsV)||VN;
+  if(pl&&pl.chC) CN.forEach((n,i)=>{const k=_ic.indexOf(n);if(k>=0&&pl.chC[k])plC['c'+i]=true;});
+  if(pl&&pl.chV) VN.forEach((n,i)=>{const k=_iv.indexOf(n);if(k>=0&&pl.chV[k])plC['v'+i]=true;});
+  // encabezado: la planilla general no lleva marcas de ninguna empresa
+  const gen=modoPlanilla()==='general';
+  document.getElementById('plHizq').textContent=gen?plantilla().titulo:'SUBE';
+  document.getElementById('plHizq').style.fontSize=gen?'18px':'';
+  document.getElementById('plHder').innerHTML=gen?'Visita':'Planilla de<br>Verificaciones';
+  document.getElementById('plLbId').textContent=gen?'ID':'ID PS';
+  document.getElementById('plTitA').textContent=TIT_A;
+  document.getElementById('plTitB').textContent=TIT_B;
+  document.getElementById('plTitB').style.display=VN.length?'':'none';
   document.getElementById('plCarga').innerHTML=CN.map((n,i)=>
-    `<div class="plr${pl&&pl.chC&&pl.chC[i]?' on':''}" onclick="plT('c${i}',this)"><div class="plrn">${n}</div><div class="plck"><span class="plx">✕</span></div></div>`
+    `<div class="plr${plC['c'+i]?' on':''}" onclick="plT('c${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
   document.getElementById('plVenta').innerHTML=VN.map((n,i)=>
-    `<div class="plr${pl&&pl.chV&&pl.chV[i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${n}</div><div class="plck"><span class="plx">✕</span></div></div>`
+    `<div class="plr${plC['v'+i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
-  if(pl&&pl.chC) CN.forEach((_,i)=>{if(pl.chC[i])plC['c'+i]=true;});
-  if(pl&&pl.chV) VN.forEach((_,i)=>{if(pl.chV[i])plC['v'+i]=true;});
 
   document.getElementById('plF').value=(pl&&pl.fecha)||hoy();
   document.getElementById('plH').value=(pl&&pl.hora)||ahora();
@@ -150,6 +161,7 @@ function quitarFoto(){
 
 // PDF activo: la planilla elegida como predeterminada en Configuración, o la oficial incluida
 async function pdfParaVisita(){
+  if(modoPlanilla()==='general') return {b64:'GENERAL',nombre:'Planilla_General.pdf'};
   const plDef = plDefId && planillas.find(x=>x.id===plDefId);
   if(plDef) return {b64:plDef.b64,nombre:(plDef.nombre||'planilla')+'.pdf'};
   try{ return {b64:await planillaPredeterminadaB64(),nombre:'Planilla_Verificaciones.pdf'}; }
@@ -191,7 +203,7 @@ async function guardarVisita(soloGuardar,confirmado){
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
   if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
-    chC,chV,ti,obs:document.getElementById('plO').value,
+    chC,chV,ti,itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     driveFotoUrl:null,drivePdfUrl:null,

@@ -16,6 +16,7 @@ css/                    Estilos, en orden (cada archivo pisa al anterior)
   06-ajustes-finos.css    movimientos suaves, planilla, resplandor de íconos
   07-pantalla-entrada.css pantalla de entrada animada
   08-perfil.css           foto de perfil y ventana de perfil
+  09-plantilla.css        editor de la planilla general
 js/                     Lógica, en orden (comparten el mismo ámbito global)
   00-errores.js           registro de errores (se carga primero)
   01-base.js              constantes, fechas, almacenamiento, fotos (IndexedDB)
@@ -36,6 +37,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   16-app-instalacion.js   versión (APP_VERSION), iPhone, instalar como app
   17-diagnostico.js       Ajustes → Diagnóstico (info para soporte)
   18-perfil.js            perfil de usuario (foto de Google, cerrar sesión)
+  19-plantilla.js         planilla general editable (sin marca), planilla en uso, PDF general
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
 privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)

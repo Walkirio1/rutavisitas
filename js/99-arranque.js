@@ -1,6 +1,8 @@
 // Arranque: lo que se ejecuta al cargar la página, después de definir todas las funciones.
 // (Estas instrucciones estaban sueltas entre las funciones; se juntan acá y mantienen su orden.)
 
+aplicarPlantilla(); // listas de la planilla en uso (antes de dibujar nada)
+
 // de 02-puntos.js
 document.getElementById('fechaHdr').textContent=hoy();
 
