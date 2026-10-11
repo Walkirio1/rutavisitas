@@ -33,7 +33,11 @@ function aplicarPlantilla(){
   }
 }
 // Dónde va la foto de la visita (solo la planilla general lo permite elegir; las otras la mandan aparte)
-function fotoModo(){return modoPlanilla()==='general'?(plantilla().foto||'aparte'):'aparte';}
+function fotoModo(){
+  if(modoPlanilla()==='general') return plantilla().foto||'aparte';
+  const pc=pdfConCampos();
+  return pc&&pc.campos.some(c=>c.tipo==='foto')?'planilla':'aparte'; // planilla PDF con un recuadro de foto: la foto va adentro
+}
 function nombrePlanillaActiva(){
   const m=modoPlanilla();
   if(m==='general') return 'general de la app';

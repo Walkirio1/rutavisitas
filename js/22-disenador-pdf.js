@@ -7,6 +7,7 @@ const TOOLS_DS={
   numero:{n:'123 Número',w:50,h:14,c:'#7c3aed'},
   fecha:{n:'📅 Fecha',w:80,h:14,c:'#0891b2'},
   firma:{n:'✍️ Firma',w:170,h:62,c:'#16a34a'},
+  foto:{n:'📷 Foto',w:160,h:120,c:'#be185d'},
   suma:{n:'Σ Suma',w:50,h:14,c:'#d97706'},
   auto:{n:'⚙ Dato auto',w:150,h:14,c:'#64748b'}
 };
@@ -210,6 +211,7 @@ function dsAgregar(p){
   const c={id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),tipo:_ds.tool,etiqueta:'',pag:_ds.pag,w:t.w,h:t.h,x:p.x-t.w/2,y:p.y-t.h/2};
   c.x=Math.max(0,Math.min(_ds.pw-c.w,c.x));c.y=Math.max(0,Math.min(_ds.ph-c.h,c.y));
   if(c.tipo==='auto') c.fuente='fecha';
+  if(c.tipo==='foto') c.etiqueta='Foto de la visita';
   _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};calcGrupo();_ds.tool=null;pintarHerramientas(); // cada toque agrega un solo campo: la herramienta se apaga
   pintarMarcas();dsEditar(_ds.campos.length-1,true);
 }
@@ -219,7 +221,7 @@ let _dsEdI=null,_dsEdNuevo=false;
 function dsEditar(i,nuevo){
   _dsEdI=i;_dsEdNuevo=!!nuevo;
   const c=_ds.campos[i],t=TOOLS_DS[c.tipo];
-  document.getElementById('dsEdTit').textContent=({tilde:'Tilde',texto:'Campo de texto',numero:'Campo de número',fecha:'Campo de fecha',firma:'Firma',suma:'Total / suma',auto:'Dato automático'})[c.tipo];
+  document.getElementById('dsEdTit').textContent=({tilde:'Tilde',texto:'Campo de texto',numero:'Campo de número',fecha:'Campo de fecha',firma:'Firma',foto:'Foto de la visita',suma:'Total / suma',auto:'Dato automático'})[c.tipo];
   const nom=document.getElementById('dsEdNom');nom.value=c.etiqueta||'';
   nom.placeholder=c.tipo==='suma'?'Ej: Total de puntos':(c.tipo==='tilde'?'Ej: Comercio cerrado':'Nombre del campo');
   document.getElementById('dsEdNomBox').style.display=c.tipo==='auto'?'none':'';
@@ -229,7 +231,7 @@ function dsEditar(i,nuevo){
   document.getElementById('dsEdPuntos').value=c.puntos||'';
   document.getElementById('dsEdCierraBox').style.display=c.tipo==='tilde'?'':'none';
   document.getElementById('dsEdCierra').checked=!!c.cierra;
-  document.getElementById('dsEdObligBox').style.display=(c.tipo==='auto'||c.tipo==='suma')?'none':'';
+  document.getElementById('dsEdObligBox').style.display=(c.tipo==='auto'||c.tipo==='suma'||c.tipo==='foto')?'none':'';
   document.getElementById('dsEdOblig').checked=!!c.obligatorio;
   // suma: de qué campos
   const sb=document.getElementById('dsEdSumaBox');
@@ -351,7 +353,15 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
       if(v==='Sí'){const t=Math.min(c.w,c.h)*1.15;pg.drawText('X',{x:c.x+(c.w-fb.widthOfTextAtSize('X',t))/2,y:c.y+(c.h-t)/2+t*.12,size:t,font:fb,color:rgb(0,0,0)});}
     }else if(c.tipo==='auto') texto(pg,c,auto[c.fuente]);
     else if(c.tipo==='suma') texto(pg,c,String(valorSuma(c,val,campos)));
-    else if(c.tipo==='firma'){
+    else if(c.tipo==='foto'){ // la foto de la visita va dentro de la planilla, en este recuadro
+      if(pl.foto){
+        try{
+          const im=await doc.embedJpg(Uint8Array.from(atob(pl.foto.replace(/^data:image\/\w+;base64,/,'')),ch=>ch.charCodeAt(0)));
+          const e=Math.min(c.w/im.width,c.h/im.height),w=im.width*e,h=im.height*e;
+          pg.drawImage(im,{x:c.x+(c.w-w)/2,y:c.y+(c.h-h)/2,width:w,height:h});
+        }catch(e){console.warn('foto en la planilla:',e);}
+      }
+    }else if(c.tipo==='firma'){
       if(v){
         try{const f1=await firmaRecortada(doc,v,c.w,c.h,true);pg.drawImage(f1.im,{x:c.x+(c.w-f1.w)/2,y:c.y+(c.h-f1.h)/2,width:f1.w,height:f1.h});}
         catch(e){console.warn('firma en la planilla:',e);}
