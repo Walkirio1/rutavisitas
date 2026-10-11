@@ -75,13 +75,13 @@ function filasJornadaExcel(){
   // puntos que se cargaron después y no estaban en el Excel original
   const ya=new Set(aoa.slice(1).map(r=>String(r[cId])));
   puntos.forEach(p=>{if(!ya.has(String(p.id))){const r=new Array(cab.length).fill('');r[cId]=p.id;if(cNom>=0)r[cNom]=p.nombre;if(cDir>=0)r[cDir]=p.dir;if(cLoc>=0)r[cLoc]=p.localidad;if(cTip>=0)r[cTip]=p.tipo;aoa.push(r);}});
-  const extra=['Estado','Fecha visita','Hora','Irregularidades','Observaciones de la visita','Enviado a Drive'];
+  const extra=['Estado','Fecha visita','Hora','Irregularidades','Observaciones de la visita','Datos adicionales','Enviado a Drive'];
   const filas=[[...cab,...extra]];const estilos=[1];
   aoa.slice(1).forEach(r=>{
     const id=String(r[cId]);const v=visits[id];const est=estadoVisita(id);const pl=v&&v.planilla;
     const irr=pl?irregsDe(pl).join(', '):'';
     const txt={ok:'VISITADO ✓',cerrado:'CERRADO',no:'NO VISITADO'}[est]||(sel.has(id)?'Pendiente':'');
-    filas.push([...cab.map((_,i)=>r[i]==null?'':r[i]),txt,pl?pl.fecha||'':'',pl?pl.hora||'':'',irr,pl?pl.obs||'':'',v&&v.envio?(v.envio.estado==='ok'?'Sí':'No'):'']);
+    filas.push([...cab.map((_,i)=>r[i]==null?'':r[i]),txt,pl?pl.fecha||'':'',pl?pl.hora||'':'',irr,pl?pl.obs||'':'',pl?textoExtras(pl):'',v&&v.envio?(v.envio.estado==='ok'?'Sí':'No'):'']);
     estilos.push(est==='ok'?2:(est?3:0));
   });
   return {filas,estilos};

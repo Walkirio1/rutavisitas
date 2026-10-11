@@ -18,6 +18,7 @@ css/                    Estilos, en orden (cada archivo pisa al anterior)
   08-perfil.css           foto de perfil y ventana de perfil
   09-plantilla.css        editor de la planilla general
   10-mapa.css             pines tapados que titilan
+  11-campos.css           campos adicionales y firma
 js/                     Lógica, en orden (comparten el mismo ámbito global)
   00-errores.js           registro de errores (se carga primero)
   01-base.js              constantes, fechas, almacenamiento, fotos (IndexedDB)
@@ -39,6 +40,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   17-diagnostico.js       Ajustes → Diagnóstico (info para soporte)
   18-perfil.js            perfil de usuario (foto de Google, cerrar sesión)
   19-plantilla.js         planilla general editable (sin marca), planilla en uso, PDF general
+  20-campos.js            campos adicionales (texto, número, fecha, sí/no, opciones) y firma en pantalla
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
 privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)
