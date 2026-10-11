@@ -51,6 +51,8 @@ function abrirFirma(id){
   _firmaId=id;_firmaTrazo=false;
   const dlg=document.getElementById('firmaDlg'),cv=document.getElementById('firmaCv');
   dlg.classList.add('show');
+  const def=camposActivos().find(c=>c.id===id);
+  document.getElementById('firmaSub').textContent=def?def.etiqueta:'Con el dedo, dentro del recuadro';
   const r=cv.getBoundingClientRect(),dpr=2;
   cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);
   const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);
