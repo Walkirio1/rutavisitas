@@ -526,6 +526,11 @@ input[type=checkbox]:checked::after{transform:translateX(20px)}
 :root[data-theme="light"] .gate .hero-dark{display:none}
 .gate .tagline{font-size:12.5px;letter-spacing:.04em;color:var(--text-mute);margin:-4px 0 18px}
 .gate p{color:var(--text-soft)}
+
+/* ═══════════ Fondos de cristal (imagen desenfocada + velo para que el texto se lea) ═══════════ */
+body,:root[data-theme="light"] body{background:transparent!important}
+:root[data-theme="light"]::before{background:linear-gradient(180deg,rgba(247,251,255,.34),rgba(240,247,253,.22)),url(icons/bg-claro.webp) center/cover no-repeat}
+:root[data-theme="dark"]::before{background:linear-gradient(180deg,rgba(4,9,22,.34),rgba(3,7,18,.26)),url(icons/bg-oscuro.webp) center/cover no-repeat}
 </style>
 </head>
 <body>
@@ -3202,7 +3207,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · s';
+const APP_VERSION='2026-10-11 · t';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
