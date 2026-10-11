@@ -19,21 +19,45 @@ function pintarCamposExtra(pl){
   // valores previos: se buscan por id (si el campo se quitó de la planilla después, no se muestra)
   if(pl&&pl.extra) campos.forEach(c=>{if(pl.extra[c.id]!==undefined)plExtra[c.id]=pl.extra[c.id];});
   tit.style.display=campos.length?'':'none';
-  cont.innerHTML=campos.map(c=>{
-    const v=plExtra[c.id],req=c.obligatorio?' <span class="plreq">*</span>':'';
-    const lab=`<div class="pllb">${escapeHtml(c.etiqueta)}${req}</div>`;
-    if(c.tipo==='texto') return `<div class="plcampo">${lab}<input class="pli" type="text" value="${escapeHtml(v||'')}" oninput="plExtra['${c.id}']=this.value;plCambio()"></div>`;
-    if(c.tipo==='numero') return `<div class="plcampo">${lab}${c.moneda?'<div class="plmon"><span>$</span>':''}<input class="pli" type="number" inputmode="decimal" value="${escapeHtml(v==null?'':v)}" oninput="plExtra['${c.id}']=this.value;plCambio()">${c.moneda?'</div>':''}</div>`;
-    if(c.tipo==='fecha') return `<div class="plcampo">${lab}<input class="pli" type="date" value="${escapeHtml(v||'')}" oninput="plExtra['${c.id}']=this.value;plCambio()"></div>`;
-    if(c.tipo==='si_no') return `<div class="plcampo">${lab}<div class="plsino" data-id="${c.id}"><button type="button" class="${v==='Sí'?'on':''}" onclick="plSiNo('${c.id}','Sí')">Sí</button><button type="button" class="${v==='No'?'on':''}" onclick="plSiNo('${c.id}','No')">No</button></div></div>`;
-    if(c.tipo==='opciones') return `<div class="plcampo">${lab}<select class="pli" onchange="plExtra['${c.id}']=this.value;plCambio()"><option value="">— elegir —</option>${(c.opciones||[]).map(o=>`<option${o===v?' selected':''}>${escapeHtml(o)}</option>`).join('')}</select></div>`;
-    if(c.tipo==='firma') return `<div class="plcampo">${lab}<div class="plfirma" onclick="abrirFirma('${c.id}')" id="plfirma_${c.id}">${v?`<img src="${v}" alt="Firma">`:'<span>✍️ Tocá para firmar</span>'}</div></div>`;
-    if(c.tipo==='tilde') return `<div class="plcampo"><div class="plr${v==='Sí'?' on':''}" onclick="plTilde('${c.id}',this)"><div class="plrn">${escapeHtml(c.etiqueta)}${c.puntos?' · '+c.puntos+' pts':''}${req}</div><div class="plck"><span class="plx">✕</span></div></div></div>`;
-    if(c.tipo==='suma') return `<div class="plcampo">${lab}<div class="plsuma" id="plsuma_${c.id}">0</div></div>`;
-    return '';
-  }).join('');
+  cont.innerHTML=pdfConCampos()?seccionesHtml(campos):campos.map(c=>htmlCampo(c)).join('');
   plCambio();
-  if(typeof pintarHojaVisita==='function') pintarHojaVisita(); // si la planilla es un PDF con campos, se completa sobre la hoja
+}
+function htmlCampo(c,compacto){
+  const v=plExtra[c.id],req=c.obligatorio?' <span class="plreq">*</span>':'';
+  const lab=`<div class="pllb">${escapeHtml(c.etiqueta)}${req}</div>`,num=compacto?' scnum':'';
+  if(c.tipo==='texto') return `<div class="plcampo">${lab}<input class="pli" type="text" value="${escapeHtml(v||'')}" oninput="plExtra['${c.id}']=this.value;plCambio()"></div>`;
+  if(c.tipo==='numero') return `<div class="plcampo${num}">${lab}${c.moneda?'<div class="plmon"><span>$</span>':''}<input class="pli" type="number" inputmode="decimal" value="${escapeHtml(v==null?'':v)}" oninput="plExtra['${c.id}']=this.value;plCambio()">${c.moneda?'</div>':''}</div>`;
+  if(c.tipo==='fecha') return `<div class="plcampo">${lab}<input class="pli" type="date" value="${escapeHtml(v||'')}" oninput="plExtra['${c.id}']=this.value;plCambio()"></div>`;
+  if(c.tipo==='si_no') return `<div class="plcampo">${lab}<div class="plsino" data-id="${c.id}"><button type="button" class="${v==='Sí'?'on':''}" onclick="plSiNo('${c.id}','Sí')">Sí</button><button type="button" class="${v==='No'?'on':''}" onclick="plSiNo('${c.id}','No')">No</button></div></div>`;
+  if(c.tipo==='opciones') return `<div class="plcampo">${lab}<select class="pli" onchange="plExtra['${c.id}']=this.value;plCambio()"><option value="">— elegir —</option>${(c.opciones||[]).map(o=>`<option${o===v?' selected':''}>${escapeHtml(o)}</option>`).join('')}</select></div>`;
+  if(c.tipo==='firma') return `<div class="plcampo">${lab}<div class="plfirma" onclick="abrirFirma('${c.id}')" id="plfirma_${c.id}">${v?`<img src="${v}" alt="Firma">`:'<span>✍️ Tocá para firmar</span>'}</div></div>`;
+  if(c.tipo==='tilde') return `<div class="plcampo"><div class="plr${v==='Sí'?' on':''}" onclick="plTilde('${c.id}',this)"><div class="plrn">${escapeHtml(c.etiqueta)}${c.puntos?' · '+c.puntos+' pts':''}${req}</div><div class="plck"><span class="plx">✕</span></div></div></div>`;
+  if(c.tipo==='suma') return `<div class="plcampo${num}${compacto?' tot':''}">${lab}<div class="plsuma" id="plsuma_${c.id}">0</div></div>`;
+  return '';
+}
+// Planilla PDF con campos: tarjetas por sección, en el orden en que están en la hoja
+function seccionesHtml(campos){
+  const ord=campos.filter(c=>c.tipo!=='auto').sort((a,b)=>(a.pag||0)-(b.pag||0)||Math.round(b.y/6)-Math.round(a.y/6)||a.x-b.x);
+  const grupos=[];
+  ord.forEach(c=>{
+    const t=c.seccion||'';let g=grupos[grupos.length-1];
+    if(!g||g.t!==t){g={t,items:[]};grupos.push(g);}
+    const it=g.items[g.items.length-1];
+    if(c.tipo==='tilde'&&it&&it.tilde&&it.pag===(c.pag||0)&&Math.abs(it.y-c.y)<5) it.campos.push(c);
+    else g.items.push({tilde:c.tipo==='tilde',pag:c.pag||0,y:c.y,campos:[c]});
+  });
+  const unico=grupos.length===1&&!grupos[0].t;
+  return grupos.map((g,i)=>{
+    const filas=g.items.map(it=>{
+      const c=it.campos[0];
+      if(!it.tilde) return htmlCampo(c,true);
+      const req=c.obligatorio?' <span class="plreq">*</span>':'';
+      if(it.campos.length===1) return `<div class="sc-f" onclick="plTilde('${c.id}',this.querySelector('.sc-ck'))"><div class="sc-n">${escapeHtml(c.etiqueta)}${c.puntos?` <span class="sc-pts">· ${c.puntos} pts</span>`:''}${req}</div><div class="sc-ck${plExtra[c.id]==='Sí'?' on':''}">✕</div></div>`;
+      const nom=c.etiqueta.split(' · ')[0];
+      return `<div class="sc-f"><div class="sc-n">${escapeHtml(nom)}${c.puntos?` <span class="sc-pts">· ${c.puntos} pts</span>`:''}${req}</div>${it.campos.map(k=>{const p=k.etiqueta.split(' · ');return `<div class="sc-chip${plExtra[k.id]==='Sí'?' on':''}" onclick="plTilde('${k.id}',this)">${escapeHtml(p.length>1?p[p.length-1]:'✓')}</div>`;}).join('')}</div>`;
+    }).join('');
+    return `<div class="sc">${g.t?`<div class="sc-t">${escapeHtml(g.t)}</div>`:(unico?'':`<div class="sc-t">Otros datos</div>`)}${filas}</div>`;
+  }).join('');
 }
 function plTilde(id,el){plExtra[id]=plExtra[id]==='Sí'?'':'Sí';el.classList.toggle('on',plExtra[id]==='Sí');plCambio();}
 // recalcula los totales (campos de suma) cada vez que algo cambia
@@ -43,7 +67,6 @@ function plCambio(){
     const t=valorSuma(c,plExtra,campos);plExtra[c.id]=t;
     const el=document.getElementById('plsuma_'+c.id);if(el) el.textContent=(c.moneda?'$ ':'')+t;
   });
-  if(typeof hvRefrescar==='function') hvRefrescar();
 }
 function plSiNo(id,val){
   plExtra[id]=plExtra[id]===val?'':val;plCambio();

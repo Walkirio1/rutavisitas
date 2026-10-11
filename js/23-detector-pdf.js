@@ -114,9 +114,15 @@ async function detectarCampos(pdf){
       if(/total|puntaje|suma/i.test(base)){campos.push({id:nid(),tipo:'suma',etiqueta:base,pag:p,x,y:s.y-2.5,w:Math.min(w,60),h:14});continue;}
       if(base.length>=3&&base.length<=40) campos.push({id:nid(),tipo:/cantidad|n[uú]mero|importe|monto|edad|\bn[°º]/i.test(base)?'numero':'texto',etiqueta:base,pag:p,x,y:s.y-2.5,w,h:14});
     }
+    // sección de cada campo: el título (en mayúsculas) más cercano por encima
+    const pcs=campos.filter(k=>k.pag===p),tits=frases.filter(s=>!usadas.has(s)&&esTituloSec(s.s)&&!pcs.some(k=>Math.abs(k.y-s.y)<8));
+    pcs.forEach(k=>{const e=tits.filter(s=>s.y>=k.y+Math.min(k.h,16)-2).sort((a,b)=>a.y-b.y)[0];if(e) k.seccion=limpiarEt(e.s);});
   }
+  // lo que queda sin título en una hoja sigue en la sección de la anterior
+  let ult='';campos.forEach(k=>{if(k.seccion) ult=k.seccion;else if(ult&&!campos.some(o=>o.pag===k.pag&&o.seccion)) k.seccion=ult;});
   return campos;
 }
+function esTituloSec(t){t=t.trim();return t.length>=3&&t.length<=45&&!/[:_]\s*$/.test(t)&&!/\d{3,}/.test(t)&&/[A-ZÁÉÍÓÚÑ]{3}/.test(t)&&t===t.toUpperCase();}
 
 // ── PDF rellenable (con campos reales de formulario)
 async function camposDeFormulario(bytes,pdf){
