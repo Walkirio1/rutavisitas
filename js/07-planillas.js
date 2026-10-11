@@ -208,7 +208,7 @@ async function guardarVisita(soloGuardar,confirmado){
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
   if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
-    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
+    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final'})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     driveFotoUrl:null,drivePdfUrl:null,
