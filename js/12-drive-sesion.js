@@ -6,6 +6,7 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 // Client ID público de la app (no es un secreto). Si está cargado, nadie tiene que pegarlo.
 const GOOGLE_CLIENT_ID = '197847834069-dagdtb4k8mq45vakhipof65j0gf286ro.apps.googleusercontent.com';
 const SK_DRV_USER='sube:drvuser', SK_DRV_ON='sube:drvon';
+const SK_MODO='sube:modo'; // 'google' (con Drive) o 'local' (sin conexión): quien ya eligió no vuelve a ver la pantalla de entrada
 
 const drv = {
   clientId: GOOGLE_CLIENT_ID || lsGet(SK.clientId) || '',
@@ -109,8 +110,7 @@ function initTokenClient(){
       drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
       gapi.client.setToken({access_token: drv.accessToken});
       drv.connected = true;
-      lsSet(SK_DRV_ON,true);
-      document.documentElement.classList.add('logged');
+      lsSet(SK_DRV_ON,true);lsSet(SK_MODO,'google');
       try{
         const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
           headers:{'Authorization':'Bearer '+drv.accessToken}
@@ -149,8 +149,13 @@ async function connectDrive(){
 // ── PANTALLA DE ENTRADA: sin cuenta de Google conectada no se puede usar la app
 function actualizarGate(){
   const g=document.getElementById('gate');if(!g) return;
-  if(!drv.connected&&!lsGet(SK_DRV_ON)){g.classList.remove('out');g.classList.add('show');}
+  if(!lsGet(SK_MODO)){g.classList.remove('out');g.classList.add('show');document.documentElement.classList.remove('logged');}
   else if(g.classList.contains('show')&&!g.classList.contains('out')){g.classList.add('out');setTimeout(()=>g.classList.remove('show','out'),650);}
+}
+function entrarSinConectar(){
+  lsSet(SK_MODO,'local');
+  actualizarGate();renderPerfilBtn();
+  showToast('Entraste sin conexión. Podés conectar Google desde tu perfil.');
 }
 /* (se ejecuta al final, en js/99-arranque.js) */
 /* (se ejecuta al final, en js/99-arranque.js) */
