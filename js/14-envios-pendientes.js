@@ -84,7 +84,7 @@ async function prepararArchivos(ids){
     if(!punto||!v||!v.planilla) continue;
     if(v.planilla.tieneFoto&&!v.planilla.foto){const f=await fotoGet(id);if(f)v.planilla.foto=f;}
     const base=safeName(`${(v.planilla.fecha||hoy()).replace(/\//g,'-')}_${id}_${punto.nombre||'punto'}`);
-    if(v.planilla.foto) files.push(new File([b64ABlob(v.planilla.foto,'image/jpeg')],base+'_foto.jpg',{type:'image/jpeg'}));
+    if(v.planilla.foto&&fotoModo()==='aparte') files.push(new File([b64ABlob(v.planilla.foto,'image/jpeg')],base+'_foto.jpg',{type:'image/jpeg'}));
     if(pdf.b64){
       let b=pdf.b64;
       try{b=await rellenarPlanillaPDF(pdf.b64,punto,v);}catch(e){console.warn('pdf en blanco:',e);}

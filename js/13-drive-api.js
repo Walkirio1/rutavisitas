@@ -218,7 +218,7 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
     const prefix = `${fechaCarpeta}_${hora}`;
 
     // Subir foto si hay
-    if(visita.planilla && visita.planilla.foto){
+    if(visita.planilla && visita.planilla.foto && fotoModo()==='aparte'){
       try{
         const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
         if(visits[punto.id]&&visits[punto.id].planilla) visits[punto.id].planilla.driveFotoUrl = r.webViewLink;

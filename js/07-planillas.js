@@ -92,6 +92,8 @@ function openPl(id){
   document.getElementById('plHizq').style.fontSize=gen?'18px':'';
   document.getElementById('plHder').innerHTML=gen?'Visita':'Planilla de<br>Verificaciones';
   document.getElementById('plLbId').textContent=gen?'ID':'ID PS';
+  document.getElementById('plBoxId').style.display=gen?'none':''; // la planilla general no muestra el ID
+  document.getElementById('plFotoSec').style.display=fotoModo()==='no'?'none':'';
   document.getElementById('plTitA').textContent=TIT_A;
   document.getElementById('plTitB').textContent=TIT_B;
   document.getElementById('plTitB').style.display=VN.length?'':'none';
@@ -198,6 +200,7 @@ async function guardarVisita(soloGuardar,confirmado){
   const chC=CN.map((_,i)=>!!plC['c'+i]);
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
+  if(fotoModo()==='no') fotoData=null;
   const previa=visits[curId]&&visits[curId].planilla; // si se está editando una visita ya hecha, se conserva su fecha y hora
   if(!visits[curId])visits[curId]={};
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';

@@ -3,6 +3,7 @@
 const SK_PLTPL='sube:plantilla', SK_PLMODO='sube:plmodo';
 const PLANTILLA_BASE={
   titulo:'Planilla de verificación',
+  foto:'aparte', // 'aparte' (archivo propio) · 'planilla' (dentro del PDF) · 'no'
   secA:{nombre:'Irregularidades del local',items:['Domicilio inexistente','Local cerrado','No atiende / sin responsable','Sin cartelería','Sin servicio','Cobro adicional','Otra irregularidad']},
   secB:{nombre:'Otras observaciones',items:['Sin stock','Otro']}
 };
@@ -28,6 +29,8 @@ function aplicarPlantilla(){
     CN=CN_SUBE.slice();VN=VN_SUBE.slice();TIT_A='Irregularidad de Carga';TIT_B='Irregularidad en la Venta';
   }
 }
+// Dónde va la foto de la visita (solo la planilla general lo permite elegir; las otras la mandan aparte)
+function fotoModo(){return modoPlanilla()==='general'?(plantilla().foto||'aparte'):'aparte';}
 function nombrePlanillaActiva(){
   const m=modoPlanilla();
   if(m==='general') return 'general de la app';
@@ -55,6 +58,7 @@ function editarPlantilla(){
 function pintarEditorPlantilla(){
   const e=_plEd;
   document.getElementById('plEdTitulo').value=e.titulo;
+  document.getElementById('plEdFoto').value=e.foto||'aparte';
   [['A','secA'],['B','secB']].forEach(([k,s])=>{
     document.getElementById('plEdNom'+k).value=e[s].nombre;
     document.getElementById('plEdLista'+k).innerHTML=e[s].items.map((t,i)=>
@@ -71,6 +75,7 @@ function plEdAgregar(s){
 function plEdGuardar(){
   const e=_plEd;
   e.titulo=document.getElementById('plEdTitulo').value.trim()||PLANTILLA_BASE.titulo;
+  e.foto=document.getElementById('plEdFoto').value;
   e.secA.nombre=document.getElementById('plEdNomA').value.trim()||PLANTILLA_BASE.secA.nombre;
   e.secB.nombre=document.getElementById('plEdNomB').value.trim()||PLANTILLA_BASE.secB.nombre;
   e.secA.items=e.secA.items.map(x=>String(x).trim()).filter(Boolean).slice(0,14);
@@ -100,7 +105,7 @@ async function generarPlanillaGeneralPDF(punto,visita){
   page.drawText(L(t.titulo),{x:40,y,size:20,font:fb,color:azul});y-=10;
   page.drawLine({start:{x:40,y},end:{x:555,y},thickness:1.5,color:azul});y-=24;
   const campo=(k,v)=>{page.drawText(k,{x:40,y,size:9,font:fb,color:gris});page.drawText(L(v).slice(0,80),{x:120,y,size:11,font:f,color:negro});y-=18;};
-  campo('Fecha',pl.fecha||hoy());campo('Hora',pl.hora||ahora());campo('ID',punto.id||'');
+  campo('Fecha',pl.fecha||hoy());campo('Hora',pl.hora||ahora());
   campo('Dirección',(punto.dir||'')+(punto.localidad?' - '+punto.localidad:''));
   campo('Local',punto.nombre||'');campo('Rubro',pl.rubro||punto.tipo||'');
   y-=8;
@@ -125,7 +130,7 @@ async function generarPlanillaGeneralPDF(punto,visita){
     for(const l of ls.slice(0,6)){page.drawText(l,{x:40,y,size:10,font:f,color:negro});y-=13;}
   }
   y-=6;
-  if(pl.foto){
+  if(pl.foto&&fotoModo()==='planilla'){
     try{
       const raw=pl.foto.replace(/^data:image\/\w+;base64,/,'');
       const img=await doc.embedJpg(Uint8Array.from(atob(raw),c=>c.charCodeAt(0)));
