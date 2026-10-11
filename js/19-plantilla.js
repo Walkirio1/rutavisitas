@@ -144,16 +144,16 @@ async function generarPlanillaGeneralPDF(punto,visita){
       const v=(pl.extra||{})[c.id];
       if(c.tipo==='firma'&&String(c.pos||'').startsWith('pie_')) continue; // se dibuja al pie de la última hoja
       if(c.tipo==='firma'){
-        hace(100);
+        hace(140);
         page.drawText(L(c.etiqueta),{x:48,y,size:9,font:fb,color:gris});y-=6;
         if(v){
           try{
             const im=await doc.embedPng(Uint8Array.from(atob(v.replace(/^data:image\/png;base64,/,'')),ch=>ch.charCodeAt(0)));
-            const w=190,h=Math.min(70,w*im.height/im.width);
+            const w=285,h=Math.min(105,w*im.height/im.width);
             page.drawImage(im,{x:48,y:y-h,width:h*im.width/im.height>w?w:h*im.width/im.height,height:h});y-=h+4;
           }catch(e){console.warn('firma en PDF:',e);y-=20;}
-        }else y-=36;
-        page.drawLine({start:{x:48,y},end:{x:248,y},thickness:.8,color:negro});y-=18;
+        }else y-=54;
+        page.drawLine({start:{x:48,y},end:{x:333,y},thickness:.8,color:negro});y-=18;
       }else{
         hace(20);
         page.drawText(L(c.etiqueta),{x:48,y,size:9,font:fb,color:gris});
@@ -185,14 +185,14 @@ async function generarPlanillaGeneralPDF(punto,visita){
   // firmas al pie de la última hoja: izquierda, centro o derecha
   const pie=defs.filter(c=>c.tipo==='firma'&&String(c.pos||'').startsWith('pie_'));
   if(pie.length){
-    if(y<165){page=doc.addPage([595,842]);y=800;}
-    const ancho=170,xs={pie_izq:40,pie_centro:(595-ancho)/2,pie_der:555-ancho};
+    if(y<200){page=doc.addPage([595,842]);y=800;}
+    const ancho=255,xs={pie_izq:40,pie_centro:(595-ancho)/2,pie_der:555-ancho};
     for(const c of pie){
       const v=(pl.extra||{})[c.id],x0=xs[c.pos]!==undefined?xs[c.pos]:40;
       if(v){
         try{
           const im=await doc.embedPng(Uint8Array.from(atob(v.replace(/^data:image\/png;base64,/,'')),ch=>ch.charCodeAt(0)));
-          const h=Math.min(62,ancho*im.height/im.width),w=Math.min(ancho,h*im.width/im.height);
+          const h=Math.min(93,ancho*im.height/im.width),w=Math.min(ancho,h*im.width/im.height);
           page.drawImage(im,{x:x0+(ancho-w)/2,y:78,width:w,height:h});
         }catch(e){console.warn('firma en PDF:',e);}
       }
