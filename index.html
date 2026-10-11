@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="css/08-perfil.css">
 <link rel="stylesheet" href="css/09-plantilla.css">
 <link rel="stylesheet" href="css/10-mapa.css">
+<link rel="stylesheet" href="css/11-campos.css">
 </head>
 <body>
 <div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
@@ -388,6 +389,9 @@
       <div class="plsec" id="plTitB">Irregularidad en la Venta</div>
       <div id="plVenta"></div>
 
+      <div class="plsec" id="plExtraTit" style="display:none">Datos adicionales</div>
+      <div id="plExtraBox"></div>
+
       <!-- OBS -->
       <div class="plsec">Observaciones</div>
       <textarea class="pli" id="plO" placeholder="Observaciones..." style="resize:vertical;min-height:60px"></textarea>
@@ -447,6 +451,7 @@
 <script src="js/17-diagnostico.js"></script>
 <script src="js/18-perfil.js"></script>
 <script src="js/19-plantilla.js"></script>
+<script src="js/20-campos.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -505,6 +510,14 @@ setTimeout(go,2500);})();</script>
     <input class="pli" id="plEdNomB" type="text">
     <div id="plEdListaB"></div>
     <div class="pled-add"><input class="pli" id="plEdNuevoB" type="text" placeholder="Nuevo ítem…"><button class="sm sma" onclick="plEdAgregar('secB')">+ Agregar</button></div>
+    <label class="pllb" style="margin-top:14px">Campos adicionales</label>
+    <div class="pled-nota">Sumá lo que necesites: texto, números, fechas, sí/no, opciones y firma en pantalla.</div>
+    <div id="plEdCampos"></div>
+    <div class="pled-add">
+      <select class="pli" id="plEdCampoTipo" style="max-width:150px"><option value="texto">Texto</option><option value="numero">Número</option><option value="fecha">Fecha</option><option value="si_no">Sí / No</option><option value="opciones">Opciones</option><option value="firma">Firma</option></select>
+      <input class="pli" id="plEdCampoNom" type="text" placeholder="Nombre del campo…">
+      <button class="sm sma" onclick="plEdAgregarCampo()">+</button>
+    </div>
     <label class="pllb" style="margin-top:12px">Foto de la visita</label>
     <select class="pli" id="plEdFoto">
       <option value="aparte">Con foto · va aparte (archivo propio)</option>
@@ -515,6 +528,17 @@ setTimeout(go,2500);})();</script>
       <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
       <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
       <button class="btn bd" onclick="plEdCerrar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="dlg" id="firmaDlg">
+  <div class="dlgw" style="max-width:380px">
+    <div style="font-weight:800;font-size:15px;margin-bottom:8px">Firmá acá</div>
+    <canvas id="firmaCv" style="width:100%;height:190px;border-radius:12px;border:1px dashed #94a3b8;background:#fff;touch-action:none;display:block"></canvas>
+    <div style="display:grid;gap:8px;margin-top:12px">
+      <button class="btn ba" onclick="firmaGuardar()">Guardar firma</button>
+      <button class="btn bd" onclick="firmaBorrar()">Borrar y empezar de nuevo</button>
+      <button class="btn bd" onclick="firmaCerrar()">Cancelar</button>
     </div>
   </div>
 </div>

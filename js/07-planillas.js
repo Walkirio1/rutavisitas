@@ -104,6 +104,7 @@ function openPl(id){
     `<div class="plr${plC['v'+i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
 
+  pintarCamposExtra(pl);
   document.getElementById('plF').value=(pl&&pl.fecha)||hoy();
   document.getElementById('plH').value=(pl&&pl.hora)||ahora();
   document.getElementById('plI').value=p.id||'';
@@ -189,7 +190,7 @@ async function guardarVisita(soloGuardar,confirmado){
   if(modoLocal) soloGuardar=true; // sin cuenta de Google no hay envío a Drive
   // Editando una visita ya hecha y sin nada marcado ni escrito: probablemente se marcó por error
   const yaHecha=visits[curId]&&visits[curId].done;
-  if(yaHecha&&!confirmado&&!Object.values(plC).some(Boolean)&&!document.getElementById('plO').value.trim()&&!fotoData){
+  if(yaHecha&&!confirmado&&!Object.values(plC).some(Boolean)&&!document.getElementById('plO').value.trim()&&!fotoData&&!Object.values(plExtra).some(Boolean)){
     mostrarDlgEnvio('No hay nada marcado en la planilla, ni observaciones ni foto.\n\n¿Esta visita no se hizo (por ejemplo, te confundiste de dirección)?',[
       {txt:'↩ Sí, dejarla como no visitada',cls:'ba',fn:()=>desmarcarHecha(curId)},
       {txt:'No, guardarla como hecha (sin irregularidades)',cls:'bd',fn:()=>guardarVisita(soloGuardar,true)},
@@ -201,12 +202,13 @@ async function guardarVisita(soloGuardar,confirmado){
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
   if(fotoModo()==='no') fotoData=null;
+  if(faltaCampoObligatorio()) return;
   const previa=visits[curId]&&visits[curId].planilla; // si se está editando una visita ya hecha, se conserva su fecha y hora
   if(!visits[curId])visits[curId]={};
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
   if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
-    chC,chV,ti,itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
+    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     driveFotoUrl:null,drivePdfUrl:null,
