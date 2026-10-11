@@ -480,6 +480,8 @@ html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;p
       <button class="sm smh" onclick="centrarEnPuntos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg> Ver todos</button>
     </div>
 
+    <div id="mapaLeyenda" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:#cbd5e1"></div>
+
     <div id="geoPendList"></div>
 
     <div style="position:relative">
@@ -1349,27 +1351,28 @@ let markersLayer = null;
 let miUbicLayer = null;
 let ubicando = null;      // índice en puntos[] del punto que se está ubicando a mano
 let sinGeoAbierto = false;
+let modoMarcar = true;     // true: tocar un pin lo marca/desmarca (azul); false: tocar un pin abre su info
 let manualQ = {};          // texto escrito en el buscador manual, por índice de punto
 let manualRes = {};        // resultados de la búsqueda manual, por índice de punto
 let geocodingInProgress = false;
 
 // Iconos SVG para los pins
 function makeIcon(color){
-  const svg=`<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+  const svg=`<svg width="34" height="48" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
     <path d="M15 0 C6.7 0 0 6.7 0 15 c0 11 15 27 15 27 s15-16 15-27 C30 6.7 23.3 0 15 0 z" fill="${color}"/>
     <circle cx="15" cy="15" r="6" fill="#fff"/>
   </svg>`;
   return L.divIcon({
     html:`<div class="pin-marker">${svg}</div>`,
     className:'',
-    iconSize:[30,42],
-    iconAnchor:[15,42],
-    popupAnchor:[0,-38]
+    iconSize:[34,48],
+    iconAnchor:[17,48],
+    popupAnchor:[0,-44]
   });
 }
-const ICON_SEL = () => makeIcon('#3b82f6');   // azul: en ruta
+const ICON_SEL = () => makeIcon('#3b82f6');   // azul: voy a visitarlo
 const ICON_DEF = () => makeIcon('#94a3b8');   // gris: no en ruta
-const ICON_DONE = () => makeIcon('#10b981');  // verde: verificado
+const ICON_DONE = () => makeIcon('#ef4444');  // rojo: ya visitado
 
 // Inicializar mapa una sola vez
 function initMapa(){
@@ -1408,6 +1411,15 @@ function renderMapa(noFit){
   // empty state
   document.getElementById('mapaVacio').style.display = puntos.length?'none':'block';
   document.getElementById('mapa').style.display = puntos.length?'block':'none';
+
+  // leyenda con colores, cantidades y el interruptor de modo
+  const nVisit=puntos.filter(p=>p.lat&&visits[p.id]&&visits[p.id].done).length;
+  const nRuta=puntos.filter(p=>p.lat&&sel.has(p.id)&&!(visits[p.id]&&visits[p.id].done)).length;
+  const nSin=conGeo.length-nVisit-nRuta;
+  const pt=(c)=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:4px;vertical-align:-1px"></span>`;
+  const ley=document.getElementById('mapaLeyenda');
+  if(ley) ley.innerHTML=`<span>${pt('#94a3b8')}Sin elegir ${nSin}</span><span>${pt('#3b82f6')}Voy ${nRuta}</span><span>${pt('#ef4444')}Visitado ${nVisit}</span>
+    <button class="sm ${modoMarcar?'sma':'smh'}" style="margin-left:auto" onclick="toggleModoMapa()">${modoMarcar?'🔵 Tocar = marcar':'ℹ️ Tocar = ver info'}</button>`;
 
   // lista de puntos sin geocodificar (el cartel se puede tocar para ver cuáles son)
   const pendList=document.getElementById('geoPendList');
@@ -1454,7 +1466,11 @@ function renderMapa(noFit){
       <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con Google Maps</a>
       <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Agregar a ruta'}</button>
     `;
-    marker.bindPopup(popup);
+    if(modoMarcar){
+      marker.on('click',()=>marcarDesdeMapa(p.id));
+    }else{
+      marker.bindPopup(popup);
+    }
     bounds.push([p.lat,p.lng]);
   });
 
@@ -1557,9 +1573,32 @@ function cancelarUbicar(){
   renderMapa(true);
 }
 
+function toggleModoMapa(){
+  modoMarcar=!modoMarcar;
+  showToast(modoMarcar?'Tocá un punto para marcarlo en azul':'Tocá un punto para ver su información');
+  renderMapa(true);
+}
+
+// Tocar un pin: lo marca (azul) o lo desmarca. Los ya visitados (rojo) no se tocan.
+function marcarDesdeMapa(id){
+  const p=puntos.find(x=>x.id===id);
+  if(!p) return;
+  if(visits[id]&&visits[id].done){
+    showToast('✓ Ya visitado: '+(p.nombre||p.dir));
+    return;
+  }
+  const agregando=!sel.has(id);
+  if(agregando) sel.add(id); else sel.delete(id);
+  lsSet(SK.sel,[...sel]);
+  renderP();updStats();
+  renderMapa(true);
+  showToast((agregando?'🔵 Voy: ':'Quitado: ')+(p.nombre||p.dir)+' · '+sel.size+' en ruta');
+  triggerAutosave();
+}
+
 function toggleSelFromMap(id){
   toggleSel(id);
-  renderMapa(); // refresca colores de pin
+  renderMapa(true); // refresca colores de pin sin mover el mapa
 }
 
 function escapeHtml(s){
@@ -2415,7 +2454,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · i';
+const APP_VERSION='2026-10-11 · j';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
