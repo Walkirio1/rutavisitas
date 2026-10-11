@@ -454,6 +454,7 @@
 <script src="js/20-campos.js"></script>
 <script src="js/21-firma-pdf.js"></script>
 <script src="js/22-disenador-pdf.js"></script>
+<script src="js/23-detector-pdf.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -598,6 +599,18 @@ setTimeout(go,2500);})();</script>
       <button class="btn ba" onclick="dsEdGuardar()">Listo</button>
       <button class="btn bd" onclick="dsEdBorrar()">🗑️ Borrar este campo</button>
       <button class="btn bd" onclick="dsEdCancelar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="dlg alto" id="revDlg">
+  <div class="dlgw" style="max-width:400px;max-height:92vh;display:flex;flex-direction:column">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Campos de tu planilla</div>
+    <div id="revRes" style="font-size:12px;color:var(--text-mute);line-height:1.45;margin-bottom:8px"></div>
+    <div id="revLista" style="overflow-y:auto;flex:1;min-height:120px;-webkit-overflow-scrolling:touch"></div>
+    <div style="display:grid;gap:8px;margin-top:10px">
+      <button class="btn ba" id="revOk" onclick="revUsar()">Usar estos campos</button>
+      <button class="btn bd" onclick="revAjustar()">Ajustar sobre la hoja</button>
+      <button class="btn bd" onclick="revCerrar()">Cancelar</button>
     </div>
   </div>
 </div>

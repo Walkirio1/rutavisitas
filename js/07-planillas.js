@@ -25,7 +25,7 @@ function renderPlanillas(){
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
