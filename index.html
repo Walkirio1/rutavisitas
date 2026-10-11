@@ -1065,6 +1065,8 @@ function hoy(){return new Date().toLocaleDateString('es-AR');}
 function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});}
 
 // ── STORAGE (localStorage con prefijo)
+const SK_ORDEN='sube:orden';
+let ordenRuta=(function(){try{return JSON.parse(localStorage.getItem('sube:orden'))||[];}catch(e){return [];}})();
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
   historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
@@ -1772,7 +1774,7 @@ async function exportarExcel(){
 function borrarDia(){
   confirm2('¿Borrar todos los puntos y visitas del día actual?',function(){
     puntos=[];sel=new Set();visits={};
-    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');
+    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');ordenRuta=[];lsDel(SK_ORDEN);
     renderP();updStats();showToast('Día actual borrado ✓');
   });
 }
@@ -1839,6 +1841,7 @@ function setFiltroV(f){
 function renderV(){
   renderPendientes();
   const enRuta=puntos.filter(p=>sel.has(p.id));
+  if(ordenRuta.length){const o=new Map(ordenRuta.map((id,i)=>[id,i]));enRuta.sort((a,b)=>(o.has(a.id)?o.get(a.id):1e9)-(o.has(b.id)?o.get(b.id):1e9));}
   const vEmpty=document.getElementById('vEmpty');
   const vlist=document.getElementById('vlist');
   const fltInfo=document.getElementById('fltInfoV');
@@ -1934,7 +1937,12 @@ function renderH(){
   const btnBH=document.getElementById('btnBorrarHist');
   if(!historial.length){hEmpty.style.display='block';hlist.innerHTML='';btnBH.style.display='none';return;}
   hEmpty.style.display='none';btnBH.style.display='';
-  hlist.innerHTML=historial.map((h,i)=>{
+  const totH=historial.reduce((a,h)=>a+(h.hechos||0),0),totP=historial.reduce((a,h)=>a+(h.total||0),0);
+  const irr=historial.reduce((a,h)=>a+Object.values(h.visits||{}).filter(v=>v&&v.planilla&&((v.planilla.chC||[]).some(Boolean)||(v.planilla.chV||[]).some(Boolean))).length,0);
+  const resumen=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;text-align:center">
+    ${[[historial.length,'jornadas'],[totH,'visitas hechas'],[(totH/historial.length).toFixed(1),'por jornada'],[totP?Math.round(totH/totP*100)+'%':'–','cumplimiento']].map(([n,t])=>`<div class="sc" style="padding:9px 4px;cursor:default"><div style="font-size:17px;font-weight:800">${n}</div><div style="font-size:9.5px;color:var(--text-mute);margin-top:2px">${t}</div></div>`).join('')}
+  </div>${irr?`<div style="font-size:11px;color:var(--text-mute);margin:-4px 0 12px;text-align:center">⚠️ ${irr} visita${irr>1?'s':''} con irregularidades marcadas</div>`:''}`;
+  hlist.innerHTML=resumen+historial.map((h,i)=>{
     const open=histOpenIdx===i;
     const rows=(h.puntos||[]).map(p=>{
       const v=h.visits&&h.visits[p.id]||{};
@@ -2585,20 +2593,45 @@ async function siguientePunto(){
 }
 
 // Ruta completa en Google Maps (es la única app que admite varias paradas): se ordena por cercanía
+// Ordena las paradas: vecino más cercano + mejora 2-opt (camino abierto desde "start")
+function optimizarOrden(start,pts){
+  const d=(a,b)=>distKm(a.lat,a.lng,b.lat,b.lng);
+  const resto=pts.slice(),ruta=[];let pos=start;
+  while(resto.length){let k=0,m=Infinity;resto.forEach((q,i)=>{const x=d(pos,q);if(x<m){m=x;k=i;}});const n=resto.splice(k,1)[0];ruta.push(n);pos=n;}
+  const P=[start,...ruta];let mejora=true,vueltas=0;
+  while(mejora&&vueltas++<30){
+    mejora=false;
+    for(let i=1;i<P.length-1;i++)for(let j=i+1;j<P.length;j++){
+      const a=P[i-1],b=P[i],c=P[j],e=P[j+1];
+      const antes=d(a,b)+(e?d(c,e):0),desp=d(a,c)+(e?d(b,e):0);
+      if(desp+1e-9<antes){P.splice(i,j-i+1,...P.slice(i,j+1).reverse());mejora=true;}
+    }
+  }
+  return P.slice(1);
+}
+// estimación: distancia en línea recta x1,35 (calles), 25 km/h promedio en ciudad, 8 min por visita
+function estimarRuta(start,orden){
+  let km=0,pos=start;orden.forEach(q=>{km+=distKm(pos.lat,pos.lng,q.lat,q.lng);pos=q;});
+  km*=1.35;const min=Math.round(km/25*60+orden.length*8);
+  return {km,min};
+}
+function fmtMin(m){return m>=60?Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min':m+' min';}
 async function rutaCompleta(){
   const faltan=faltanVisitar();
   if(!faltan.length){showToast(sel.size?'¡Ruta completa! No quedan puntos por visitar ✓':'Marcá puntos en azul en el mapa primero',true);return;}
-  showToast('Armando la ruta...');
+  showToast('Optimizando la ruta...');
   const yo=await ubicacionActual();
-  let pos=yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng};
-  const resto=faltan.slice(),orden=[];
-  while(resto.length&&orden.length<10){ // Google Maps admite hasta 10 paradas por enlace
-    resto.sort((x,y)=>distKm(pos.lat,pos.lng,x.lat,x.lng)-distKm(pos.lat,pos.lng,y.lat,y.lng));
-    const n=resto.shift();orden.push(n);pos={lat:n.lat,lng:n.lng};
-  }
+  const start=yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng};
+  const todo=optimizarOrden(start,faltan);
+  const est=estimarRuta(start,todo);
+  // el orden queda guardado: la lista de Visitas se muestra en este orden
+  const hechos=puntos.filter(p=>sel.has(p.id)&&!faltan.includes(p)).map(p=>p.id);
+  ordenRuta=[...hechos,...todo.map(p=>p.id)];lsSet(SK_ORDEN,ordenRuta);renderV();
+  const orden=todo.slice(0,10); // Google Maps admite hasta 10 paradas por enlace
   const dest=orden[orden.length-1],via=orden.slice(0,-1).map(p=>p.lat+','+p.lng).join('|');
   const url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest.lat+','+dest.lng+(via?'&waypoints='+encodeURIComponent(via):'');
-  mostrarDlgEnvio(`🗺️ Ruta de ${orden.length} parada${orden.length>1?'s':''} ordenadas por cercanía${faltan.length>orden.length?` (las primeras ${orden.length} de ${faltan.length}; después armás la siguiente)`:''}.\n\n`+orden.map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n'),[
+  const lista=todo.slice(0,15).map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n')+(todo.length>15?`\n… y ${todo.length-15} más`:'');
+  mostrarDlgEnvio(`🗺️ Ruta optimizada: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
     {txt:'🧭 Abrir en Google Maps',cls:'ba',fn:()=>{window.open(url,'_blank');}},
     {txt:'Cerrar',cls:'bd'}
   ]);
@@ -3675,7 +3708,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 12';
+const APP_VERSION='2026-10-11 · 13';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
