@@ -464,6 +464,11 @@ setTimeout(go,2500);})();</script>
     <input type="text" class="pnom-in" id="perfilNom" placeholder="Tu nombre" autocomplete="name" onchange="perfilGuardarNombre(this.value)">
     <div class="pmail" id="perfilMail"></div>
     <div class="pest" id="perfilEst"></div>
+    <div class="pemp">
+      <input type="email" id="perfilEmpresa" placeholder="Correo de la empresa (opcional)" autocomplete="off" inputmode="email" onchange="perfilGuardarEmpresa(this.value)">
+      <div class="pemp-t">Al cerrar el día, esa dirección recibe de tu Drive el aviso con la carpeta de la jornada (planillas, fotos y Excel).</div>
+      <button class="sm smh" id="perfilEnviarEmp" style="display:none" onclick="compartirDiaConEmpresa(true)">📨 Enviar copia de hoy ahora</button>
+    </div>
     <div class="pstats" id="perfilStats"></div>
     <div class="pinf" id="perfilInf"></div>
     <div style="display:grid;gap:8px">
