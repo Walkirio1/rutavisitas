@@ -113,6 +113,9 @@ function openPl(id){
   if(bs) bs.style.display=drv.connected?'':'none'; // sin Drive, el botón principal ya solo guarda
   if(bg) bg.innerHTML=drv.connected?(v.done?'☁️ Reenviar':'☁️ Enviar visita'):'💾 Guardar visita';
 
+  const bd=document.getElementById('btnDesmarcar');
+  if(bd) bd.style.display=v.done?'':'none'; // solo si ya estaba marcada como hecha
+
   document.getElementById('ov').classList.add('show');
   document.body.style.overflow='hidden';
 }
@@ -153,7 +156,31 @@ async function pdfParaVisita(){
   catch(e){console.error('planilla predeterminada:',e);return {b64:null,nombre:'Planilla_Verificaciones.pdf'};}
 }
 
-async function guardarVisita(soloGuardar){
+// Deja el punto como si nunca se hubiera visitado (vuelve a "pendiente", sin color en el mapa)
+function desmarcarHecha(id){
+  delete visits[id];
+  fotoDel(id);fotosEnIDB.delete(String(id));
+  guardarVisits();
+  closeOv();renderV();updStats();
+  if(typeof mapa!=='undefined'&&mapa) renderMapa(true);
+  showToast('Quedó como no visitada ↩');
+  triggerAutosave();
+}
+function confirmarDesmarcar(){
+  confirm2('¿Dejar este punto como NO visitado? Se borra la planilla y la foto guardadas en la app (lo que ya se envió a tu Drive no se borra).',function(){desmarcarHecha(curId);});
+}
+
+async function guardarVisita(soloGuardar,confirmado){
+  // Editando una visita ya hecha y sin nada marcado ni escrito: probablemente se marcó por error
+  const yaHecha=visits[curId]&&visits[curId].done;
+  if(yaHecha&&!confirmado&&!Object.values(plC).some(Boolean)&&!document.getElementById('plO').value.trim()&&!fotoData){
+    mostrarDlgEnvio('No hay nada marcado en la planilla, ni observaciones ni foto.\n\n¿Esta visita no se hizo (por ejemplo, te confundiste de dirección)?',[
+      {txt:'↩ Sí, dejarla como no visitada',cls:'ba',fn:()=>desmarcarHecha(curId)},
+      {txt:'No, guardarla como hecha (sin irregularidades)',cls:'bd',fn:()=>guardarVisita(soloGuardar,true)},
+      {txt:'Volver a la planilla',cls:'bd'}
+    ]);
+    return;
+  }
   const chC=CN.map((_,i)=>!!plC['c'+i]);
   const chV=VN.map((_,i)=>!!plC['v'+i]);
   const ti=chC.filter(Boolean).length+chV.filter(Boolean).length;
