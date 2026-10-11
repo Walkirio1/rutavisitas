@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070d1b">
+<script>(function(){try{if(localStorage.getItem('sube:drvon'))document.documentElement.classList.add('logged');}catch(e){}})();</script>
 <script>(function(){try{var t=JSON.parse(localStorage.getItem('sube:tema')||'"claro"');var d=t==='oscuro'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,6 +27,7 @@
 <link rel="stylesheet" href="css/05-fondos-y-barra.css">
 <link rel="stylesheet" href="css/06-ajustes-finos.css">
 <link rel="stylesheet" href="css/07-pantalla-entrada.css">
+<link rel="stylesheet" href="css/08-perfil.css">
 </head>
 <body>
 <div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
@@ -77,12 +79,13 @@
 
   <!-- HEADER -->
   <div class="hdr">
-    <div class="logo"><img class="hlogo" src="icons/hero.webp" alt="">Verific.<span>SUBE</span></div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span class="drv-badge" id="drvBadge" onclick="showTab(5)" style="cursor:pointer"><span class="drv-dot"></span><span id="drvBadgeTxt">Drive off</span></span>
-      <span id="fechaHdr" style="font-size:10px;color:var(--text-mute)"></span>
+    <div class="logo"><img class="hlogo" src="icons/hero.webp" alt=""></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span id="fechaHdr" style="font-size:11px;color:var(--text-mute)"></span>
+      <button class="perfil-btn off" id="perfilBtn" onclick="openPerfil()" aria-label="Mi perfil"><span class="pav"></span><span class="pdot" style="display:none"></span></button>
     </div>
   </div>
+  <script>(function(){try{var p=JSON.parse(localStorage.getItem('sube:perfil')),b=document.getElementById('perfilBtn');if(p&&b){var a=b.firstChild;if(p.foto){var i=document.createElement('img');i.alt='';i.src=p.foto;i.referrerPolicy='no-referrer';a.appendChild(i);}else{a.textContent=((p.nombre||p.email||'?').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]}).join('')||'?').toUpperCase();}}}catch(e){}})();</script>
 
   <!-- TABS -->
   <div class="tabs">
@@ -431,6 +434,7 @@
 <script src="js/15-autosave.js"></script>
 <script src="js/16-app-instalacion.js"></script>
 <script src="js/17-diagnostico.js"></script>
+<script src="js/18-perfil.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -447,6 +451,23 @@ setTimeout(go,2500);})();</script>
     <div style="display:grid;gap:8px">
       <button class="btn ba" id="ocrOk" onclick="ocrArmarRuta()">Armar la ruta</button>
       <button class="btn bd" onclick="ocrCerrar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="dlg" id="perfilDlg" onclick="if(event.target===this)closePerfil()">
+  <div class="dlgw perfil">
+    <div class="pav big" id="perfilAv"></div>
+    <div class="pnom" id="perfilNom"></div>
+    <div class="pmail" id="perfilMail"></div>
+    <div class="pest" id="perfilEst"></div>
+    <div class="pstats" id="perfilStats"></div>
+    <div class="pinf" id="perfilInf"></div>
+    <div style="display:grid;gap:8px">
+      <button class="btn ba" id="perfilReco" onclick="closePerfil();connectDrive()">Reconectar con Google</button>
+      <button class="btn bd" onclick="perfilIr(4)">📄 Planilla de mi empresa</button>
+      <button class="btn bd" onclick="perfilIr(5)">☁️ Drive y carpeta</button>
+      <button class="btn bd" onclick="perfilSalir()">Cerrar sesión</button>
+      <button class="btn bd" onclick="closePerfil()">Cerrar</button>
     </div>
   </div>
 </div>

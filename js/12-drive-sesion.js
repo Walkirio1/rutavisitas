@@ -110,12 +110,14 @@ function initTokenClient(){
       gapi.client.setToken({access_token: drv.accessToken});
       drv.connected = true;
       lsSet(SK_DRV_ON,true);
+      document.documentElement.classList.add('logged');
       try{
         const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
           headers:{'Authorization':'Bearer '+drv.accessToken}
         }).then(r=>r.json());
         drv.user = userInfo.email || drv.user;
         if(drv.user) lsSet(SK_DRV_USER,drv.user);
+        guardarPerfil(userInfo);
       }catch(e){}
       // el auto-guardado de la jornada queda activado desde el primer ingreso
       if(lsGet(SK.autosave)===null){drv.autosave=true;lsSet(SK.autosave,true);}
@@ -147,14 +149,8 @@ async function connectDrive(){
 // ── PANTALLA DE ENTRADA: sin cuenta de Google conectada no se puede usar la app
 function actualizarGate(){
   const g=document.getElementById('gate');if(!g) return;
-  if(!drv.connected){g.classList.remove('out');g.classList.add('show');}
+  if(!drv.connected&&!lsGet(SK_DRV_ON)){g.classList.remove('out');g.classList.add('show');}
   else if(g.classList.contains('show')&&!g.classList.contains('out')){g.classList.add('out');setTimeout(()=>g.classList.remove('show','out'),650);}
-}
-// Al mandar la app a segundo plano, la pantalla de entrada queda "puesta": iOS toma ahí su foto y es lo primero que se ve al volver a abrir
-function gateSnapshot(on){
-  const g=document.getElementById('gate');if(!g) return;
-  if(on){g.classList.remove('out');g.classList.add('show','snap');}
-  else{g.classList.remove('snap');actualizarGate();}
 }
 /* (se ejecuta al final, en js/99-arranque.js) */
 /* (se ejecuta al final, en js/99-arranque.js) */
@@ -206,13 +202,7 @@ async function ensureToken(){
 }
 
 function updateDriveBadge(){
-  const b=document.getElementById('drvBadge');
-  const t=document.getElementById('drvBadgeTxt');
-  if(!b)return;
-  b.classList.toggle('on',drv.connected);
-  const pend=pendientesEnvio().length;
-  t.textContent = pend ? (pend+' sin enviar') : (drv.connected ? (drv.autosave?'Sync ✓':'Drive ✓') : 'Drive off');
-  b.classList.toggle('sync',pend>0);
+  renderPerfilBtn();
   actualizarGate();
 }
 
