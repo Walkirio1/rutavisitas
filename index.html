@@ -624,7 +624,7 @@ html{scroll-behavior:smooth}
 :root[data-theme="dark"] .tabs::before{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 8px 20px -12px rgba(37,99,235,.55),0 0 0 1px rgba(96,165,250,.28)}
 /* Pantalla de entrada animada */
 .gate{overflow:hidden}
-.gate.show{animation:gateIn .7s cubic-bezier(.22,1,.36,1) both}
+.gate.show{animation:none}
 .gate.out{animation:gateOut .6s cubic-bezier(.5,0,.75,0) both;pointer-events:none}
 @keyframes gateIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
 @keyframes gateOut{to{opacity:0;transform:scale(1.08);filter:blur(8px)}}
@@ -671,6 +671,18 @@ html{scroll-behavior:smooth}
 </style>
 </head>
 <body>
+<div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
+  <div class="gw">
+    <img class="hero-light" src="icons/hero.webp" alt="">
+    <img class="hero-dark" src="icons/hero.webp" alt="">
+    <h1>Verific</h1>
+    <div class="tagline">Seguro · Rápido · Verificado</div>
+    <p>Entrá con tu cuenta de Google para que tu trabajo quede guardado en tu Drive.</p>
+    <button class="btn ba" onclick="entrarGate()">Entrar con Google</button>
+    <div class="gerr" id="gateErr"></div>
+  </div>
+</div>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
@@ -3364,7 +3376,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 3';
+const APP_VERSION='2026-10-11 · 4';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3431,19 +3443,7 @@ setTimeout(()=>{
 },300);
 actualizarGate();
 </script>
-<div class="gate" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
-  <div class="gw">
-    <img class="hero-light" src="icons/hero.webp" alt="">
-    <img class="hero-dark" src="icons/hero.webp" alt="">
-    <h1>Verific</h1>
-    <div class="tagline">Seguro · Rápido · Verificado</div>
-    <p>Entrá con tu cuenta de Google para que tu trabajo quede guardado en tu Drive.</p>
-    <button class="btn ba" onclick="entrarGate()">Entrar con Google</button>
-    <div class="gerr" id="gateErr"></div>
-  </div>
-</div>
 
-<script>actualizarGate();</script>
 <div class="dlg" id="envioDlg">
   <div class="dlgw">
     <p id="envioMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px;white-space:pre-line"></p>
