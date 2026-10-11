@@ -314,7 +314,8 @@ html{-webkit-text-size-adjust:100%}
 html,body{overscroll-behavior:none}               /* evita recargar sin querer al deslizar hacia abajo */
 .cnt{overscroll-behavior-y:contain}
 button,.tab,.sm,.btn,label{touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.app{height:100vh;height:100dvh}                  /* dvh: respeta la barra del navegador del celular */
+.app{position:fixed;top:0;right:0;bottom:0;left:0;height:auto;margin:0 auto}  /* cubre toda la pantalla, también bajo la barra de inicio del iPhone */
+html{background:#0a0d12}
 #mapa{height:calc(100vh - 200px);height:calc(100dvh - 200px)}
 .hdr{padding-top:max(14px,env(safe-area-inset-top))}
 .cnt{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
