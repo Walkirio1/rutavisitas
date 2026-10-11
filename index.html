@@ -369,7 +369,7 @@
       <div class="plg">
         <div><div class="pllb">Fecha</div><input class="pli plau" id="plF" readonly/></div>
         <div><div class="pllb">Hora</div><input class="pli plau" id="plH" readonly/></div>
-        <div><div class="pllb" id="plLbId">ID PS</div><input class="pli plau" id="plI" readonly/></div>
+        <div id="plBoxId"><div class="pllb" id="plLbId">ID PS</div><input class="pli plau" id="plI" readonly/></div>
         <div><div class="pllb">Rubro</div><input class="pli" id="plR" placeholder="Kiosco"/></div>
         <div class="plgf"><div class="pllb">Dirección</div><input class="pli plau" id="plD" readonly/></div>
       </div>
@@ -386,6 +386,7 @@
       <div class="plsec">Observaciones</div>
       <textarea class="pli" id="plO" placeholder="Observaciones..." style="resize:vertical;min-height:60px"></textarea>
 
+      <div id="plFotoSec">
       <!-- FOTO -->
       <div class="plsec">Foto de la visita</div>
       <label class="foto-btn" id="fotoBtnLbl">
@@ -396,6 +397,7 @@
       <img id="fotoPrev" class="foto-prev"/>
       <div id="fotoOk" style="display:none;font-size:11px;color:#059669;font-weight:600;margin-top:5px;text-align:center"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Foto cargada</div>
       <button id="fotoQuit" style="display:none;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:7px;width:100%;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;margin-top:6px" onclick="quitarFoto()">🗑️ Quitar foto</button>
+      </div>
     </div>
     <div class="plbr">
       <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">💾 Guardar visita</button>
@@ -497,6 +499,12 @@ setTimeout(go,2500);})();</script>
     <input class="pli" id="plEdNomB" type="text">
     <div id="plEdListaB"></div>
     <div class="pled-add"><input class="pli" id="plEdNuevoB" type="text" placeholder="Nuevo ítem…"><button class="sm sma" onclick="plEdAgregar('secB')">+ Agregar</button></div>
+    <label class="pllb" style="margin-top:12px">Foto de la visita</label>
+    <select class="pli" id="plEdFoto">
+      <option value="aparte">Con foto · va aparte (archivo propio)</option>
+      <option value="planilla">Con foto · va dentro de la planilla</option>
+      <option value="no">Sin foto</option>
+    </select>
     <div style="display:grid;gap:8px;margin-top:14px">
       <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
       <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
