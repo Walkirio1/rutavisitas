@@ -10,3 +10,15 @@
 .plcamp-ed{margin-top:10px;padding:8px;border-radius:12px;background:rgba(120,150,200,.1)}
 .plcamp-sub{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-mute);margin:6px 2px 0}
 .plcamp-ed .pli{margin-top:6px;width:100%}
+/* Firma a pantalla casi completa */
+.firma-full{display:none;position:fixed;inset:0;z-index:2600;background:linear-gradient(180deg,#f4f8ff,#e3edfc);flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))}
+.firma-full.show{display:flex}
+.firma-top{text-align:center;padding:6px 0 10px}
+.firma-tit{font-weight:800;font-size:20px;color:#0d2a78;font-family:'Montserrat','Inter Tight',sans-serif}
+.firma-sub{font-size:13px;color:#475569;margin-top:2px}
+.firma-area{position:relative;flex:1;min-height:0;border-radius:18px;background:#fff;border:2px dashed #94a3b8;box-shadow:0 12px 30px -16px rgba(20,40,100,.5);overflow:hidden}
+.firma-area canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.firma-linea{position:absolute;left:18px;right:18px;bottom:22%;border-bottom:1.5px solid #cbd5e1;color:#94a3b8;font-size:16px;pointer-events:none;line-height:0;height:0}
+.firma-bot{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px;padding-top:12px}
+.pled-aviso{background:#fff4e0;border:1px solid #f3d29a;color:#8a5a00;border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.45;margin-bottom:8px}
+.plfirma{min-height:110px;border-color:#2563eb;background:linear-gradient(180deg,#fff,#f1f6ff);color:#1d4fb8}

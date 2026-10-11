@@ -499,6 +499,7 @@ setTimeout(go,2500);})();</script>
 <div class="dlg" id="plEditDlg">
   <div class="dlgw" style="max-width:380px;max-height:92vh;overflow-y:auto">
     <div style="font-weight:800;font-size:15px;margin-bottom:8px">Planilla general</div>
+    <div class="pled-aviso" id="plEdAviso" style="display:none">⚠️ Ahora estás usando otra planilla, y estos campos (incluida la firma) solo aparecen con la planilla general. Al guardar te ofrezco usarla.</div>
     <label class="pllb">Título del PDF</label>
     <input class="pli" id="plEdTitulo" type="text">
     <label class="pllb" style="margin-top:10px">Sección 1 · nombre</label>
@@ -531,15 +532,16 @@ setTimeout(go,2500);})();</script>
     </div>
   </div>
 </div>
-<div class="dlg" id="firmaDlg">
-  <div class="dlgw" style="max-width:380px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:8px">Firmá acá</div>
-    <canvas id="firmaCv" style="width:100%;height:190px;border-radius:12px;border:1px dashed #94a3b8;background:#fff;touch-action:none;display:block"></canvas>
-    <div style="display:grid;gap:8px;margin-top:12px">
-      <button class="btn ba" onclick="firmaGuardar()">Guardar firma</button>
-      <button class="btn bd" onclick="firmaBorrar()">Borrar y empezar de nuevo</button>
-      <button class="btn bd" onclick="firmaCerrar()">Cancelar</button>
-    </div>
+<div class="firma-full" id="firmaDlg">
+  <div class="firma-top">
+    <div class="firma-tit">Firmá acá</div>
+    <div class="firma-sub" id="firmaSub">Con el dedo, dentro del recuadro</div>
+  </div>
+  <div class="firma-area"><canvas id="firmaCv"></canvas><div class="firma-linea">✕</div></div>
+  <div class="firma-bot">
+    <button class="btn bd" onclick="firmaBorrar()">Borrar</button>
+    <button class="btn bd" onclick="firmaCerrar()">Cancelar</button>
+    <button class="btn ba" onclick="firmaGuardar()">Guardar firma</button>
   </div>
 </div>
 <div class="dlg" id="envioDlg">

@@ -54,6 +54,7 @@ let _plEd=null;
 function editarPlantilla(){
   _plEd=JSON.parse(JSON.stringify(plantilla()));
   pintarEditorPlantilla();
+  document.getElementById('plEdAviso').style.display=modoPlanilla()==='general'?'none':'';
   document.getElementById('plEditDlg').classList.add('show');
 }
 function pintarEditorPlantilla(){
@@ -87,6 +88,12 @@ function plEdGuardar(){
   lsSet(SK_PLTPL,e);aplicarPlantilla();renderPlanillas();
   document.getElementById('plEditDlg').classList.remove('show');
   showToast('Planilla general guardada ✓');
+  if(modoPlanilla()!=='general'){
+    mostrarDlgEnvio('Guardada. Pero ahora estás usando otra planilla, y los campos nuevos (incluida la firma) solo aparecen en la planilla general.\n\n¿La usamos desde ahora?',[
+      {txt:'Sí, usar la planilla general',cls:'ba',fn:()=>setPlModo('general')},
+      {txt:'No, seguir con la actual',cls:'bd'}
+    ]);
+  }
 }
 function plEdRestablecer(){
   confirm2('¿Volver a la planilla general original de la app?',function(){_plEd=JSON.parse(JSON.stringify(PLANTILLA_BASE));pintarEditorPlantilla();});
