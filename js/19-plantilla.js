@@ -26,6 +26,8 @@ function aplicarPlantilla(){
   if(modoPlanilla()==='general'){
     const t=plantilla();
     CN=t.secA.items.slice();VN=t.secB.items.slice();TIT_A=t.secA.nombre;TIT_B=t.secB.nombre;
+  }else if(pdfConCampos()){
+    CN=[];VN=[]; // el formulario sale de los campos marcados en la planilla PDF
   }else{
     CN=CN_SUBE.slice();VN=VN_SUBE.slice();TIT_A='Irregularidad de Carga';TIT_B='Irregularidad en la Venta';
   }
@@ -46,7 +48,8 @@ function setPlModo(m){
 function irregsDe(pl){
   if(!pl) return [];
   const a=pl.itemsC||CN,b=pl.itemsV||VN;
-  return a.filter((_,i)=>pl.chC&&pl.chC[i]).concat(b.filter((_,i)=>pl.chV&&pl.chV[i]));
+  const tild=(pl.extraDef||[]).filter(c=>c.tipo==='tilde'&&pl.extra&&pl.extra[c.id]==='Sí').map(c=>c.etiqueta); // tildes de planillas PDF con campos
+  return a.filter((_,i)=>pl.chC&&pl.chC[i]).concat(b.filter((_,i)=>pl.chV&&pl.chV[i])).concat(tild);
 }
 
 // ── EDITOR

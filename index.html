@@ -453,6 +453,7 @@
 <script src="js/19-plantilla.js"></script>
 <script src="js/20-campos.js"></script>
 <script src="js/21-firma-pdf.js"></script>
+<script src="js/22-disenador-pdf.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -559,6 +560,38 @@ setTimeout(go,2500);})();</script>
     <button class="btn bd" onclick="quitarFirmaPlanilla(_pf&&_pf.id)">Sin firma</button>
     <button class="btn bd" onclick="cerrarPosFirma()">Cancelar</button>
     <button class="btn ba" onclick="confirmarPosFirma()">Confirmar lugar</button>
+  </div>
+</div>
+<div class="firma-full" id="dsDlg">
+  <div class="firma-top">
+    <div class="firma-tit">Marcá los campos de tu planilla</div>
+    <div class="firma-sub">Elegí qué vas a marcar y tocá la hoja donde va. Tocá una marca para editarla; arrastrala para moverla.</div>
+  </div>
+  <div class="ds-tools" id="dsTools"></div>
+  <div class="pf-nav"><button class="sm smh" onclick="dsHoja(-1)">◀</button><span id="dsHoja">Hoja 1</span><button class="sm smh" onclick="dsHoja(1)">▶</button>
+    <span style="flex:1"></span><button class="sm smh" onclick="dsZoom(.8)">−</button><span id="dsZoomT">100%</span><button class="sm smh" onclick="dsZoom(1.25)">+ Zoom</button></div>
+  <div class="pf-scroll" id="dsScroll"><div class="pf-wrap" id="dsWrap"><canvas id="dsCv"></canvas><div class="ds-capa" id="dsMarcas"></div></div></div>
+  <div class="firma-bot" style="grid-template-columns:auto 1fr 1.4fr;align-items:center">
+    <span id="dsCuenta" style="font-size:12px;font-weight:700;color:#0d2a78">0 campos</span>
+    <button class="btn bd" onclick="cerrarDisenador()">Cancelar</button>
+    <button class="btn ba" onclick="guardarDisenador()">Guardar campos</button>
+  </div>
+</div>
+<div class="dlg alto" id="dsEdDlg">
+  <div class="dlgw" style="max-width:360px;max-height:90vh;overflow-y:auto">
+    <div style="font-weight:800;font-size:15px;margin-bottom:8px" id="dsEdTit">Campo</div>
+    <div id="dsEdNomBox"><label class="pllb">Nombre (como lo ve quien completa)</label><input class="pli" id="dsEdNom" type="text"></div>
+    <div id="dsEdAuto" style="display:none"><label class="pllb">Se completa solo con</label><select class="pli" id="dsEdFuente"></select></div>
+    <div id="dsEdPuntosBox" style="margin-top:8px"><label class="pllb">Puntos que suma si se tilda (opcional)</label><input class="pli" id="dsEdPuntos" type="number" inputmode="decimal" placeholder="Ej: 5"></div>
+    <label class="ds-chk" id="dsEdCierraBox" style="margin-top:8px"><input type="checkbox" id="dsEdCierra"> Si se tilda, el punto queda en rojo (cerrado / no se pudo visitar)</label>
+    <label class="ds-chk" id="dsEdObligBox" style="margin-top:8px"><input type="checkbox" id="dsEdOblig"> Obligatorio</label>
+    <div id="dsEdSumaBox" style="margin-top:8px"><label class="pllb">Suma estos campos</label><div id="dsEdSuma"></div></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="sm smh" style="flex:1" onclick="dsEdTamano(.85)">− Más chico</button><button class="sm smh" style="flex:1" onclick="dsEdTamano(1.18)">+ Más grande</button></div>
+    <div style="display:grid;gap:8px;margin-top:12px">
+      <button class="btn ba" onclick="dsEdGuardar()">Listo</button>
+      <button class="btn bd" onclick="dsEdBorrar()">🗑️ Borrar este campo</button>
+      <button class="btn bd" onclick="dsEdCancelar()">Cancelar</button>
+    </div>
   </div>
 </div>
 <div class="dlg" id="envioDlg">

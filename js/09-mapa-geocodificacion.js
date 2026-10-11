@@ -36,7 +36,7 @@ const ICON_CERRADO = () => makeIcon('#ef4444'); // rojo: cerrado o no se visitó
 function estadoVisita(id){
   const v=visits[id];if(!v) return null;
   if(v.noVisitado) return 'no';
-  if(v.done){const c=(v.planilla&&v.planilla.chC)||[];return (c[0]||c[1])?'cerrado':'ok';}
+  if(v.done){const c=(v.planilla&&v.planilla.chC)||[];return (c[0]||c[1]||(v.planilla&&v.planilla.cierra))?'cerrado':'ok';}
   return null;
 }
 
