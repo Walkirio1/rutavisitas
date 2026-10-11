@@ -2,7 +2,7 @@
 // - Archivos de la app: red primero (siempre la versión nueva), con respaldo en caché.
 // - Librerías externas (mapas, Excel, PDF, fuentes): caché primero.
 // - Todo lo demás (Google Drive, geocodificación, mapa base) va directo a la red.
-const CACHE = 'sube-v2';
+const CACHE = 'sube-v3';
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './icons/icon-192.png'];
 const CDN = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -32,7 +32,7 @@ function redPrimero(req) {
     const desdeCache = () => caches.match(req).then(m => m || caches.match('./index.html'));
     // con mala señal, después de 4 s se usa lo guardado (si existe)
     const t = setTimeout(() => desdeCache().then(fin), 4000);
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(res => { clearTimeout(t); guardar(req, res); fin(res); })
       .catch(() => { clearTimeout(t); desdeCache().then(m => fin(m || Response.error())); });
   });
