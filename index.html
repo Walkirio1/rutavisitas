@@ -152,6 +152,8 @@ textarea{resize:vertical;min-height:70px;line-height:1.55}
 .vst{font-size:9.5px;padding:3px 9px;border-radius:20px;font-weight:700;flex-shrink:0;text-transform:uppercase;letter-spacing:.1em;border:1px solid var(--line-2)}
 .vsp{background:linear-gradient(180deg,rgba(200,147,114,.15),rgba(200,147,114,.05));color:var(--copper);border-color:rgba(200,147,114,.3)}
 .vsd{background:linear-gradient(180deg,rgba(122,155,118,.15),rgba(122,155,118,.05));color:var(--sage);border-color:rgba(122,155,118,.3)}
+button.vbtn{font-family:inherit;cursor:pointer;font-size:12px;padding:10px 16px;min-height:40px;touch-action:manipulation}
+button.vbtn:active{transform:scale(.96)}
 
 .bdg{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:3px 9px;border-radius:11px;background:linear-gradient(180deg,rgba(212,165,116,.13),rgba(212,165,116,.04));color:var(--amber-light);border:1px solid rgba(212,165,116,.25);box-shadow:0 1px 0 rgba(255,255,255,.04) inset}
 .bdg.gr{background:linear-gradient(180deg,rgba(122,155,118,.13),rgba(122,155,118,.04));color:var(--sage);border-color:rgba(122,155,118,.25)}
@@ -637,7 +639,7 @@ html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;p
       <button id="fotoQuit" style="display:none;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:7px;width:100%;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;margin-top:6px" onclick="quitarFoto()">🗑️ Quitar foto</button>
     </div>
     <div class="plbr">
-      <button class="plbt plgo" onclick="guardarVisita()">💾 Guardar visita</button>
+      <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">💾 Guardar visita</button>
       <button class="plbt plcl" onclick="closeOv()"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg> Cancelar</button>
     </div>
   </div>
@@ -1003,46 +1005,16 @@ function renderV(){
           ${pl?`<div style="font-size:11px;color:#10b981;margin-top:4px">📄 ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
           ${pl&&pl.obs?`<div style="font-size:10px;color:#94a3b8;margin-top:2px">📝 ${pl.obs}</div>`:''}
         </div>
-        <span class="vst ${v.done?'vsd':'vsp'}">${v.done?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha':'Pendiente'}</span>
+        ${v.done
+          ?`<button class="vst vsd vbtn" onclick="openPl('${p.id}')" aria-label="Abrir la planilla para modificarla"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha ›</button>`
+          :`<span class="vst vsp">Pendiente</span>`}
       </div>
       ${!v.done?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
         <button class="sm smb" onclick="openPl('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-list"/></svg> Planilla</button>
         <button class="sm smh" onclick="markDone('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar hecha</button>
-      </div>`:`<div style="font-size:11px;color:#10b981;margin-top:6px"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · ${pl?pl.fecha+' '+pl.hora:''}${pl&&pl.drivePdfUrl?' · ☁️ en Drive':''}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button class="sm smb" onclick="openPl('${p.id}')">✏️ Editar planilla</button>
-        <button class="sm sma" onclick="reenviarADrive('${p.id}')">☁️ Reenviar a Drive</button>
-        <button class="sm smh" onclick="reabrirVisita('${p.id}')">↩️ Reabrir</button>
-      </div>`}
+      </div>`:`<div style="font-size:11px;color:#10b981;margin-top:6px"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · ${pl?pl.fecha+' '+pl.hora:''}</div>`}
     </div>`;
   }).join('');
-}
-
-// Vuelve a mandar a Drive la foto y la planilla rellenada de una visita ya hecha
-async function reenviarADrive(id){
-  if(!drv.connected){showToast('Conectá Drive primero (⚙ → Google Drive)',true);return;}
-  const punto=puntos.find(p=>p.id===id), v=visits[id];
-  if(!punto||!v||!v.planilla){showToast('Esta visita no tiene planilla para enviar: tocá "Editar planilla"',true);return;}
-  showToast('Enviando a Drive...');
-  try{
-    const r=await pdfParaVisita();
-    await subirVisitaADrive(punto,v,r.b64,r.nombre);
-    renderV();
-  }catch(e){
-    console.error('reenviar:',e);
-    showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No se pudo enviar a Drive',true);
-  }
-}
-
-// Una visita hecha vuelve a Pendiente (se conserva la planilla cargada)
-function reabrirVisita(id){
-  confirm2('¿Reabrir esta visita? Vuelve a Pendiente y la planilla guardada se conserva.',function(){
-    if(visits[id]) visits[id].done=false;
-    lsSet(SK.visits,visits);
-    renderV();updStats();
-    showToast('Visita reabierta');
-    triggerAutosave();
-  });
 }
 
 function markDone(id){
@@ -1218,6 +1190,10 @@ function openPl(id){
   if(fotoData)fp.src=fotoData;
   document.getElementById('fotoOk').style.display=fotoData?'block':'none';
   document.getElementById('fotoQuit').style.display=fotoData?'block':'none';
+
+  // Con Drive conectado el botón también envía: se llama "Enviar"
+  const bg=document.getElementById('btnGuardarVisita');
+  if(bg) bg.innerHTML=drv.connected?(v.done?'☁️ Reenviar':'☁️ Enviar visita'):'💾 Guardar visita';
 
   document.getElementById('ov').classList.add('show');
   document.body.style.overflow='hidden';
@@ -2488,7 +2464,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · k';
+const APP_VERSION='2026-10-11 · l';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
