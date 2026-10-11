@@ -1,0 +1,87 @@
+/* Nivel 2: cristal (glassmorphism), burbujas, botones, chips */
+/* ═══════════ NIVEL 2: cristal (glassmorphism), burbujas, destellos y brillo premium ═══════════ */
+:root{--glass-bg:rgba(20,34,64,.55);--glass-bd:rgba(255,255,255,.13);--glass-sh:0 14px 34px -16px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.1)}
+:root[data-theme="light"]{
+  --acc:37,99,235; --acc-1:#4d8dff; --acc-2:#1d4ed8;
+  --amber:#2563eb; --amber-light:#1d4ed8; --text:#0b1d4a; --text-soft:#475a82; --text-mute:#64748b;
+  --glass-bg:rgba(255,255,255,.62); --glass-bd:rgba(255,255,255,.9);
+  --glass-sh:0 16px 36px -18px rgba(37,99,235,.35),0 3px 10px -4px rgba(37,99,235,.12),inset 0 1px 0 #fff,inset 0 0 0 1px rgba(37,99,235,.05);
+}
+/* Fondo pastel con burbujas translúcidas y destellos */
+:root[data-theme="light"] body{background:linear-gradient(165deg,#f6faff 0%,#e9f2fe 48%,#eef8f4 100%)}
+:root[data-theme="light"]::before{
+  background-image:
+    radial-gradient(circle 150px at 96% 5%,rgba(255,255,255,.95) 0,rgba(176,208,255,.4) 55%,rgba(255,255,255,0) 73%),
+    radial-gradient(circle 210px at 2% 94%,rgba(255,255,255,.9) 0,rgba(190,235,222,.42) 55%,rgba(255,255,255,0) 73%),
+    radial-gradient(circle 70px at 94% 52%,rgba(255,255,255,.9) 0,rgba(185,215,255,.32) 58%,rgba(255,255,255,0) 74%),
+    radial-gradient(circle 60px at 5% 32%,rgba(255,255,255,.9) 0,rgba(198,238,226,.3) 58%,rgba(255,255,255,0) 74%)}
+.app::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.9}
+:root[data-theme="dark"] .app::before{opacity:.35;filter:brightness(1.6)}
+
+/* Tarjetas de cristal */
+.card,.vi,.pi,.sc,.cfg-item,.pend-bar,.geo-pend{background:var(--glass-bg);-webkit-backdrop-filter:blur(14px) saturate(1.35);backdrop-filter:blur(14px) saturate(1.35);border:1px solid var(--glass-bd);box-shadow:var(--glass-sh)}
+.card::before,.pnum::after{display:none}
+.card,.vi{border-radius:22px}.pi,.sc,.cfg-item{border-radius:18px}
+:root[data-theme="light"] .pi.sel,:root[data-theme="light"] .sc.act{background:linear-gradient(180deg,rgba(219,234,254,.85),rgba(236,244,255,.7));border-color:rgba(37,99,235,.38);box-shadow:var(--glass-sh),0 0 0 1px rgba(37,99,235,.12)}
+:root[data-theme="light"] .vi.dn{background:linear-gradient(180deg,rgba(220,252,231,.78),rgba(240,253,244,.6));border-color:rgba(16,185,129,.4)}
+.dlgw,.cfg-panel{-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3)}
+:root[data-theme="light"] .dlgw{background:rgba(255,255,255,.88);border-color:#fff}
+:root[data-theme="light"] .cfg-panel{background:linear-gradient(180deg,rgba(248,251,255,.94),rgba(233,242,254,.94))}
+
+/* Encabezado y barra de abajo de cristal */
+.hdr{-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+:root[data-theme="light"] .hdr{background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(240,246,255,.72));border-bottom:1px solid rgba(255,255,255,.9);box-shadow:0 10px 28px -16px rgba(37,99,235,.35)}
+:root[data-theme="light"] .hdr::after{display:none}
+:root[data-theme="light"] .tabs{background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(238,245,255,.72));border:1px solid rgba(255,255,255,.95);box-shadow:0 18px 40px -16px rgba(37,99,235,.45),inset 0 1px 0 #fff,0 0 0 1px rgba(37,99,235,.06)}
+.logo{font-family:'Montserrat','Inter Tight',sans-serif;font-style:normal;font-weight:800;font-size:21px;letter-spacing:-.02em}
+:root[data-theme="light"] .logo{color:#0d2a78}
+.logo .hlogo{width:34px;height:34px;border-radius:11px}
+:root[data-theme="light"] .logo .hlogo{box-shadow:0 8px 18px -8px rgba(37,99,235,.7),0 0 0 1px #fff,inset 0 1px 0 #fff}
+.cfg-title,.gate h1{font-family:'Montserrat','Inter Tight',sans-serif;font-style:normal;font-weight:800;letter-spacing:-.02em}
+:root[data-theme="light"] .cfg-title,:root[data-theme="light"] .gate h1{color:#0d2a78}
+.stit{font-family:'Montserrat','Inter Tight',sans-serif;font-weight:700}
+.cfg-item .cfg-nm{font-family:'Montserrat','Inter Tight',sans-serif;font-weight:700;font-size:13px}
+
+/* Botón principal: azul brillante con reflejo y destello */
+.ba,.sma,.btn.ba{background:linear-gradient(180deg,#4f8ff7 0%,#2563eb 52%,#1d4ed8 100%);color:#fff;border:1px solid rgba(20,60,170,.5);
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 -3px 8px rgba(0,20,100,.28) inset,0 14px 26px -12px rgba(37,99,235,.85),0 3px 8px -3px rgba(29,78,216,.5)}
+.ba::before,.sma::before{background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 46%,rgba(255,255,255,0) 52%,rgba(0,0,60,.12) 100%)}
+.sma::after{display:none}
+.btn.ba{font-family:'Montserrat','Inter Tight',sans-serif;font-weight:700;font-size:14px}
+/* Botón secundario: cristal con borde azul claro */
+:root[data-theme="light"] .bd,:root[data-theme="light"] .smh{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(232,242,255,.85));color:#1d4ed8;border:1.5px solid rgba(96,165,250,.7);box-shadow:0 1px 0 #fff inset,0 10px 20px -12px rgba(37,99,235,.45)}
+:root[data-theme="light"] .bd::before,:root[data-theme="light"] .smh::before{background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 55%)}
+/* Éxito (verde brillante) */
+.smb,.bw,.smg{background:linear-gradient(180deg,#5eead4 -30%,#34d399 0%,#10b981 55%,#059669 100%);color:#fff;border:1px solid rgba(4,120,87,.5);text-shadow:0 1px 0 rgba(0,70,40,.35);box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 -3px 8px rgba(0,60,40,.25) inset,0 12px 22px -12px rgba(16,185,129,.9)}
+.smb::before,.bw::before,.smg::before{background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.08) 48%,rgba(255,255,255,0) 52%,rgba(0,40,20,.1))}
+
+/* Etiquetas (chips) brillantes */
+.vst,.geo-tag,.drv-badge,.bdg{box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 6px 12px -8px rgba(37,99,235,.45)}
+:root[data-theme="light"] .vsd{background:linear-gradient(180deg,#a7f3d0,#34d399);color:#064e3b;border-color:rgba(16,185,129,.55)}
+:root[data-theme="light"] .vsp{background:linear-gradient(180deg,#fde68a,#fbbf24);color:#78350f;border-color:rgba(217,119,6,.5)}
+:root[data-theme="light"] .vsr{background:linear-gradient(180deg,#fecaca,#f87171);color:#7f1d1d;border-color:rgba(220,38,38,.5)}
+:root[data-theme="light"] .drv-badge{background:linear-gradient(180deg,#e0ecff,#bcd6ff);color:#1e40af;border-color:rgba(96,165,250,.7)}
+:root[data-theme="light"] .drv-badge.on{background:linear-gradient(180deg,#a7f3d0,#34d399);color:#064e3b;border-color:rgba(16,185,129,.55)}
+:root[data-theme="light"] .drv-badge.sync{background:linear-gradient(180deg,#fde68a,#fbbf24);color:#78350f;border-color:rgba(217,119,6,.5)}
+:root[data-theme="light"] .bdg{background:linear-gradient(180deg,#e0ecff,#bcd6ff);color:#1e40af;border-color:rgba(96,165,250,.7)}
+:root[data-theme="light"] .bdg.gr{background:linear-gradient(180deg,#a7f3d0,#6ee7b7);color:#064e3b;border-color:rgba(16,185,129,.5)}
+:root[data-theme="light"] .logo span{background:linear-gradient(180deg,#e0ecff,#bcd6ff);color:#1e40af;border-color:rgba(96,165,250,.7)}
+
+/* Campos suaves y interruptor */
+input[type=text],input[type=email],select,textarea{border-radius:16px}
+:root[data-theme="light"] input[type=text],:root[data-theme="light"] input[type=email],:root[data-theme="light"] select,:root[data-theme="light"] textarea{background:linear-gradient(180deg,rgba(237,243,252,.9),rgba(255,255,255,.95));border:1px solid rgba(37,99,235,.15);box-shadow:inset 0 2px 5px rgba(37,99,235,.08),0 1px 0 #fff}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:50px!important;height:30px;border-radius:999px;background:linear-gradient(180deg,#cbd5e1,#e2e8f0);border:1px solid rgba(100,116,139,.35);position:relative;cursor:pointer;flex-shrink:0;transition:background .3s;box-shadow:inset 0 2px 5px rgba(15,23,42,.18)}
+input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#fff,#e8eef9);box-shadow:0 3px 8px rgba(15,23,42,.35),0 1px 0 #fff inset;transition:transform .3s var(--ease-premium)}
+input[type=checkbox]:checked{background:linear-gradient(180deg,#60a5fa,#2563eb);border-color:rgba(20,60,170,.5)}
+input[type=checkbox]:checked::after{transform:translateX(20px)}
+
+/* Pantalla de entrada */
+.gate{background:var(--bg-deep)}
+:root[data-theme="light"] .gate{background:linear-gradient(165deg,#f6faff,#e6f0fd 55%,#eaf7f2)}
+.gate .hero-light,.gate .hero-dark{width:170px;height:170px;object-fit:contain;margin-bottom:6px;border-radius:0;box-shadow:none}
+.gate .hero-light{display:none;mix-blend-mode:multiply}
+:root[data-theme="light"] .gate .hero-light{display:block;margin-left:auto;margin-right:auto}
+:root[data-theme="light"] .gate .hero-dark{display:none}
+.gate .tagline{font-size:12.5px;letter-spacing:.04em;color:var(--text-mute);margin:-4px 0 18px}
+.gate p{color:var(--text-soft)}
+

@@ -1,0 +1,54 @@
+/* Pantalla de entrada animada (esferas de vidrio, botón Google) */
+/* Pantalla de entrada animada */
+.gate{overflow:hidden}
+.gate.show{animation:none}
+.gate.out{animation:gateOut .6s cubic-bezier(.5,0,.75,0) both;pointer-events:none}
+@keyframes gateIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+@keyframes gateOut{to{opacity:0;transform:scale(1.08);filter:blur(8px)}}
+.gate::before,.gate::after{content:"";position:absolute;border-radius:50%;pointer-events:none;filter:blur(2px)}
+.gate::before{width:340px;height:340px;left:-110px;top:-80px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(96,165,250,.38) 45%,rgba(59,130,246,0) 72%);animation:gBub1 9s ease-in-out infinite}
+.gate::after{width:300px;height:300px;right:-100px;bottom:-70px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.5),rgba(52,211,153,.30) 45%,rgba(52,211,153,0) 72%);animation:gBub2 11s ease-in-out infinite}
+@keyframes gBub1{50%{transform:translate(40px,50px) scale(1.12)}}
+@keyframes gBub2{50%{transform:translate(-45px,-40px) scale(1.1)}}
+.gate .gw{position:relative;z-index:1}
+.gate .gw>*{opacity:0}
+.gate.go .gw>*{animation:gRise .8s cubic-bezier(.22,1,.36,1) forwards}
+.gate.go .gw>img{animation:gPop .9s cubic-bezier(.2,1.3,.4,1) 0s forwards,gFloat 5s ease-in-out 1.3s infinite}
+.gate.go .gw>h1{animation-delay:.15s}
+.gate.go .gw>.tagline{animation-delay:.22s}
+.gate.go .gw>p{animation-delay:.3s}
+.gate.go .gw>.btn{animation-delay:.4s;position:relative;overflow:hidden}
+.gate.go .gw>.gerr{animation-delay:.5s}
+@keyframes gRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes gPop{0%{opacity:0;transform:scale(.4) rotate(-8deg)}100%{opacity:1;transform:none}}
+@keyframes gFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.gate .btn.ba::before{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:gShine 3.2s ease-in-out 1.6s infinite}
+@keyframes gShine{0%{left:-70%}45%,100%{left:130%}}
+@media (prefers-reduced-motion:reduce){.gate *,.gate::before,.gate::after{animation:none!important}.gate .gw>*{opacity:1!important}}
+.gate .hero-light{mix-blend-mode:normal!important}
+.gate .hero-light,.gate .hero-dark{filter:drop-shadow(0 14px 26px rgba(30,90,200,.35))}
+.gate::before,.gate::after{filter:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.38);
+  box-shadow:inset 0 0 40px rgba(255,255,255,.14),inset 12px 14px 30px rgba(255,255,255,.28),inset -14px -18px 36px rgba(0,30,90,.10),0 20px 50px -20px rgba(20,60,160,.35)}
+.gate::before{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.55) 0,rgba(255,255,255,.12) 18%,rgba(96,165,250,.22) 55%,rgba(59,130,246,.10) 100%)}
+.gate::after{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.5) 0,rgba(255,255,255,.1) 18%,rgba(52,211,153,.20) 55%,rgba(52,211,153,.09) 100%)}
+.logo .hlogo,:root[data-theme="light"] .logo .hlogo{border-radius:0;box-shadow:none;object-fit:contain;width:36px;height:36px;filter:drop-shadow(0 4px 8px rgba(37,99,235,.35))}
+.inst-bar img{border-radius:0;object-fit:contain}
+.gate .gb{position:absolute;width:var(--s);height:var(--s);border-radius:50%;pointer-events:none;z-index:0;
+  background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.5) 0,rgba(255,255,255,.08) 22%,rgba(var(--c),.12) 62%,rgba(var(--c),.05) 100%);
+  border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  box-shadow:inset 4px 5px 12px rgba(255,255,255,.22),inset -5px -6px 12px rgba(var(--c),.08);
+  animation:gDrift var(--d) ease-in-out var(--dl) infinite alternate;opacity:.9}
+@keyframes gDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(14px,-26px) scale(1.08)}}
+.gate::before{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.4) 0,rgba(255,255,255,.08) 18%,rgba(96,165,250,.13) 55%,rgba(59,130,246,.06) 100%)!important}
+.gate::after{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.36) 0,rgba(255,255,255,.07) 18%,rgba(52,211,153,.12) 55%,rgba(52,211,153,.05) 100%)!important}
+.gate::before,.gate::after{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+@media (prefers-reduced-motion:reduce){.gate .gb{animation:none!important}}
+.plbr .plgo{grid-column:1/-1}
+.plbt.plsv{font-size:12px;background:linear-gradient(180deg,#fff,#e8f1fe);color:#1d4fb8;border:1px solid #bcd3f5;box-shadow:0 6px 14px -8px rgba(37,99,235,.5)}
+.gate.snap,.gate.snap .gw>*,.gate.snap .gb{animation:none!important}
+.gate.snap .gw>*{opacity:1!important;transform:none}
+.gate{bottom:-160px;padding-bottom:188px}
+.gate .gbtn{background:#fff;color:#3c4043;border:1px solid #dadce0;box-shadow:0 8px 22px -10px rgba(20,40,100,.45);display:flex;align-items:center;justify-content:center;gap:12px;font-weight:600;text-shadow:none}
+.gate .gbtn .gg{width:20px;height:20px;flex-shrink:0}
+.gate .btn.gbtn::before{background:linear-gradient(100deg,transparent,rgba(66,133,244,.18),transparent)}
