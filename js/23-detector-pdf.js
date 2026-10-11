@@ -97,7 +97,9 @@ async function detectarCampos(pdf){
         usadas.add(s);
       }
       const x=s.x+s.w+3,w=Math.max(40,Math.min(90,vp.width-30-x));
-      campos.push({id:nid(),tipo:'numero',moneda:true,etiqueta:nom,pag:p,x,y:s.y-2.5,w,h:14});
+      // si la fila o la columna dice Total / Subtotal / Suma, el $ es el casillero del total: ahí va la suma
+      const esTotal=/total|suma|puntaje/i.test(nom);
+      campos.push({id:nid(),tipo:esTotal?'suma':'numero',moneda:true,etiqueta:nom,pag:p,x,y:s.y-2.5,w,h:14});
     }
     // datos automáticos, totales, firma y otros campos "Etiqueta:"
     for(const s of frases){
