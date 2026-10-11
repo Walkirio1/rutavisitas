@@ -192,6 +192,16 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
     }
   }
 
+  // firma en el lugar que el usuario marcó en su planilla PDF
+  try{
+    const cfg=firmaDePlanillaPdf(),fv=(pl.extra||{}).firma_pdf;
+    if(cfg&&fv){
+      const pg=pdfDoc.getPages()[Math.min(cfg.pagina,pdfDoc.getPageCount()-1)];
+      const f1=await firmaRecortada(pdfDoc,fv,cfg.w,cfg.h,true);
+      pg.drawImage(f1.im,{x:cfg.x+(cfg.w-f1.w)/2,y:cfg.y+(cfg.h-f1.h)/2,width:f1.w,height:f1.h});
+    }
+  }catch(e){console.warn('firma en la planilla:',e);}
+
   // Serializar PDF resultante
   const pdfBytes = await pdfDoc.save();
   // Convertir a base64 plano

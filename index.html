@@ -452,6 +452,7 @@
 <script src="js/18-perfil.js"></script>
 <script src="js/19-plantilla.js"></script>
 <script src="js/20-campos.js"></script>
+<script src="js/21-firma-pdf.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -542,6 +543,22 @@ setTimeout(go,2500);})();</script>
     <button class="btn bd" onclick="firmaBorrar()">Borrar</button>
     <button class="btn bd" onclick="firmaCerrar()">Cancelar</button>
     <button class="btn ba" onclick="firmaGuardar()">Guardar firma</button>
+  </div>
+</div>
+<div class="firma-full" id="pfDlg">
+  <div class="firma-top">
+    <div class="firma-tit">¿Dónde va la firma?</div>
+    <div class="firma-sub">Tocá la hoja donde tiene que ir. Podés arrastrar el recuadro y cambiarle el tamaño.</div>
+  </div>
+  <div class="pf-nav"><button class="sm smh" onclick="pfHoja(-1)">◀</button><span id="pfHoja">Hoja 1</span><button class="sm smh" onclick="pfHoja(1)">▶</button>
+    <span style="flex:1"></span><button class="sm smh" onclick="pfTamano(.85)">− Más chica</button><button class="sm smh" onclick="pfTamano(1.18)">+ Más grande</button></div>
+  <div class="pf-scroll"><div class="pf-wrap" id="pfWrap"><canvas id="pfCv"></canvas>
+    <div class="pf-box" id="pfBox"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M6 28 C 20 4, 34 36, 48 14 S 76 6, 92 22 L 112 12" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/></svg><span>Acá firma</span></div>
+  </div></div>
+  <div class="firma-bot" style="grid-template-columns:1fr 1fr 1.4fr">
+    <button class="btn bd" onclick="quitarFirmaPlanilla(_pf&&_pf.id)">Sin firma</button>
+    <button class="btn bd" onclick="cerrarPosFirma()">Cancelar</button>
+    <button class="btn ba" onclick="confirmarPosFirma()">Confirmar lugar</button>
   </div>
 </div>
 <div class="dlg" id="envioDlg">
