@@ -63,11 +63,11 @@ function pintarMarcas(){
     let h='';
     if(c.tipo==='suma'&&c.zona&&c.zona.pag===_ds.pag){
       const z=c.zona,sel=_ds.sel&&_ds.sel.i===i&&_ds.sel.parte==='zona';
-      h+=`<div class="ds-m ds-zona${sel?' ds-sel':''}" data-i="${i}" data-p="zona" style="--c:#d97706;${pos(z)}"><span>Σ zona de suma</span></div>`;
+      h+=`<div class="ds-m ds-zona${sel?' ds-sel':''}" data-i="${i}" data-p="zona" style="--c:#d97706;${pos(z)}"><span>Σ zona de suma</span>${sel?manijas():''}</div>`;
     }
     if(c.pag===_ds.pag){
       const t=TOOLS_DS[c.tipo]||TOOLS_DS.texto,sel=_ds.sel&&_ds.sel.i===i&&_ds.sel.parte==='campo';
-      h+=`<div class="ds-m ds-${c.tipo}${sel?' ds-sel':''}" data-i="${i}" data-p="campo" style="--c:${t.c};${pos(c)}"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span></div>`;
+      h+=`<div class="ds-m ds-${c.tipo}${sel?' ds-sel':''}" data-i="${i}" data-p="campo" style="--c:${t.c};${pos(c)}"><span>${c.tipo==='tilde'?'✕':escapeHtml(c.etiqueta||'')}</span>${sel?manijas():''}</div>`;
     }
     return h;
   }).join('');
@@ -76,10 +76,11 @@ function pintarMarcas(){
   if(_ds.sel){
     const c=_ds.campos[_ds.sel.i];
     acc.style.display='';
-    document.getElementById('dsAccTxt').textContent=_ds.sel.parte==='zona'?'Zona de suma: pellizcá para cambiar el tamaño y arrastrala sobre los números':'«'+(c.etiqueta||'campo')+'»: pellizcá con dos dedos para cambiar su tamaño';
+    document.getElementById('dsAccTxt').textContent=_ds.sel.parte==='zona'?'Zona de suma: arrastrá las esquinas para cubrir los números y movela con un dedo':'«'+(c.etiqueta||'campo')+'»: arrastrá una esquina para darle la forma que quieras';
     document.getElementById('dsAccEd').style.display=_ds.sel.parte==='zona'?'none':'';
   }else acc.style.display='none';
 }
+const manijas=()=>['nw','ne','sw','se'].map(k=>`<i class="ds-h ${k}" data-h="${k}"></i>`).join('');
 function dsSel(i,parte){_ds.sel=i===null?null:{i,parte:parte||'campo'};pintarMarcas();}
 function dsAccEditar(){if(_ds.sel) dsEditar(_ds.sel.i);}
 function dsAccBorrar(){
@@ -108,14 +109,16 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
     ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(ptrs.size===1){
       const m=e.target.closest&&e.target.closest('.ds-m');
-      down={sx:e.clientX,sy:e.clientY,lx:e.clientX,ly:e.clientY,mov:false,cancel:false,m:m?{i:+m.dataset.i,parte:m.dataset.p}:null};
+      const hnd=e.target.closest&&e.target.closest('.ds-h');
+      down={sx:e.clientX,sy:e.clientY,lx:e.clientX,ly:e.clientY,mov:false,cancel:false,m:m?{i:+m.dataset.i,parte:m.dataset.p}:null,res:hnd?hnd.dataset.h:null};
+      if(down.res&&_ds.sel){const r=rectSel(),fx=down.res.includes('w')?r.x+r.w:r.x,fy=down.res.includes('n')?r.y:r.y+r.h;down.fijo={x:fx,y:fy};}
       if(down.m){const r=down.m.parte==='zona'?_ds.campos[down.m.i].zona:_ds.campos[down.m.i],p=pt(e.clientX,e.clientY);down.dx=p.x-r.x;down.dy=p.y-r.y;}
     }else if(ptrs.size===2){
       if(down) down.cancel=true;
       const [a,b]=[...ptrs.values()];
       const w0=wrap().getBoundingClientRect();
       pinch={dx0:Math.max(30,Math.abs(a.x-b.x)),dy0:Math.max(30,Math.abs(a.y-b.y)),d0:Math.hypot(a.x-b.x,a.y-b.y),zoom0:_ds.zoom,
-        modo:(_ds.sel&&dentroSel(a.x,a.y)&&dentroSel(b.x,b.y))?'tam':'zoom',
+        modo:'zoom',
         r0:_ds.sel?{...rectSel()}:null,fx:((a.x+b.x)/2-w0.left)/w0.width,fy:((a.y+b.y)/2-w0.top)/w0.height};
     }
   });
@@ -143,7 +146,13 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
     if(!down||down.cancel) return;
     if(!down.mov&&Math.hypot(e.clientX-down.sx,e.clientY-down.sy)<7) return;
     down.mov=true;
-    if(down.m){ // mover la marca
+    if(down.res&&down.fijo&&_ds.sel){ // estirar desde la esquina: la esquina opuesta queda fija
+      const r=rectSel(),p=pt(e.clientX,e.clientY),fx=down.fijo.x,fy=down.fijo.y;
+      let x0=Math.min(fx,p.x),x1=Math.max(fx,p.x),y0=Math.min(fy,p.y),y1=Math.max(fy,p.y);
+      x0=Math.max(0,x0);x1=Math.min(_ds.pw,x1);y0=Math.max(0,y0);y1=Math.min(_ds.ph,y1);
+      if(x1-x0<8) x1=x0+8; if(y1-y0<8) y1=y0+8;
+      r.x=x0;r.y=y0;r.w=x1-x0;r.h=y1-y0;pintarMarcas();
+    }else if(down.m){ // mover la marca
       if(!_ds.sel||_ds.sel.i!==down.m.i||_ds.sel.parte!==down.m.parte) _ds.sel={i:down.m.i,parte:down.m.parte};
       const r=rectSel(),p=pt(e.clientX,e.clientY);
       r.x=Math.max(0,Math.min(_ds.pw-r.w,p.x-down.dx));r.y=Math.max(0,Math.min(_ds.ph-r.h,p.y-down.dy));pintarMarcas();
@@ -161,7 +170,7 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
     }
     if(ptrs.size===0&&down){
       const d=down;down=null;
-      if(!activo()||d.cancel||d.mov) return;
+      if(!activo()||d.cancel||d.mov||d.res) return;
       if(d.m) dsSel(d.m.i,d.m.parte);
       else if(_ds.sel) dsSel(null);
       else if(_ds.tool){const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);}

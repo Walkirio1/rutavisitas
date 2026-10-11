@@ -56,3 +56,10 @@
 .rev-r input[type=checkbox]{width:22px;height:22px;flex-shrink:0}
 .rev-n{flex:1;min-width:0;border-radius:10px;padding:8px 10px;border:1px solid rgba(120,150,200,.4);background:rgba(255,255,255,.7);color:var(--text);font-size:13px}
 .rev-p{width:62px;border-radius:10px;padding:8px 6px;border:1px solid rgba(120,150,200,.4);background:rgba(255,255,255,.7);font-size:13px;text-align:center}
+/* Manijas en las esquinas (tamaño libre) */
+.ds-m{overflow:visible!important}
+.ds-m span{max-width:100%;display:block}
+.ds-h{position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #0d2a78;box-shadow:0 2px 6px rgba(0,0,0,.4);touch-action:none;z-index:6}
+.ds-h::after{content:"";position:absolute;inset:-10px}
+.ds-h.nw{left:-26px;top:-26px}.ds-h.ne{right:-26px;top:-26px}.ds-h.sw{left:-26px;bottom:-26px}.ds-h.se{right:-26px;bottom:-26px}
+.plmon{display:flex;align-items:center;gap:8px}.plmon span{font-size:22px;font-weight:800;color:#0d2a78}.plmon .pli{flex:1}

@@ -84,6 +84,21 @@ async function detectarCampos(pdf){
         campos.push(k);
       }
     }
+    // signo $: a su lado siempre va un número (importe); se toma el texto de la izquierda como nombre
+    for(const s of frases){
+      if(!/\$\s*[_\.]*\s*$/.test(s.s.trim())) continue;
+      const solo=s.s.replace(/[$_\.\s:]/g,'').length===0;
+      let nom='Importe';
+      if(!solo){const n=limpiarEt(s.s.replace(/\$/g,'').trim());if(n.length>=2) nom=n;usadas.add(s);}
+      else{
+        const izq=frases.filter(q=>q!==s&&Math.abs(q.y-s.y)<=4&&q.x+q.w<=s.x+2&&s.x-(q.x+q.w)<260).sort((a,b)=>(b.x+b.w)-(a.x+a.w))[0];
+        if(izq){nom=limpiarEt(izq.s)||nom;usadas.add(izq);}
+        else{const enc=frases.filter(q=>q.y>s.y&&q.y-s.y<120&&Math.abs(q.x+q.w/2-(s.x+s.w/2))<60&&q.s.length<28).sort((a,b)=>a.y-b.y)[0];if(enc){nom=limpiarEt(enc.s)||nom;usadas.add(enc);}}
+        usadas.add(s);
+      }
+      const x=s.x+s.w+3,w=Math.max(40,Math.min(90,vp.width-30-x));
+      campos.push({id:nid(),tipo:'numero',moneda:true,etiqueta:nom,pag:p,x,y:s.y-2.5,w,h:14});
+    }
     // datos automáticos, totales, firma y otros campos "Etiqueta:"
     for(const s of frases){
       if(usadas.has(s)) continue;
@@ -103,6 +118,7 @@ async function detectarCampos(pdf){
 
 // ── PDF rellenable (con campos reales de formulario)
 async function camposDeFormulario(bytes,pdf){
+  if(!window.PDFLib) return []; // sin pdf-lib se sigue con la detección de la hoja
   const {PDFDocument}=window.PDFLib;
   let doc;try{doc=await PDFDocument.load(bytes);}catch(e){return [];}
   const form=doc.getForm(),fields=form.getFields(),pages=doc.getPages(),res=[];let n=0;
