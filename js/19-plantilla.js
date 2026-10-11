@@ -100,6 +100,28 @@ function plEdRestablecer(){
 }
 function plEdCerrar(){document.getElementById('plEditDlg').classList.remove('show');}
 
+// Recorta el espacio en blanco de la firma y la dibuja a 1,5 veces el tamaño que tenía antes en la misma caja
+async function firmaRecortada(doc,dataUrl,cajaW,cajaH){
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=dataUrl;});
+  const cw=img.naturalWidth,ch=img.naturalHeight;
+  const c=document.createElement('canvas');c.width=cw;c.height=ch;
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);
+  const d=x.getImageData(0,0,cw,ch).data;
+  let x0=cw,y0=ch,x1=0,y1=0;
+  for(let j=0;j<ch;j++)for(let i=0;i<cw;i++){const k=(j*cw+i)*4;if(d[k+3]>20&&(d[k]<235||d[k+1]<235||d[k+2]<235)){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}}
+  if(x1<x0||y1<y0){x0=0;y0=0;x1=cw-1;y1=ch-1;}
+  const m=6;x0=Math.max(0,x0-m);y0=Math.max(0,y0-m);x1=Math.min(cw-1,x1+m);y1=Math.min(ch-1,y1+m);
+  const bw=x1-x0+1,bh=y1-y0+1;
+  const r=document.createElement('canvas');r.width=bw;r.height=bh;
+  r.getContext('2d').drawImage(c,x0,y0,bw,bh,0,0,bw,bh);
+  const im=await doc.embedPng(Uint8Array.from(atob(r.toDataURL('image/png').split(',')[1]),ch2=>ch2.charCodeAt(0)));
+  // escala de antes: la imagen entera entraba en la caja; ahora la tinta mide 1,5 veces lo que medía
+  const s0=Math.min(cajaH/ch,cajaW/cw),esc=s0*1.5;
+  let w=bw*esc,h=bh*esc;
+  const tope=cajaW*1.5;if(w>tope){h*=tope/w;w=tope;}
+  return {im,w,h};
+}
+
 // ── PDF de la planilla general (se arma desde cero, sin marca de empresa)
 async function generarPlanillaGeneralPDF(punto,visita){
   if(!window.PDFLib) throw new Error('pdf-lib no cargó');
@@ -144,16 +166,16 @@ async function generarPlanillaGeneralPDF(punto,visita){
       const v=(pl.extra||{})[c.id];
       if(c.tipo==='firma'&&String(c.pos||'').startsWith('pie_')) continue; // se dibuja al pie de la última hoja
       if(c.tipo==='firma'){
-        hace(140);
+        hace(100);
         page.drawText(L(c.etiqueta),{x:48,y,size:9,font:fb,color:gris});y-=6;
         if(v){
           try{
-            const im=await doc.embedPng(Uint8Array.from(atob(v.replace(/^data:image\/png;base64,/,'')),ch=>ch.charCodeAt(0)));
-            const w=285,h=Math.min(105,w*im.height/im.width);
-            page.drawImage(im,{x:48,y:y-h,width:h*im.width/im.height>w?w:h*im.width/im.height,height:h});y-=h+4;
+            const f1=await firmaRecortada(doc,v,190,70);  // misma caja de antes, pero la firma (la tinta) sale 50 % más grande
+            hace(f1.h+60);
+            page.drawImage(f1.im,{x:48,y:y-f1.h,width:f1.w,height:f1.h});y-=f1.h+4;
           }catch(e){console.warn('firma en PDF:',e);y-=20;}
-        }else y-=54;
-        page.drawLine({start:{x:48,y},end:{x:333,y},thickness:.8,color:negro});y-=18;
+        }else y-=36;
+        page.drawLine({start:{x:48,y},end:{x:248,y},thickness:.8,color:negro});y-=18;
       }else{
         hace(20);
         page.drawText(L(c.etiqueta),{x:48,y,size:9,font:fb,color:gris});
@@ -185,15 +207,14 @@ async function generarPlanillaGeneralPDF(punto,visita){
   // firmas al pie de la última hoja: izquierda, centro o derecha
   const pie=defs.filter(c=>c.tipo==='firma'&&String(c.pos||'').startsWith('pie_'));
   if(pie.length){
-    if(y<200){page=doc.addPage([595,842]);y=800;}
-    const ancho=255,xs={pie_izq:40,pie_centro:(595-ancho)/2,pie_der:555-ancho};
+    if(y<165){page=doc.addPage([595,842]);y=800;}
+    const ancho=170,xs={pie_izq:40,pie_centro:(595-ancho)/2,pie_der:555-ancho};
     for(const c of pie){
       const v=(pl.extra||{})[c.id],x0=xs[c.pos]!==undefined?xs[c.pos]:40;
       if(v){
         try{
-          const im=await doc.embedPng(Uint8Array.from(atob(v.replace(/^data:image\/png;base64,/,'')),ch=>ch.charCodeAt(0)));
-          const h=Math.min(93,ancho*im.height/im.width),w=Math.min(ancho,h*im.width/im.height);
-          page.drawImage(im,{x:x0+(ancho-w)/2,y:78,width:w,height:h});
+          const f1=await firmaRecortada(doc,v,ancho,62); // la línea y el lugar quedan como antes; la firma sale 50 % más grande
+          page.drawImage(f1.im,{x:Math.max(20,Math.min(575-f1.w,x0+(ancho-f1.w)/2)),y:78,width:f1.w,height:f1.h});
         }catch(e){console.warn('firma en PDF:',e);}
       }
       page.drawLine({start:{x:x0,y:76},end:{x:x0+ancho,y:76},thickness:.8,color:negro});
