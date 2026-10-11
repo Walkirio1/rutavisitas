@@ -668,6 +668,8 @@ html{scroll-behavior:smooth}
 @media (prefers-reduced-motion:reduce){.gate .gb{animation:none!important}}
 .plbr .plgo{grid-column:1/-1}
 .plbt.plsv{font-size:12px;background:linear-gradient(180deg,#fff,#e8f1fe);color:#1d4fb8;border:1px solid #bcd3f5;box-shadow:0 6px 14px -8px rgba(37,99,235,.5)}
+.gate.snap,.gate.snap .gw>*,.gate.snap .gb{animation:none!important}
+.gate.snap .gw>*{opacity:1!important;transform:none}
 </style>
 </head>
 <body>
@@ -2745,6 +2747,15 @@ function actualizarGate(){
   if(!drv.connected){g.classList.remove('out');g.classList.add('show');}
   else if(g.classList.contains('show')&&!g.classList.contains('out')){g.classList.add('out');setTimeout(()=>g.classList.remove('show','out'),650);}
 }
+// Al mandar la app a segundo plano, la pantalla de entrada queda "puesta": iOS toma ahí su foto y es lo primero que se ve al volver a abrir
+function gateSnapshot(on){
+  const g=document.getElementById('gate');if(!g) return;
+  if(on){g.classList.remove('out');g.classList.add('show','snap');}
+  else{g.classList.remove('snap');actualizarGate();}
+}
+document.addEventListener('visibilitychange',()=>gateSnapshot(document.hidden));
+window.addEventListener('pagehide',()=>gateSnapshot(true));
+window.addEventListener('pageshow',()=>gateSnapshot(false));
 function errorGate(msg){const e=document.getElementById('gateErr');if(e)e.textContent=msg||'';}
 function entrarGate(){errorGate('');connectDrive();}
 // Si la reconexión silenciosa falló al abrir, el primer toque la reintenta (con un toque el navegador no la bloquea)
@@ -3376,7 +3387,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 4';
+const APP_VERSION='2026-10-11 · 5';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
