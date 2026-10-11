@@ -86,3 +86,12 @@
 .sc .scnum .plmon{width:150px;flex-shrink:0}
 .sc .scnum .plsuma{font-size:20px;padding:5px 12px}
 .sc .scnum.tot{background:#fff6d6;border-radius:10px;padding:9px 10px;margin:4px 0 8px}
+.sc-opc{flex-wrap:wrap;gap:6px}
+.sc-chip{max-width:100%;white-space:normal;text-align:left}
+.sc-row{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #e1eaf7}
+.sc-t+.sc-row{border-top:0}
+.sc-cell{flex:1 1 135px;min-width:0}
+.sc-cell .plcampo{border:0;padding:8px 0}
+.sc-auto .sc-av{font-size:14px;font-weight:600;color:#17325c;background:#eef3fb;border-radius:10px;padding:8px 10px;margin-top:2px}
+.sc-auto{opacity:.85}
+.sc-opc .sc-chip{font-size:12.5px;padding:5px 11px}
