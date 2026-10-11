@@ -49,3 +49,10 @@
 .ds-zona{background:rgba(217,119,6,.14)!important;border:2px dashed #d97706!important}
 .pf-wrap#dsWrap{touch-action:none}
 .pf-scroll#dsScroll{touch-action:none}
+/* Revisión de los campos detectados */
+.rev-g{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1d4fb8;margin:10px 0 4px}
+.rev-g span{background:#dbe8ff;border-radius:8px;padding:0 6px;margin-left:4px}
+.rev-r{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.rev-r input[type=checkbox]{width:22px;height:22px;flex-shrink:0}
+.rev-n{flex:1;min-width:0;border-radius:10px;padding:8px 10px;border:1px solid rgba(120,150,200,.4);background:rgba(255,255,255,.7);color:var(--text);font-size:13px}
+.rev-p{width:62px;border-radius:10px;padding:8px 6px;border:1px solid rgba(120,150,200,.4);background:rgba(255,255,255,.7);font-size:13px;text-align:center}

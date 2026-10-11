@@ -26,7 +26,7 @@ async function abrirDisenador(id){
     await cargarPdfJs();
     const bin=atob(pl.b64.replace(/\s/g,''));const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
     const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
-    _ds={id,pdf,pag:0,pw:0,ph:0,zoom:1,tool:'tilde',sel:null,campos:JSON.parse(JSON.stringify(pl.campos||[]))};
+    _ds={id,pdf,pag:0,pw:0,ph:0,zoom:1,tool:null,sel:null,campos:JSON.parse(JSON.stringify(pl.campos||[]))};
     document.getElementById('dsDlg').classList.add('show');
     document.getElementById('dsHint').style.display=lsGet('sube:dszoomvisto')?'none':'';
     pintarHerramientas();
@@ -39,7 +39,7 @@ function pintarHerramientas(){
   document.getElementById('dsTools').innerHTML=Object.entries(TOOLS_DS).map(([k,t])=>
     `<button class="dst${_ds.tool===k?' on':''}" style="--c:${t.c}" onclick="dsTool('${k}')">${t.n}</button>`).join('');
 }
-function dsTool(k){_ds.tool=k;pintarHerramientas();}
+function dsTool(k){_ds.tool=_ds.tool===k?null:k;if(_ds.tool&&_ds.sel){_ds.sel=null;pintarMarcas();}pintarHerramientas();}
 
 async function pintarPagDs(){
   const pg=await _ds.pdf.getPage(_ds.pag+1),vp1=pg.getViewport({scale:1});
@@ -164,7 +164,8 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
       if(!activo()||d.cancel||d.mov) return;
       if(d.m) dsSel(d.m.i,d.m.parte);
       else if(_ds.sel) dsSel(null);
-      else{const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);}
+      else if(_ds.tool){const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);}
+      else showToast('Elegí arriba qué querés marcar y después tocá la hoja');
     }
   }
   document.addEventListener('pointerup',fin);document.addEventListener('pointercancel',fin);
@@ -175,7 +176,8 @@ function dsAgregar(p){
   const c={id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),tipo:_ds.tool,etiqueta:'',pag:_ds.pag,w:t.w,h:t.h,x:p.x-t.w/2,y:p.y-t.h/2};
   c.x=Math.max(0,Math.min(_ds.pw-c.w,c.x));c.y=Math.max(0,Math.min(_ds.ph-c.h,c.y));
   if(c.tipo==='auto') c.fuente='fecha';
-  _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};pintarMarcas();dsEditar(_ds.campos.length-1,true);
+  _ds.campos.push(c);_ds.sel={i:_ds.campos.length-1,parte:'campo'};_ds.tool=null;pintarHerramientas(); // cada toque agrega un solo campo: la herramienta se apaga
+  pintarMarcas();dsEditar(_ds.campos.length-1,true);
 }
 
 // ── Editar un campo
@@ -289,6 +291,7 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
   const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
   const bin=atob(pdfB64.replace(/\s/g,''));const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
   const doc=await PDFDocument.load(bytes),f=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
+  let form=null;try{form=doc.getForm();}catch(e){}
   const pl=visita.planilla||{},val=pl.extra||{},campos=plPdf.campos||[],paginas=doc.getPages();
   const L=s=>String(s==null?'':s).replace(/[^\x20-\x7EÀ-ÿ]/g,'');
   const auto={fecha:pl.fecha||hoy(),hora:pl.hora||ahora(),id:punto.id||'',direccion:(punto.dir||'')+(punto.localidad?' - '+punto.localidad:''),nombre:punto.nombre||'',rubro:pl.rubro||punto.tipo||''};
@@ -300,6 +303,16 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
   };
   for(const c of campos){
     const pg=paginas[Math.min(c.pag||0,paginas.length-1)],v=val[c.id];
+    if(c.via==='form'&&form){ // campo real del formulario del PDF
+      try{
+        if(c.tipo==='tilde'){const cb=form.getCheckBox(c.nombreForm);if(v==='Sí')cb.check();else cb.uncheck();}
+        else if(c.tipo==='texto'||c.tipo==='numero'||c.tipo==='fecha'||c.tipo==='auto'||c.tipo==='suma'){
+          const txt=c.tipo==='auto'?auto[c.fuente]:(c.tipo==='suma'?String(valorSuma(c,val,campos)):v);
+          if(txt) form.getTextField(c.nombreForm).setText(L(txt));
+        }
+      }catch(e){console.warn('campo del formulario:',e);}
+      continue;
+    }
     if(c.tipo==='tilde'){
       if(v==='Sí'){const t=Math.min(c.w,c.h)*1.15;pg.drawText('X',{x:c.x+(c.w-fb.widthOfTextAtSize('X',t))/2,y:c.y+(c.h-t)/2+t*.12,size:t,font:fb,color:rgb(0,0,0)});}
     }else if(c.tipo==='auto') texto(pg,c,auto[c.fuente]);
@@ -311,5 +324,6 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
       }
     }else texto(pg,c,v);
   }
+  try{if(form) form.flatten();}catch(e){}
   return await doc.saveAsBase64({dataUri:false});
 }

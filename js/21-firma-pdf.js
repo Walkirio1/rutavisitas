@@ -15,9 +15,10 @@ async function cargarPdfJs(){
 
 // Después de guardar una planilla nueva: ¿es igual a la oficial o se marcan sus campos?
 function preguntarComoUsar(id){
-  mostrarDlgEnvio('Planilla guardada. ¿Cómo la completamos?\n\n• Si es distinta a la oficial (otras casillas, puntos, sumas), marcá sobre la hoja dónde va cada dato: la app arma el formulario y rellena tu PDF.\n• Si tiene las mismas casillas que la oficial SUBE, se usa tal cual.',[
-    {txt:'🧩 Marcar los campos de mi planilla',cls:'ba',fn:()=>abrirDisenador(id)},
-    {txt:'Es igual a la oficial (solo firma, si lleva)',cls:'bd',fn:()=>preguntarFirmaPlanilla(id)}
+  mostrarDlgEnvio('Planilla guardada ✓\n\nLa app busca sola las casillas, los datos y los totales de tu planilla, y vos solo revisás la lista.',[
+    {txt:'✨ Detectar los campos automáticamente',cls:'ba',fn:()=>detectarYRevisar(id)},
+    {txt:'Es igual a la oficial SUBE (solo firma, si lleva)',cls:'bd',fn:()=>preguntarFirmaPlanilla(id)},
+    {txt:'Más tarde',cls:'bd'}
   ]);
 }
 
