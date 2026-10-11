@@ -25,7 +25,7 @@ function renderPlanillas(){
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.firma?' · ✍️ con firma':''),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,`<button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button><button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
@@ -65,7 +65,7 @@ function guardarNuevaPlanilla(){
   document.getElementById('pdfDropZone').style.display='';
   document.getElementById('pdfOkZone').style.display='none';
   renderPlanillas();showToast(`Planilla "${nombre}" guardada ✓`);
-  setTimeout(()=>preguntarFirmaPlanilla(np[0].id),600);
+  setTimeout(()=>preguntarComoUsar(np[0].id),600);
 }
 
 function borrarPlanilla(id){
@@ -95,12 +95,14 @@ function openPl(id){
   document.getElementById('plLbId').textContent=gen?'ID':'ID PS';
   document.getElementById('plBoxId').style.display=gen?'none':''; // la planilla general no muestra el ID
   document.getElementById('plFotoSec').style.display=fotoModo()==='no'?'none':'';
+  const conC=!!pdfConCampos(); // planilla PDF con campos propios: no se muestran las irregularidades de la oficial
   document.getElementById('plTitA').textContent=TIT_A;
   document.getElementById('plTitB').textContent=TIT_B;
   document.getElementById('plTitB').style.display=VN.length?'':'none';
   document.getElementById('plCarga').innerHTML=CN.map((n,i)=>
     `<div class="plr${plC['c'+i]?' on':''}" onclick="plT('c${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
+  ['plTitA','plCarga','plTitB','plVenta'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display=conC?'none':e.style.display;});
   document.getElementById('plVenta').innerHTML=VN.map((n,i)=>
     `<div class="plr${plC['v'+i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
@@ -209,7 +211,7 @@ async function guardarVisita(soloGuardar,confirmado){
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
   if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
-    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final'})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,obs:document.getElementById('plO').value,
+    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final'})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,cierra:camposActivos().some(c=>c.tipo==='tilde'&&c.cierra&&plExtra[c.id]==='Sí'),obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     driveFotoUrl:null,drivePdfUrl:null,

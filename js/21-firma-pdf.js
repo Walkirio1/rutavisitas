@@ -13,6 +13,14 @@ async function cargarPdfJs(){
   if(!window.pdfjsLib.GlobalWorkerOptions.workerSrc) window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
+// Después de guardar una planilla nueva: ¿es igual a la oficial o se marcan sus campos?
+function preguntarComoUsar(id){
+  mostrarDlgEnvio('Planilla guardada. ¿Cómo la completamos?\n\n• Si es distinta a la oficial (otras casillas, puntos, sumas), marcá sobre la hoja dónde va cada dato: la app arma el formulario y rellena tu PDF.\n• Si tiene las mismas casillas que la oficial SUBE, se usa tal cual.',[
+    {txt:'🧩 Marcar los campos de mi planilla',cls:'ba',fn:()=>abrirDisenador(id)},
+    {txt:'Es igual a la oficial (solo firma, si lleva)',cls:'bd',fn:()=>preguntarFirmaPlanilla(id)}
+  ]);
+}
+
 // Después de guardar una planilla nueva
 function preguntarFirmaPlanilla(id){
   mostrarDlgEnvio('¿Esta planilla lleva firma?\n\nSi la llevás, al completar cada visita se firma con el dedo y la firma se imprime en el lugar que elijas.',[

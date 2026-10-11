@@ -117,6 +117,7 @@ function safeName(s){
 // ═══════════════════════════════════════════════════════════
 async function rellenarPlanillaPDF(pdfB64, punto, visita){
   if(pdfB64==='GENERAL') return generarPlanillaGeneralPDF(punto,visita); // planilla general de la app
+  const plPdf=pdfConCampos(); if(plPdf&&pdfB64===plPdf.b64) return rellenarPorCampos(pdfB64,plPdf,punto,visita); // planilla PDF con campos marcados
   if(!window.PDFLib){throw new Error('pdf-lib no cargó');}
   const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
 

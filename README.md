@@ -42,6 +42,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   19-plantilla.js         planilla general editable (sin marca), planilla en uso, PDF general
   20-campos.js            campos adicionales (texto, número, fecha, sí/no, opciones) y firma en pantalla
   21-firma-pdf.js         firma en planillas PDF subidas: elegir dónde va (visor de PDF)
+  22-disenador-pdf.js     marcar sobre un PDF dónde va cada campo (tilde, texto, número, fecha, firma, suma, dato auto) y rellenarlo
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
 privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)
