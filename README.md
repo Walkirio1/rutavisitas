@@ -16,6 +16,7 @@ css/                    Estilos, en orden (cada archivo pisa al anterior)
   06-ajustes-finos.css    movimientos suaves, planilla, resplandor de íconos
   07-pantalla-entrada.css pantalla de entrada animada
 js/                     Lógica, en orden (comparten el mismo ámbito global)
+  00-errores.js           registro de errores (se carga primero)
   01-base.js              constantes, fechas, almacenamiento, fotos (IndexedDB)
   02-puntos.js            estado de la interfaz, pestañas, ajustes, lista de puntos, importar Excel
   03-lectura-fotos.js     lista de direcciones desde una foto (OCR); lector con IA (apagado, FUNC_IA)
@@ -32,7 +33,9 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   14-envios-pendientes.js envíos pendientes y guardar en el celular
   15-autosave.js          auto-guardado de la jornada
   16-app-instalacion.js   versión (APP_VERSION), iPhone, instalar como app
+  17-diagnostico.js       Ajustes → Diagnóstico (info para soporte)
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
+privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)
 manifest.webmanifest    Datos de la app instalable
 icons/                  Íconos, fondos e imágenes de la barra

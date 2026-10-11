@@ -2,10 +2,10 @@
 // - Archivos de la app: red primero (siempre la versión nueva), con respaldo en caché.
 // - Librerías externas (mapas, Excel, PDF, fuentes): caché primero.
 // - Todo lo demás (Google Drive, geocodificación, mapa base) va directo a la red.
-const CACHE = 'sube-v7';
+const CACHE = 'sube-v8';
 const TILES = 'sube-tiles'; // mapa guardado para usar sin señal (no se borra al actualizar)
 const PRECACHE = [
-  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './icons/icon-192.png',
+  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './icons/icon-192.png',
   './css/01-base.css',
   './css/02-movil-y-entrada.css',
   './css/03-nuevo-diseno.css',
@@ -13,6 +13,7 @@ const PRECACHE = [
   './css/05-fondos-y-barra.css',
   './css/06-ajustes-finos.css',
   './css/07-pantalla-entrada.css',
+  './js/00-errores.js',
   './js/01-base.js',
   './js/02-puntos.js',
   './js/03-lectura-fotos.js',
@@ -29,6 +30,7 @@ const PRECACHE = [
   './js/14-envios-pendientes.js',
   './js/15-autosave.js',
   './js/16-app-instalacion.js',
+  './js/17-diagnostico.js',
   './js/99-arranque.js'
 ];
 const CDN = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
