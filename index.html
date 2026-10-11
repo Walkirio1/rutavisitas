@@ -418,6 +418,7 @@ html{background:#0a0d12}
         <div class="cfg-tx"><div class="cfg-nm">Instalar en el celular</div><div class="cfg-ds">Ícono en pantalla de inicio, sin barra del navegador</div></div>
         <span class="cfg-ar">›</span>
       </button>
+      <div id="appVersion" style="text-align:center;font-size:10px;color:var(--text-mute);margin-top:16px"></div>
     </div>
   </aside>
 
@@ -2200,6 +2201,26 @@ async function borrarJornadaActualDrive(){
     }
   }catch(e){console.error('borrarJornadaActual:',e);}
 }
+
+// ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
+const APP_VERSION='2026-10-11 · d';
+document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
+
+// ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
+function ajustarAltoApp(){
+  const app=document.querySelector('.app');
+  if(!app) return;
+  const vertical=window.matchMedia('(orientation:portrait)').matches;
+  if(navigator.standalone===true && vertical){
+    app.style.bottom='auto';
+    app.style.height=Math.max(window.innerHeight,screen.height)+'px';
+  }else{
+    app.style.bottom='';app.style.height='';
+  }
+}
+ajustarAltoApp();
+['resize','orientationchange','pageshow'].forEach(ev=>window.addEventListener(ev,ajustarAltoApp));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)ajustarAltoApp();});
 
 // ── INSTALAR COMO APP + MODO SIN SEÑAL
 let _instalarEvt=null;
