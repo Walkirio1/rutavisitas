@@ -15,6 +15,7 @@ css/                    Estilos, en orden (cada archivo pisa al anterior)
   05-fondos-y-barra.css   fondos de cristal y barra de abajo con íconos 3D
   06-ajustes-finos.css    movimientos suaves, planilla, resplandor de íconos
   07-pantalla-entrada.css pantalla de entrada animada
+  08-perfil.css           foto de perfil y ventana de perfil
 js/                     Lógica, en orden (comparten el mismo ámbito global)
   00-errores.js           registro de errores (se carga primero)
   01-base.js              constantes, fechas, almacenamiento, fotos (IndexedDB)
@@ -34,6 +35,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   15-autosave.js          auto-guardado de la jornada
   16-app-instalacion.js   versión (APP_VERSION), iPhone, instalar como app
   17-diagnostico.js       Ajustes → Diagnóstico (info para soporte)
+  18-perfil.js            perfil de usuario (foto de Google, cerrar sesión)
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
 privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)

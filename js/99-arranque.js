@@ -44,15 +44,6 @@ mostrarAppNav();
 actualizarIAEst();
 
 // de 12-drive-sesion.js
-document.addEventListener('visibilitychange',()=>gateSnapshot(document.hidden));
-
-// de 12-drive-sesion.js
-window.addEventListener('pagehide',()=>gateSnapshot(true));
-
-// de 12-drive-sesion.js
-window.addEventListener('pageshow',()=>gateSnapshot(false));
-
-// de 12-drive-sesion.js
 document.addEventListener('click',()=>{
   if(_toqueUsado||drv.connected||!lsGet(SK_DRV_ON)||!drv.tokenClient) return;
   _toqueUsado=true;drv.silentTry=true;
