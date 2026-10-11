@@ -3460,6 +3460,10 @@ setTimeout(()=>{
 actualizarGate();
 </script>
 
+<script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
+function listo(){requestAnimationFrame(function(){requestAnimationFrame(go);});}
+if(document.readyState==='complete')listo();else window.addEventListener('load',listo);
+setTimeout(go,2500);})();</script>
 <div class="dlg" id="envioDlg">
   <div class="dlgw">
     <p id="envioMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px;white-space:pre-line"></p>
