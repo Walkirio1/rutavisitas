@@ -39,7 +39,7 @@ function pintarHerramientas(){
   document.getElementById('dsTools').innerHTML=Object.entries(TOOLS_DS).map(([k,t])=>
     `<button class="dst${_ds.tool===k?' on':''}" style="--c:${t.c}" onclick="dsTool('${k}')">${t.n}</button>`).join('');
 }
-function dsTool(k){_ds.tool=_ds.tool===k?null:k;if(_ds.tool&&_ds.sel){_ds.sel=null;pintarMarcas();}pintarHerramientas();}
+function dsTool(k){_ds.tool=_ds.tool===k?null:k;if(_ds.tool&&_ds.sel){_ds.sel=null;pintarMarcas();}pintarHerramientas();if(_ds.tool) showToast('Ahora tocá la hoja donde va');}
 
 async function pintarPagDs(){
   const pg=await _ds.pdf.getPage(_ds.pag+1),vp1=pg.getViewport({scale:1});
@@ -196,9 +196,9 @@ function rectSel(){const c=_ds.campos[_ds.sel.i];return _ds.sel.parte==='zona'?c
     if(ptrs.size===0&&down){
       const d=down;down=null;
       if(!activo()||d.cancel||d.mov||d.res) return;
-      if(d.m) dsSel(d.m.i,d.m.parte);
+      if(_ds.tool){const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);} // con una herramienta elegida, tocar siempre agrega (aunque haya una marca debajo)
+      else if(d.m) dsSel(d.m.i,d.m.parte);
       else if(_ds.sel) dsSel(null);
-      else if(_ds.tool){const p=pt(d.sx,d.sy);if(p.x>=0&&p.x<=_ds.pw&&p.y>=0&&p.y<=_ds.ph) dsAgregar(p);}
       else showToast('Elegí arriba qué querés marcar y después tocá la hoja');
     }
   }
