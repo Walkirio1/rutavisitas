@@ -142,6 +142,7 @@ async function generarPlanillaGeneralPDF(punto,visita){
     page.drawText('DATOS ADICIONALES',{x:46,y:y+1,size:10,font:fb,color:azul});y-=26;
     for(const c of defs){
       const v=(pl.extra||{})[c.id];
+      if(c.tipo==='firma'&&String(c.pos||'').startsWith('pie_')) continue; // se dibuja al pie de la última hoja
       if(c.tipo==='firma'){
         hace(100);
         page.drawText(L(c.etiqueta),{x:48,y,size:9,font:fb,color:gris});y-=6;
@@ -180,6 +181,25 @@ async function generarPlanillaGeneralPDF(punto,visita){
       esc=Math.min(300/img.width,Math.max(60,y-40)/img.height,1);
       page.drawImage(img,{x:40,y:y-img.height*esc,width:img.width*esc,height:img.height*esc});
     }catch(e){console.warn('foto en PDF:',e);}
+  }
+  // firmas al pie de la última hoja: izquierda, centro o derecha
+  const pie=defs.filter(c=>c.tipo==='firma'&&String(c.pos||'').startsWith('pie_'));
+  if(pie.length){
+    if(y<165){page=doc.addPage([595,842]);y=800;}
+    const ancho=170,xs={pie_izq:40,pie_centro:(595-ancho)/2,pie_der:555-ancho};
+    for(const c of pie){
+      const v=(pl.extra||{})[c.id],x0=xs[c.pos]!==undefined?xs[c.pos]:40;
+      if(v){
+        try{
+          const im=await doc.embedPng(Uint8Array.from(atob(v.replace(/^data:image\/png;base64,/,'')),ch=>ch.charCodeAt(0)));
+          const h=Math.min(62,ancho*im.height/im.width),w=Math.min(ancho,h*im.width/im.height);
+          page.drawImage(im,{x:x0+(ancho-w)/2,y:78,width:w,height:h});
+        }catch(e){console.warn('firma en PDF:',e);}
+      }
+      page.drawLine({start:{x:x0,y:76},end:{x:x0+ancho,y:76},thickness:.8,color:negro});
+      const et=L(c.etiqueta).slice(0,34);
+      page.drawText(et,{x:x0+(ancho-f.widthOfTextAtSize(et,8.5))/2,y:63,size:8.5,font:f,color:gris});
+    }
   }
   doc.getPages().forEach(p=>p.drawText('Generado con Verific',{x:40,y:20,size:8,font:f,color:gris}));
   return await doc.saveAsBase64({dataUri:false});

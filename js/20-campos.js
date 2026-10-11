@@ -1,5 +1,7 @@
 // Campos adicionales de la planilla general: texto, número, fecha, sí/no, opciones y firma en pantalla
 const TIPOS_CAMPO={texto:'Texto',numero:'Número',fecha:'Fecha',si_no:'Sí / No',opciones:'Opciones (elegir una)',firma:'Firma en pantalla'};
+// dónde se dibuja la firma en el PDF
+const POS_FIRMA={final:'Posición: pegada al final de la planilla',pie_izq:'Posición: abajo a la izquierda',pie_centro:'Posición: abajo, centrada',pie_der:'Posición: abajo a la derecha'};
 let plExtra={}; // valores de la visita que se está completando: {idCampo: valor}
 
 function camposActivos(){
@@ -99,6 +101,7 @@ function pintarEditorCampos(){
     <div class="plcamp-ed">
       <div class="pled-row"><input type="text" value="${escapeHtml(c.etiqueta)}" placeholder="Nombre del campo" onchange="_plEd.campos[${i}].etiqueta=this.value"><button onclick="plEdQuitarCampo(${i})" aria-label="Quitar">✕</button></div>
       <div class="plcamp-sub"><span>${TIPOS_CAMPO[c.tipo]||c.tipo}</span><label><input type="checkbox" ${c.obligatorio?'checked':''} onchange="_plEd.campos[${i}].obligatorio=this.checked"> Obligatorio</label></div>
+      ${c.tipo==='firma'?`<select class="pli" onchange="_plEd.campos[${i}].pos=this.value">${Object.entries(POS_FIRMA).map(([k,n])=>`<option value="${k}"${(c.pos||'final')===k?' selected':''}>${n}</option>`).join('')}</select>`:''}
       ${c.tipo==='opciones'?`<input class="pli" type="text" value="${escapeHtml((c.opciones||[]).join(', '))}" placeholder="Opciones separadas por coma" onchange="_plEd.campos[${i}].opciones=this.value.split(',').map(s=>s.trim()).filter(Boolean)">`:''}
     </div>`).join('');
 }
