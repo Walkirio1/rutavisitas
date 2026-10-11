@@ -625,6 +625,31 @@ html{scroll-behavior:smooth}
 /* pastilla más fina y suave */
 .tabs::before{box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 8px 18px -12px rgba(37,99,235,.35),0 0 0 1px rgba(96,165,250,.28)}
 :root[data-theme="dark"] .tabs::before{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 8px 20px -12px rgba(37,99,235,.55),0 0 0 1px rgba(96,165,250,.28)}
+/* Pantalla de entrada animada */
+.gate{overflow:hidden}
+.gate.show{animation:gateIn .7s cubic-bezier(.22,1,.36,1) both}
+.gate.out{animation:gateOut .6s cubic-bezier(.5,0,.75,0) both;pointer-events:none}
+@keyframes gateIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+@keyframes gateOut{to{opacity:0;transform:scale(1.08);filter:blur(8px)}}
+.gate::before,.gate::after{content:"";position:absolute;border-radius:50%;pointer-events:none;filter:blur(2px)}
+.gate::before{width:340px;height:340px;left:-110px;top:-80px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(96,165,250,.38) 45%,rgba(59,130,246,0) 72%);animation:gBub1 9s ease-in-out infinite}
+.gate::after{width:300px;height:300px;right:-100px;bottom:-70px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.5),rgba(52,211,153,.30) 45%,rgba(52,211,153,0) 72%);animation:gBub2 11s ease-in-out infinite}
+@keyframes gBub1{50%{transform:translate(40px,50px) scale(1.12)}}
+@keyframes gBub2{50%{transform:translate(-45px,-40px) scale(1.1)}}
+.gate .gw{position:relative;z-index:1}
+.gate.show .gw>*{opacity:0;animation:gRise .8s cubic-bezier(.22,1,.36,1) forwards}
+.gate.show .gw>img{animation:gPop 1.1s cubic-bezier(.2,1.3,.4,1) .1s forwards,gFloat 5s ease-in-out 1.3s infinite}
+.gate.show .gw>h1{animation-delay:.45s}
+.gate.show .gw>.tagline{animation-delay:.6s}
+.gate.show .gw>p{animation-delay:.75s}
+.gate.show .gw>.btn{animation-delay:.95s;position:relative;overflow:hidden}
+.gate.show .gw>.gerr{animation-delay:1.1s}
+@keyframes gRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes gPop{0%{opacity:0;transform:scale(.4) rotate(-8deg)}100%{opacity:1;transform:none}}
+@keyframes gFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.gate .btn.ba::before{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:gShine 3.2s ease-in-out 1.6s infinite}
+@keyframes gShine{0%{left:-70%}45%,100%{left:130%}}
+@media (prefers-reduced-motion:reduce){.gate *,.gate::before,.gate::after{animation:none!important}.gate .gw>*{opacity:1!important}}
 </style>
 </head>
 <body>
@@ -1439,8 +1464,10 @@ function cerrarDia(){
     showTab(1);return;
   }
   const enRuta=puntos.filter(p=>sel.has(p.id));
-  if(!enRuta.length){showToast('No hay puntos en la ruta',true);return;}
-  confirm2('¿Cerrar el día? Se guarda en el historial y se limpia la jornada actual.',function(){
+  const hechos=puntos.filter(p=>estadoVisita(p.id)==='ok'); // los verdes
+  if(!hechos.length){showToast('No hay visitas hechas (verdes) para cerrar',true);return;}
+  const quedan=puntos.length-hechos.length;
+  confirm2('¿Cerrar el día? Las '+hechos.length+' visitas hechas (verdes) salen del mapa y se guardan en el historial. Quedan '+quedan+' punto'+(quedan===1?'':'s')+' (cerrados y sin marcar).',function(){
     // el Excel del día queda en Drive antes de limpiar
     try{const fx=generarExcelJornada();if(drv.connected)subirExcelADrive(fx).catch(e=>console.warn('excel del día:',e));}catch(e){console.warn(e);}
     const entrada={
@@ -1448,14 +1475,19 @@ function cerrarDia(){
       puntos:enRuta,
       visits:visitsSinFotos(visits), // el historial no guarda fotos (ya se enviaron a Drive)
       total:enRuta.length,
-      hechos:enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length,
+      hechos:hechos.length,
     };
     historial=[entrada,...historial].slice(0,60);
-    puntos=[];sel=new Set();visits={};
+    const ids=new Set(hechos.map(p=>p.id));
+    hechos.forEach(p=>{fotoDel(p.id);fotosEnIDB.delete(String(p.id));});
+    puntos=puntos.filter(p=>!ids.has(p.id));
+    sel=new Set([...sel].filter(id=>!ids.has(id)));
+    ids.forEach(id=>{delete visits[id];});
     lsSet(SK.historial,historial);
-    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');
-    renderP();updStats();renderH();showToast('Día cerrado y guardado ✓');
-    // borrar jornada-actual del Drive (la jornada ya pasó al historial)
+    lsSet(SK.puntos,puntos);lsSet(SK.sel,[...sel]);guardarVisits();
+    renderP();updStats();renderH();renderV();
+    if(typeof renderMapa==='function'&&mapa) renderMapa(true);
+    showToast('Día cerrado: '+hechos.length+' hechas guardadas ✓');
     if(drv.connected) borrarJornadaActualDrive().catch(()=>{});
     showTab(3);
   });
@@ -2675,7 +2707,8 @@ async function connectDrive(){
 // ── PANTALLA DE ENTRADA: sin cuenta de Google conectada no se puede usar la app
 function actualizarGate(){
   const g=document.getElementById('gate');if(!g) return;
-  g.classList.toggle('show',!drv.connected&&!lsGet(SK_DRV_ON));
+  if(!drv.connected){g.classList.remove('out');g.classList.add('show');}
+  else if(g.classList.contains('show')&&!g.classList.contains('out')){g.classList.add('out');setTimeout(()=>g.classList.remove('show','out'),650);}
 }
 function errorGate(msg){const e=document.getElementById('gateErr');if(e)e.textContent=msg||'';}
 function entrarGate(){errorGate('');connectDrive();}
@@ -3308,7 +3341,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · x';
+const APP_VERSION='2026-10-11 · y';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -3387,6 +3420,7 @@ actualizarGate();
   </div>
 </div>
 
+<script>actualizarGate();</script>
 <div class="dlg" id="envioDlg">
   <div class="dlgw">
     <p id="envioMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px;white-space:pre-line"></p>
