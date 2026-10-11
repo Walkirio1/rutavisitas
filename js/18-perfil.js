@@ -18,7 +18,7 @@ function renderPerfilBtn(){
 // guarda nombre, correo y foto (la foto se guarda en el celular para que aparezca aunque no haya internet)
 async function guardarPerfil(info){
   const prev=perfil();
-  const p={nombre:prev.editado?prev.nombre:(info.name||prev.nombre||''),email:info.email||prev.email||drv.user||'',foto:prev.foto||'',fotoUrl:prev.fotoUrl||'',editado:!!prev.editado};
+  const p={nombre:prev.editado?prev.nombre:(info.name||prev.nombre||''),email:info.email||prev.email||drv.user||'',foto:prev.foto||'',fotoUrl:prev.fotoUrl||'',editado:!!prev.editado,emailEmpresa:prev.emailEmpresa||''};
   lsSet(SK_PERFIL,p);renderPerfilBtn();
   if(!prev.editado&&info.picture&&(info.picture!==prev.fotoUrl||!prev.foto)){
     p.fotoUrl=info.picture;
@@ -42,6 +42,8 @@ function openPerfil(){
   reco.innerHTML=G_SVG+'<span>'+(modo==='local'?'Conectar con Google':'Reconectar con Google')+'</span>';
   reco.style.display=conn?'none':'';
   document.getElementById('perfilSinCon').style.display=conn?'':'none';
+  document.getElementById('perfilEmpresa').value=p.emailEmpresa||'';
+  document.getElementById('perfilEnviarEmp').style.display=(conn&&p.emailEmpresa)?'':'none';
   const hechasHoy=Object.values(visits).filter(v=>v&&v.done).length;
   const totHist=historial.reduce((a,h)=>a+(h.hechos||0),0);
   document.getElementById('perfilStats').innerHTML=
@@ -50,6 +52,13 @@ function openPerfil(){
   document.getElementById('perfilInf').innerHTML=
     '📄 Planilla: <b>'+(pl?(pl.nombre||'mi planilla'):'la original incluida')+'</b>'+(conn?'<br>📁 Carpeta en Drive: <b>'+(drv.folderName||'')+'</b>':'<br>💾 Tus visitas quedan en este celular')+(pendientesEnvio().length?'<br>⚠️ '+pendientesEnvio().length+' visita(s) sin enviar':'');
   document.getElementById('perfilDlg').classList.add('show');
+}
+function perfilGuardarEmpresa(v){
+  v=(v||'').trim();
+  if(v&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){showToast('Ese correo no es válido',true);return;}
+  const p=perfil();p.emailEmpresa=v;lsSet(SK_PERFIL,p);
+  document.getElementById('perfilEnviarEmp').style.display=(drv.connected&&v)?'':'none';
+  showToast(v?'Correo de la empresa guardado ✓':'Correo de la empresa quitado');
 }
 function perfilGuardarNombre(v){
   const p=perfil();p.nombre=(v||'').trim();p.editado=true;lsSet(SK_PERFIL,p);renderPerfilBtn();

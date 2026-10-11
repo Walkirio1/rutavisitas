@@ -132,7 +132,7 @@ function cerrarDia(){
   const quedan=puntos.length-hechos.length;
   confirm2('¿Cerrar el día? Las '+hechos.length+' visitas hechas (verdes) salen del mapa y se guardan en el historial. Quedan '+quedan+' punto'+(quedan===1?'':'s')+' (cerrados y sin marcar).',function(){
     // el Excel del día queda en Drive antes de limpiar
-    try{const fx=generarExcelJornada();if(drv.connected)subirExcelADrive(fx).catch(e=>console.warn('excel del día:',e));}catch(e){console.warn(e);}
+    try{const fx=generarExcelJornada();if(drv.connected)subirExcelADrive(fx).then(()=>emailEmpresa()?compartirDiaConEmpresa(true):0).catch(e=>console.warn('excel del día:',e));}catch(e){console.warn(e);}
     const entrada={
       fecha:hoy(),hora:ahora(),
       puntos:enRuta,

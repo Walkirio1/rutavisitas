@@ -27,3 +27,7 @@ html.logged .gate{display:none!important}
 .perfil .pnom-in:focus{border-color:rgba(37,99,235,.5);background:rgba(255,255,255,.55);outline:none}
 .perfil .gbtn2{background:#fff;color:#3c4043;border:1px solid #dadce0;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;text-shadow:none}
 .perfil .gbtn2 svg{width:18px;height:18px}
+.perfil .pemp{margin:0 0 12px;text-align:center}
+.perfil .pemp input{width:100%;text-align:center;font-size:13px;border-radius:12px;padding:9px 10px;border:1px solid rgba(120,150,200,.4);background:rgba(255,255,255,.6);color:var(--text)}
+.perfil .pemp-t{font-size:10.5px;line-height:1.45;color:var(--text-mute);margin:6px 0 8px}
+.dlgw.perfil{max-height:92vh;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}

@@ -255,3 +255,31 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-cloud"/></svg> Subido a Drive <svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg>');
   return true;
 }
+
+// ── COPIA A LA EMPRESA: se comparte la carpeta del día (solo lectura) con el correo de la empresa; Google le manda el aviso con el enlace
+function emailEmpresa(){return ((lsGet('sube:perfil')||{}).emailEmpresa||'').trim();}
+async function compartirDiaConEmpresa(avisar){
+  const mail=emailEmpresa();
+  if(!mail||!drv.connected){if(avisar)showToast(!mail?'Primero cargá el correo de la empresa en tu perfil':'Conectá Google para enviar la copia',true);return false;}
+  try{
+    await ensureToken();
+    const root=await driveGetRootFolderId();
+    const dia=await driveGetOrCreateFolder((new Date()).toISOString().slice(0,10),root);
+    const hecho=lsGet('sube:compartidos')||[];
+    const clave=dia+'|'+mail;
+    if(!hecho.includes(clave)){
+      await gapi.client.drive.permissions.create({
+        fileId:dia,sendNotificationEmail:true,
+        emailMessage:'Jornada de verificaciones compartida desde Verific'+((lsGet('sube:perfil')||{}).nombre?' por '+(lsGet('sube:perfil')||{}).nombre:'')+'.',
+        resource:{type:'user',role:'reader',emailAddress:mail}
+      });
+      lsSet('sube:compartidos',[...hecho,clave].slice(-60));
+    }
+    if(avisar)showToast('Copia enviada a '+mail+' ✓');
+    return true;
+  }catch(e){
+    console.error('compartir con la empresa:',e);
+    if(avisar)showToast('No se pudo enviar la copia a la empresa',true);
+    return false;
+  }
+}
