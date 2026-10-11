@@ -33,6 +33,7 @@ function pintarCamposExtra(pl){
     return '';
   }).join('');
   plCambio();
+  if(typeof pintarHojaVisita==='function') pintarHojaVisita(); // si la planilla es un PDF con campos, se completa sobre la hoja
 }
 function plTilde(id,el){plExtra[id]=plExtra[id]==='Sí'?'':'Sí';el.classList.toggle('on',plExtra[id]==='Sí');plCambio();}
 // recalcula los totales (campos de suma) cada vez que algo cambia
@@ -40,8 +41,9 @@ function plCambio(){
   const campos=camposActivos();
   campos.filter(c=>c.tipo==='suma').forEach(c=>{
     const t=valorSuma(c,plExtra,campos);plExtra[c.id]=t;
-    const el=document.getElementById('plsuma_'+c.id);if(el) el.textContent=t;
+    const el=document.getElementById('plsuma_'+c.id);if(el) el.textContent=(c.moneda?'$ ':'')+t;
   });
+  if(typeof hvRefrescar==='function') hvRefrescar();
 }
 function plSiNo(id,val){
   plExtra[id]=plExtra[id]===val?'':val;plCambio();
@@ -105,7 +107,7 @@ function firmaGuardar(){
   plExtra[_firmaId]=c.toDataURL('image/png');
   const box=document.getElementById('plfirma_'+_firmaId);
   if(box) box.innerHTML=`<img src="${plExtra[_firmaId]}" alt="Firma">`;
-  firmaCerrar();
+  firmaCerrar();plCambio();
 }
 function firmaCerrar(){document.getElementById('firmaDlg').classList.remove('show');}
 
