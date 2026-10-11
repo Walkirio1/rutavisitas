@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="css/06-ajustes-finos.css">
 <link rel="stylesheet" href="css/07-pantalla-entrada.css">
 <link rel="stylesheet" href="css/08-perfil.css">
+<link rel="stylesheet" href="css/09-plantilla.css">
 </head>
 <body>
 <div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
@@ -266,7 +267,7 @@
     <span class="stit">Mis planillas PDF guardadas</span>
     <div class="info">
       💡 <strong style="color:var(--text)">¿Para qué sirve?</strong><br>
-      La app ya trae la planilla oficial y la usa en todas las visitas. Si algún día cambia, guardá la nueva acá y tocá <strong style="color:var(--text)">Usar</strong>: se aplica a todas las visitas siguientes. Máximo 10 planillas guardadas.
+      La app trae una <strong style="color:var(--text)">planilla general</strong> sin marca de empresa que podés editar (ítems y títulos) y la <strong style="color:var(--text)">oficial SUBE</strong>. Si tu empresa tiene la suya, guardala acá como PDF y tocá <strong style="color:var(--text)">Usar</strong>: se aplica a las visitas siguientes. Máximo 10 planillas guardadas.
     </div>
     <!-- Subir nueva -->
     <div class="card" id="nuevaPlanCard">
@@ -360,7 +361,7 @@
 <div class="ov" id="ov">
   <button class="pl-close-x" onclick="closeOv()" aria-label="Cerrar planilla" title="Cerrar planilla"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg></button>
   <div class="plw">
-    <div class="plh"><div class="pll">SUBE</div><div class="plsub">Planilla de<br>Verificaciones</div></div>
+    <div class="plh"><div class="pll" id="plHizq">SUBE</div><div class="plsub" id="plHder">Planilla de<br>Verificaciones</div></div>
     <div class="plb">
 
       <!-- DATOS -->
@@ -368,17 +369,17 @@
       <div class="plg">
         <div><div class="pllb">Fecha</div><input class="pli plau" id="plF" readonly/></div>
         <div><div class="pllb">Hora</div><input class="pli plau" id="plH" readonly/></div>
-        <div><div class="pllb">ID PS</div><input class="pli plau" id="plI" readonly/></div>
+        <div><div class="pllb" id="plLbId">ID PS</div><input class="pli plau" id="plI" readonly/></div>
         <div><div class="pllb">Rubro</div><input class="pli" id="plR" placeholder="Kiosco"/></div>
         <div class="plgf"><div class="pllb">Dirección</div><input class="pli plau" id="plD" readonly/></div>
       </div>
 
       <!-- CARGA -->
-      <div class="plsec">Irregularidad de Carga</div>
+      <div class="plsec" id="plTitA">Irregularidad de Carga</div>
       <div id="plCarga"></div>
 
       <!-- VENTA -->
-      <div class="plsec">Irregularidad en la Venta</div>
+      <div class="plsec" id="plTitB">Irregularidad en la Venta</div>
       <div id="plVenta"></div>
 
       <!-- OBS -->
@@ -437,6 +438,7 @@
 <script src="js/16-app-instalacion.js"></script>
 <script src="js/17-diagnostico.js"></script>
 <script src="js/18-perfil.js"></script>
+<script src="js/19-plantilla.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -478,6 +480,27 @@ setTimeout(go,2500);})();</script>
       <button class="btn bd" onclick="perfilIr(5)">☁️ Drive y carpeta</button>
       <button class="btn bd" onclick="perfilSalir()">Cerrar sesión</button>
       <button class="btn bd" onclick="closePerfil()">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div class="dlg" id="plEditDlg">
+  <div class="dlgw" style="max-width:380px;max-height:92vh;overflow-y:auto">
+    <div style="font-weight:800;font-size:15px;margin-bottom:8px">Planilla general</div>
+    <label class="pllb">Título del PDF</label>
+    <input class="pli" id="plEdTitulo" type="text">
+    <label class="pllb" style="margin-top:10px">Sección 1 · nombre</label>
+    <input class="pli" id="plEdNomA" type="text">
+    <div id="plEdListaA"></div>
+    <div class="pled-add"><input class="pli" id="plEdNuevoA" type="text" placeholder="Nuevo ítem…"><button class="sm sma" onclick="plEdAgregar('secA')">+ Agregar</button></div>
+    <div class="pled-nota">Los 2 primeros ítems de esta sección pintan el punto en rojo (cerrado / inexistente).</div>
+    <label class="pllb" style="margin-top:10px">Sección 2 · nombre</label>
+    <input class="pli" id="plEdNomB" type="text">
+    <div id="plEdListaB"></div>
+    <div class="pled-add"><input class="pli" id="plEdNuevoB" type="text" placeholder="Nuevo ítem…"><button class="sm sma" onclick="plEdAgregar('secB')">+ Agregar</button></div>
+    <div style="display:grid;gap:8px;margin-top:14px">
+      <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
+      <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
+      <button class="btn bd" onclick="plEdCerrar()">Cancelar</button>
     </div>
   </div>
 </div>

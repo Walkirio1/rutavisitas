@@ -1,7 +1,9 @@
 // Constantes, fechas, almacenamiento, estado y fotos (IndexedDB)
 // ── CONSTANTES
-const CN=["DOMICILIO INEXISTENTE","COMERCIO CERRADO","NO COMERCIALIZA SUBE","SIN SERVICIO DE CARGA","COBRO ADICIONAL","NO ENTREGA TICKET","TICKET CON OTRA DIRECCIÓN","SIN SEÑALÉTICA"];
-const VN=["COBRO ADICIONAL EN LA VENTA","SIN STOCK DE TARJETAS"];
+const CN_SUBE=["DOMICILIO INEXISTENTE","COMERCIO CERRADO","NO COMERCIALIZA SUBE","SIN SERVICIO DE CARGA","COBRO ADICIONAL","NO ENTREGA TICKET","TICKET CON OTRA DIRECCIÓN","SIN SEÑALÉTICA"];
+const VN_SUBE=["COBRO ADICIONAL EN LA VENTA","SIN STOCK DE TARJETAS"];
+// Listas activas (cambian según la planilla en uso: ver js/19-plantilla.js)
+let CN=CN_SUBE.slice(),VN=VN_SUBE.slice(),TIT_A='Irregularidad de Carga',TIT_B='Irregularidad en la Venta';
 
 // ── HELPERS FECHA
 function hoy(){return new Date().toLocaleDateString('es-AR');}

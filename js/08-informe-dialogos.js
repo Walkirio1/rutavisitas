@@ -44,7 +44,7 @@ function buildMsg(){
   return '📋 *VERIFICACIONES SUBE*\n📅 '+now.toLocaleDateString('es-AR')+' · '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'\n✅ '+hchos+'/'+enRuta.length+' puntos verificados\n\n'
     +enRuta.map((p,i)=>{
       const v=visits[p.id]||{};
-      const irregs=v.planilla?CN.filter((_,j)=>v.planilla.chC&&v.planilla.chC[j]).concat(VN.filter((_,j)=>v.planilla.chV&&v.planilla.chV[j])):[];
+      const irregs=irregsDe(v.planilla);
       return (i+1)+'. '+p.nombre+' · ID:'+p.id+'\n   📍 '+p.dir+'\n   '+(v.done?'✓ Verificado':'<svg class="ico" style="vertical-align:-2px"><use href="#i-hourglass"/></svg> Pendiente')+(irregs.length?'\n   ⚠️ '+irregs.join(', '):'')+(v.planilla&&v.planilla.obs?'\n   📝 '+v.planilla.obs:'');
     }).join('\n\n')+'\n\n_Planillas adjuntas._';
 }

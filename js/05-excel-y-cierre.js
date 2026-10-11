@@ -79,7 +79,7 @@ function filasJornadaExcel(){
   const filas=[[...cab,...extra]];const estilos=[1];
   aoa.slice(1).forEach(r=>{
     const id=String(r[cId]);const v=visits[id];const est=estadoVisita(id);const pl=v&&v.planilla;
-    const irr=pl?CN.filter((_,i)=>pl.chC&&pl.chC[i]).concat(VN.filter((_,i)=>pl.chV&&pl.chV[i])).join(', '):'';
+    const irr=pl?irregsDe(pl).join(', '):'';
     const txt={ok:'VISITADO ✓',cerrado:'CERRADO',no:'NO VISITADO'}[est]||(sel.has(id)?'Pendiente':'');
     filas.push([...cab.map((_,i)=>r[i]==null?'':r[i]),txt,pl?pl.fecha||'':'',pl?pl.hora||'':'',irr,pl?pl.obs||'':'',v&&v.envio?(v.envio.estado==='ok'?'Sí':'No'):'']);
     estilos.push(est==='ok'?2:(est?3:0));

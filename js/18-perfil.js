@@ -48,9 +48,8 @@ function openPerfil(){
   const totHist=historial.reduce((a,h)=>a+(h.hechos||0),0);
   document.getElementById('perfilStats').innerHTML=
     `<div><b>${hechasHoy}</b><span>hechas hoy</span></div><div><b>${historial.length}</b><span>jornadas</span></div><div><b>${totHist+hechasHoy}</b><span>visitas en total</span></div>`;
-  const pl=plDefId&&planillas.find(x=>x.id===plDefId);
   document.getElementById('perfilInf').innerHTML=
-    '📄 Planilla: <b>'+(pl?(pl.nombre||'mi planilla'):'la original incluida')+'</b>'+(conn?'<br>📁 Carpeta en Drive: <b>'+(drv.folderName||'')+'</b>':'<br>💾 Tus visitas quedan en este celular')+(pendientesEnvio().length?'<br>⚠️ '+pendientesEnvio().length+' visita(s) sin enviar':'');
+    '📄 Planilla: <b>'+nombrePlanillaActiva()+'</b>'+(conn?'<br>📁 Carpeta en Drive: <b>'+(drv.folderName||'')+'</b>':'<br>💾 Tus visitas quedan en este celular')+(pendientesEnvio().length?'<br>⚠️ '+pendientesEnvio().length+' visita(s) sin enviar':'');
   document.getElementById('perfilDlg').classList.add('show');
 }
 function perfilGuardarEmpresa(v){
