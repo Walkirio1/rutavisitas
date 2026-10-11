@@ -431,6 +431,11 @@ html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;p
         <div class="cfg-tx"><div class="cfg-nm">Informe / Email</div><div class="cfg-ds">Generar resumen de jornada</div></div>
         <span class="cfg-ar">›</span>
       </button>
+      <button class="cfg-item" onclick="elegirAppNav()">
+        <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg></span>
+        <div class="cfg-tx"><div class="cfg-nm">App de navegación</div><div class="cfg-ds" id="navActual"></div></div>
+        <span class="cfg-ar">›</span>
+      </button>
       <button class="cfg-item" id="btnInstalar" onclick="instalarApp()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg></span>
         <div class="cfg-tx"><div class="cfg-nm">Instalar en el celular</div><div class="cfg-ds">Ícono en pantalla de inicio, sin barra del navegador</div></div>
@@ -482,7 +487,11 @@ html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;p
       <div class="sc" data-flt="pend"   onclick="setFiltroV('pend')"><div class="sn" id="s2">0</div><div class="sl">Pendientes</div></div>
     </div>
     <div id="vPendientes"></div>
-    <button class="sm smb" style="margin-bottom:10px" onclick="exportarExcel()">📊 Excel actualizado</button>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="sm sma" onclick="siguientePunto()">➡️ Siguiente punto</button>
+      <button class="sm smh" onclick="rutaCompleta()">🗺️ Ruta completa</button>
+      <button class="sm smb" onclick="exportarExcel()">📊 Excel actualizado</button>
+    </div>
     <div class="flt-info" id="fltInfoV" style="display:none"></div>
     <div id="vlist"></div>
     <div class="empty" id="vEmpty"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg></span><p>Seleccioná puntos en la pestaña Puntos.</p></div>
@@ -494,6 +503,7 @@ html::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;p
       <button class="sm sma" onclick="geocodificarTodos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes</button>
       <button class="sm smh" onclick="centrarEnMiUbicacion()"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg> Mi ubicación</button>
       <button class="sm smh" onclick="centrarEnPuntos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg> Ver todos</button>
+      <button class="sm sma" onclick="siguientePunto()">➡️ Siguiente punto</button>
     </div>
 
     <div id="mapaLeyenda" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:#cbd5e1"></div>
@@ -1732,12 +1742,12 @@ function renderMapa(noFit){
     const est = estadoVisita(p.id);
     const icon = est==='ok'?ICON_DONE():(est?ICON_CERRADO():(enRuta?ICON_SEL():ICON_DEF()));
     const marker = L.marker([p.lat,p.lng],{icon}).addTo(markersLayer);
-    const gmUrl = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+    const gmUrl = urlNavegar(p.lat,p.lng);
     const popup = `
       <div class="popup-title">${escapeHtml(p.nombre)}</div>
       <div class="popup-dir">📍 ${escapeHtml(p.dir)}</div>
       <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
-      <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con Google Maps</a>
+      <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con ${NAV_APPS[appNav()].nombre}</a>
       <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Agregar a ruta'}</button>
     `;
     if(modoMarcar){
@@ -1845,6 +1855,84 @@ function cancelarUbicar(){
   ubicando=null;
   if(mapa)mapa.getContainer().style.cursor='';
   renderMapa(true);
+}
+
+// ── NAVEGACIÓN: "Siguiente punto" y ruta completa. Se abre la app de mapas del celular; si el celular
+// está conectado a Apple CarPlay o Android Auto, la navegación aparece también en la pantalla del auto.
+const NAV_APPS={
+  google:{nombre:'Google Maps',url:(la,lo)=>`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}&travelmode=driving`},
+  apple:{nombre:'Apple Maps',url:(la,lo)=>`https://maps.apple.com/?daddr=${la},${lo}&dirflg=d`},
+  waze:{nombre:'Waze',url:(la,lo)=>`https://waze.com/ul?ll=${la},${lo}&navigate=yes`},
+};
+function appNav(){const a=lsGet('sube:nav');return NAV_APPS[a]?a:'google';}
+function urlNavegar(la,lo){return NAV_APPS[appNav()].url(la,lo);}
+function mostrarAppNav(){const e=document.getElementById('navActual');if(e)e.textContent='Usando: '+NAV_APPS[appNav()].nombre+' (tocá para cambiar)';}
+function elegirAppNav(){
+  mostrarDlgEnvio('¿Con qué app querés navegar? Funciona también en la pantalla del auto (Apple CarPlay / Android Auto) si el celular está conectado.',
+    Object.keys(NAV_APPS).map(k=>({txt:(appNav()===k?'✓ ':'')+NAV_APPS[k].nombre,cls:appNav()===k?'ba':'bd',fn:()=>{lsSet('sube:nav',k);mostrarAppNav();showToast('Navegación con '+NAV_APPS[k].nombre);}})).concat([{txt:'Cancelar',cls:'bd'}]));
+}
+mostrarAppNav();
+
+function distKm(a,b,c,d){
+  const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b);
+  const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+let _ultimaUbic=null;
+function ubicacionActual(){
+  return new Promise(res=>{
+    if(!navigator.geolocation){res(_ultimaUbic);return;}
+    const ok=pos=>{_ultimaUbic={lat:pos.coords.latitude,lng:pos.coords.longitude};res(_ultimaUbic);};
+    navigator.geolocation.getCurrentPosition(ok,()=>navigator.geolocation.getCurrentPosition(ok,()=>res(_ultimaUbic),{timeout:15000,enableHighAccuracy:true}),{timeout:7000,enableHighAccuracy:false,maximumAge:60000});
+  });
+}
+// Puntos de la ruta que faltan visitar (azules) y tienen ubicación
+const faltanVisitar=()=>puntos.filter(p=>p.lat&&sel.has(p.id)&&!estadoVisita(p.id));
+
+let _saltados=new Set();
+async function siguientePunto(){
+  const faltan=faltanVisitar();
+  if(!faltan.length){showToast(sel.size?'¡Ruta completa! No quedan puntos por visitar ✓':'Marcá puntos en azul en el mapa primero',true);return;}
+  showToast('Buscando el más cercano...');
+  const yo=await ubicacionActual();
+  let cand=faltan.filter(p=>!_saltados.has(p.id));
+  if(!cand.length){_saltados=new Set();cand=faltan;}
+  let p,msg;
+  if(yo){
+    cand.sort((x,y)=>distKm(yo.lat,yo.lng,x.lat,x.lng)-distKm(yo.lat,yo.lng,y.lat,y.lng));
+    p=cand[0];
+    const km=distKm(yo.lat,yo.lng,p.lat,p.lng);
+    msg=`➡️ ${p.nombre||p.dir}\n📍 ${p.dir}${p.localidad?' · '+p.localidad:''}\n🚗 a ${km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km'} (en línea recta) · quedan ${faltan.length}`;
+  }else{
+    p=cand[0];
+    msg=`➡️ ${p.nombre||p.dir}\n📍 ${p.dir}${p.localidad?' · '+p.localidad:''}\nNo pude ver tu ubicación: te muestro el primero de tu ruta. Quedan ${faltan.length}.`;
+  }
+  if(mapa) mapa.setView([p.lat,p.lng],16);
+  mostrarDlgEnvio(msg,[
+    {txt:'🧭 Navegar con '+NAV_APPS[appNav()].nombre,cls:'ba',fn:()=>{window.open(urlNavegar(p.lat,p.lng),'_blank');}},
+    ...(cand.length>1?[{txt:'Otro punto',cls:'bd',fn:()=>{_saltados.add(p.id);siguientePunto();}}]:[]),
+    {txt:'Cerrar',cls:'bd'}
+  ]);
+}
+
+// Ruta completa en Google Maps (es la única app que admite varias paradas): se ordena por cercanía
+async function rutaCompleta(){
+  const faltan=faltanVisitar();
+  if(!faltan.length){showToast(sel.size?'¡Ruta completa! No quedan puntos por visitar ✓':'Marcá puntos en azul en el mapa primero',true);return;}
+  showToast('Armando la ruta...');
+  const yo=await ubicacionActual();
+  let pos=yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng};
+  const resto=faltan.slice(),orden=[];
+  while(resto.length&&orden.length<10){ // Google Maps admite hasta 10 paradas por enlace
+    resto.sort((x,y)=>distKm(pos.lat,pos.lng,x.lat,x.lng)-distKm(pos.lat,pos.lng,y.lat,y.lng));
+    const n=resto.shift();orden.push(n);pos={lat:n.lat,lng:n.lng};
+  }
+  const dest=orden[orden.length-1],via=orden.slice(0,-1).map(p=>p.lat+','+p.lng).join('|');
+  const url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest.lat+','+dest.lng+(via?'&waypoints='+encodeURIComponent(via):'');
+  mostrarDlgEnvio(`🗺️ Ruta de ${orden.length} parada${orden.length>1?'s':''} ordenadas por cercanía${faltan.length>orden.length?` (las primeras ${orden.length} de ${faltan.length}; después armás la siguiente)`:''}.\n\n`+orden.map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n'),[
+    {txt:'🧭 Abrir en Google Maps',cls:'ba',fn:()=>{window.open(url,'_blank');}},
+    {txt:'Cerrar',cls:'bd'}
+  ]);
 }
 
 function toggleModoMapa(){
@@ -2908,7 +2996,7 @@ async function borrarJornadaActualDrive(){
 }
 
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · o';
+const APP_VERSION='2026-10-11 · p';
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -2987,7 +3075,7 @@ actualizarGate();
 
 <div class="dlg" id="envioDlg">
   <div class="dlgw">
-    <p id="envioMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px"></p>
+    <p id="envioMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px;white-space:pre-line"></p>
     <div id="envioBtns" style="display:grid;gap:8px"></div>
   </div>
 </div>
