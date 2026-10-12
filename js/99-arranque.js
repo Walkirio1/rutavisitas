@@ -85,8 +85,9 @@ if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone
 // de 16-app-instalacion.js
 setTimeout(()=>{
   const ya=navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
-  const cerrado=lsGet('sube:instdismiss');
-  if(ya||(cerrado&&Date.now()-cerrado<3*864e5)) return;
+  const forzar=new URLSearchParams(location.search).get('instalar')==='1'; // abrir la app con ?instalar=1 muestra siempre el aviso
+  const cerrado=lsGet('sube:instdismiss2'); // clave nueva: ignora los cierres viejos
+  if(ya||(!forzar&&cerrado&&Date.now()-cerrado<864e5)) return;
   document.getElementById('instBar').classList.add('show');
 },2500);
 
