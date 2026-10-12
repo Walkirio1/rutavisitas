@@ -265,6 +265,7 @@
       <span class="stit" style="margin:0">Historial de jornadas</span>
       <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">🗑️ Borrar todo</button>
     </div>
+    <div id="hReporte"></div>
     <div id="hlist"></div>
     <div class="empty" id="hEmpty"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-clock"/></svg></span><p>Cerrá el día desde el encabezado<br/>para guardar jornadas aquí.</p></div>
   </div>
@@ -373,6 +374,7 @@
 
       <!-- DATOS -->
       <div class="plsec">Datos de la visita</div>
+      <div class="plubi" id="plUbi"></div>
       <div class="plg">
         <div><div class="pllb">Fecha</div><input class="pli plau" id="plF" readonly/></div>
         <div><div class="pllb">Hora</div><input class="pli plau" id="plH" readonly/></div>
@@ -455,6 +457,7 @@
 <script src="js/21-firma-pdf.js"></script>
 <script src="js/22-disenador-pdf.js"></script>
 <script src="js/23-detector-pdf.js"></script>
+<script src="js/25-ubicacion.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}

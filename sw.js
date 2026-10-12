@@ -2,7 +2,7 @@
 // - Archivos de la app: red primero (siempre la versión nueva), con respaldo en caché.
 // - Librerías externas (mapas, Excel, PDF, fuentes): caché primero.
 // - Todo lo demás (Google Drive, geocodificación, mapa base) va directo a la red.
-const CACHE = 'sube-v38';
+const CACHE = 'sube-v39';
 const TILES = 'sube-tiles'; // mapa guardado para usar sin señal (no se borra al actualizar)
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './icons/icon-192.png',
@@ -41,6 +41,7 @@ const PRECACHE = [
   './js/21-firma-pdf.js',
   './js/22-disenador-pdf.js',
   './js/23-detector-pdf.js',
+  './js/25-ubicacion.js',
   './js/99-arranque.js'
 ];
 const CDN = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];

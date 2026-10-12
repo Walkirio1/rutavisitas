@@ -106,6 +106,7 @@ function markDone(id){
 
 // ── HISTORIAL
 function renderH(){
+  if(typeof renderReporte==='function') renderReporte();
   const hlist=document.getElementById('hlist');
   const hEmpty=document.getElementById('hEmpty');
   const btnBH=document.getElementById('btnBorrarHist');

@@ -69,7 +69,7 @@
 /* Completar la visita sobre la hoja */
 
 /* Tarjetas por sección (planilla PDF con campos) */
-.sc{text-align:left;border:1.5px solid #bcd3f5;border-radius:16px;padding:10px 12px 4px;margin-bottom:12px;background:linear-gradient(180deg,#fff,#f4f8ff)}
+.tj{text-align:left;border:1.5px solid #bcd3f5;border-radius:16px;padding:10px 12px 4px;margin-bottom:12px;background:linear-gradient(180deg,#fff,#f4f8ff)}
 .sc-t{font-weight:800;font-size:13px;color:#0d2a78;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase}
 .sc-f{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #e1eaf7}
 .sc-t+.sc-f{border-top:0}
@@ -79,13 +79,13 @@
 .sc-ck.on{background:#d6f5df;border-color:#1a9c4a;color:#1a9c4a}
 .sc-chip{border:2px solid #17325c;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;color:#17325c;cursor:pointer;flex-shrink:0}
 .sc-chip.on{background:#d6f5df;border-color:#1a9c4a;color:#1a9c4a}
-.sc .plcampo{margin:0;padding:9px 0;border-top:1px solid #e1eaf7}
+.tj .plcampo{margin:0;padding:9px 0;border-top:1px solid #e1eaf7}
 .sc-t+.plcampo{border-top:0}
-.sc .scnum{display:flex;align-items:center;gap:8px}
-.sc .scnum .pllb{flex:1;margin:0;font-size:12px}
-.sc .scnum .plmon{width:150px;flex-shrink:0}
-.sc .scnum .plsuma{font-size:20px;padding:5px 12px}
-.sc .scnum.tot{background:#fff6d6;border-radius:10px;padding:9px 10px;margin:4px 0 8px}
+.tj .scnum{display:flex;align-items:center;gap:8px}
+.tj .scnum .pllb{flex:1;margin:0;font-size:12px}
+.tj .scnum .plmon{width:150px;flex-shrink:0}
+.tj .scnum .plsuma{font-size:20px;padding:5px 12px}
+.tj .scnum.tot{background:#fff6d6;border-radius:10px;padding:9px 10px;margin:4px 0 8px}
 .sc-opc{flex-wrap:wrap;gap:6px}
 .sc-chip{max-width:100%;white-space:normal;text-align:left}
 .sc-row{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #e1eaf7}
@@ -102,3 +102,15 @@
 .plfirma img{max-height:90px;margin:0 auto}
 /* marca de firma en el diseñador: solo un borde fino */
 .ds-m.ds-firma{border-width:1px;border-style:dashed;background:color-mix(in srgb,var(--c) 7%,transparent)}
+/* Ubicación de la visita y reporte */
+.plubi{font-size:12px;font-weight:700;padding:7px 10px;border-radius:10px;margin:0 0 8px;background:#eef3fb;color:#3b4d73}
+.plubi:empty{display:none}
+.plubi.ok{background:#d6f5df;color:#14733a}.plubi.cerca{background:#fff3cf;color:#8a5a00}.plubi.lejos{background:#fde0e0;color:#a01919}
+.rep{border:1.5px solid #bcd3f5;border-radius:16px;padding:12px;margin-bottom:12px;background:linear-gradient(180deg,#fff,#f4f8ff)}
+.rep-per{display:flex;gap:6px;margin-bottom:10px}
+.rep-per button{flex:1;border:1.5px solid #bcd3f5;background:#fff;border-radius:20px;padding:7px 4px;font-weight:700;color:#3b4d73;font-size:13px}
+.rep-per button.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.rep-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rep-g div{background:#fff;border:1px solid #dbe6f7;border-radius:12px;padding:10px;text-align:center}
+.rep-g b{display:block;font-size:24px;color:#0d2a78}.rep-g span{font-size:11px;color:#6b7fa6;font-weight:600}
+.rep-l{font-size:12px;color:#3b4d73;margin-top:8px}
