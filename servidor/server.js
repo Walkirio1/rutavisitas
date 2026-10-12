@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT 
 `);
 for(const m of ["ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
 db.exec('CREATE TABLE IF NOT EXISTS jornadas(equipo_id INTEGER PRIMARY KEY,json TEXT NOT NULL,version INTEGER NOT NULL,ts INTEGER)');
+db.exec('CREATE TABLE IF NOT EXISTS usos(id TEXT PRIMARY KEY,primero INTEGER,ultimo INTEGER,dia TEXT,dias INTEGER DEFAULT 1,version TEXT,app INTEGER DEFAULT 0,pdf INTEGER DEFAULT 0,equipo INTEGER DEFAULT 0,dupla INTEGER DEFAULT 0,google INTEGER DEFAULT 0)');
 const hoy=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); // fecha de Argentina (UTC-3)
 const tok=()=>crypto.randomBytes(24).toString('hex');
 const cod=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=a[crypto.randomInt(a.length)];return s;};
@@ -31,6 +32,13 @@ const leer=req=>new Promise((ok,mal)=>{let b='';req.on('data',c=>{b+=c;if(b.leng
 const bearer=req=>((req.headers.authorization||'').match(/^Bearer\s+(\S+)/)||[])[1]||'';
 const admin=req=>{const t=bearer(req);return t?ult('SELECT * FROM equipos WHERE admin_token=?',t):null;};
 const miembro=req=>{const t=bearer(req);const m=t?ult('SELECT * FROM miembros WHERE token=?',t):null;if(m)run('UPDATE miembros SET visto=? WHERE id=?',Date.now(),m.id);return m;};
+// clave para ver las estadísticas: la define ESTADISTICAS_CLAVE o se crea sola la primera vez (queda en datos/clave-estadisticas.txt)
+const CLAVE_STATS=(()=>{
+  if(process.env.ESTADISTICAS_CLAVE) return process.env.ESTADISTICAS_CLAVE;
+  const f=path.join(path.dirname(DB),'clave-estadisticas.txt');
+  try{return fs.readFileSync(f,'utf8').trim();}catch(e){}
+  const k=crypto.randomBytes(9).toString('hex');fs.writeFileSync(f,k+'\n');console.log('Clave de estadísticas (guardada en '+f+'): '+k);return k;
+})();
 const txt=(v,n=200)=>String(v==null?'':v).slice(0,n);
 
 // límite simple de pedidos por usuario (o por IP si no hay sesión), contra abusos
@@ -84,6 +92,25 @@ async function optimizar(b){
 const rutas={
   'GET /api/salud':async()=>{let calles=false;try{await osrmGet('/nearest/v1/driving/-60.65,-32.95');calles=true;}catch(e){}return [200,{ok:true,hora:Date.now(),calles}];},
   'POST /api/optimizar':async(req,b)=>optimizar(b),
+  // contador anónimo: la app avisa que está en uso (código al azar + versión + sí/no de 5 funciones). No recibe nada personal.
+  'POST /api/ping':async(req,b)=>{
+    const i=txt(b.i,40);if(!/^[a-f0-9]{12,40}$/.test(i)) return [400,{error:'Dato inválido'}];
+    const f=b.f||{},bit=x=>f[x]===true?1:0,d=hoy(),now=Date.now(),v=txt(b.v,40);
+    const u=ult('SELECT dia FROM usos WHERE id=?',i);
+    if(!u) run('INSERT INTO usos(id,primero,ultimo,dia,dias,version,app,pdf,equipo,dupla,google) VALUES(?,?,?,?,1,?,?,?,?,?,?)',i,now,now,d,v,bit('app'),bit('pdf'),bit('equipo'),bit('dupla'),bit('google'));
+    else run('UPDATE usos SET ultimo=?,dias=dias+?,dia=?,version=?,app=?,pdf=?,equipo=?,dupla=?,google=? WHERE id=?',now,u.dia===d?0:1,d,v,bit('app'),bit('pdf'),bit('equipo'),bit('dupla'),bit('google'),i);
+    return [200,{ok:true}];
+  },
+  'GET /api/estadisticas':async(req)=>{
+    if(bearer(req)!==CLAVE_STATS) return [401,{error:'Sin permiso'}];
+    const dia=n=>new Date(Date.now()-3*3600*1000-n*86400000).toISOString().slice(0,10);
+    const tot=ult('SELECT COUNT(*) n,SUM(app) app,SUM(pdf) pdf,SUM(equipo) equipo,SUM(dupla) dupla,SUM(google) google FROM usos');
+    const act=n=>ult('SELECT COUNT(*) n FROM usos WHERE ultimo>=?',Date.now()-n*86400000).n;
+    const nuevos=todos("SELECT strftime('%Y-%m-%d',(primero/1000)-10800,'unixepoch') d,COUNT(*) n FROM usos WHERE primero>=? GROUP BY d ORDER BY d",Date.now()-30*86400000);
+    return [200,{total:tot.n,instalada:tot.app||0,conPdf:tot.pdf||0,conEquipo:tot.equipo||0,conDupla:tot.dupla||0,conGoogle:tot.google||0,
+      hoy:act(1),semana:act(7),mes:act(30),nuevosHoy:ult('SELECT COUNT(*) n FROM usos WHERE primero>=?',Date.now()-86400000).n,
+      versiones:todos('SELECT version v,COUNT(*) n FROM usos GROUP BY version ORDER BY n DESC LIMIT 8'),nuevosPorDia:nuevos}];
+  },
   'POST /api/equipo/crear':async(req,b)=>{
     const nombre=txt(b.nombre,60).trim();if(nombre.length<2) return [400,{error:'Poné el nombre del equipo'}];
     let codigo=cod();while(ult('SELECT 1 FROM equipos WHERE codigo=?',codigo)) codigo=cod();
@@ -200,7 +227,7 @@ http.createServer(async(req,res)=>{
       res.writeHead(200,{'Content-Type':MIME[ext],'Cache-Control':'no-cache'});return fs.createReadStream(f).pipe(res);
     }
     if(!url.pathname.startsWith('/api/')){ // el panel web
-      const f=path.join(__dirname,url.pathname==='/'||url.pathname==='/panel'?'panel.html':'nada');
+      const f=path.join(__dirname,url.pathname==='/'||url.pathname==='/panel'?'panel.html':url.pathname==='/estadisticas'?'estadisticas.html':'nada');
       if(fs.existsSync(f)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(fs.readFileSync(f));}
       res.writeHead(404);return res.end('No existe');
     }

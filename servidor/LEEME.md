@@ -33,6 +33,11 @@ El `docker-compose.yml` monta la carpeta de la app y el servidor la sirve en **`
 El servidor guarda **solo texto liviano** (equipos, miembros, rutas asignadas y el estado de cada visita: unos 300 bytes por visita). **No guarda PDFs, fotos ni Excel**: eso va al Drive de cada usuario.
 Para que los datos queden en otro disco, creá un archivo `.env` junto al `docker-compose.yml` con `DATOS_DIR=/datos/verific` (y la carpeta creada), y volvé a levantar con `docker compose up -d`.
 
+## Estadísticas de uso (contador anónimo)
+- La app avisa a `/api/ping` (como mucho cada 6 h) con un código al azar, la versión y 5 datos de sí/no. Nada personal; el usuario puede apagarlo en Ajustes → Privacidad.
+- Se ven en `https://TU-SERVIDOR/estadisticas` con una **clave**: la primera vez se crea sola y queda en `datos/clave-estadisticas.txt` (o definila con la variable `ESTADISTICAS_CLAVE`).
+- Ver la clave: `cat /datos/verific/clave-estadisticas.txt`.
+
 ## En vivo
 - El panel se actualiza solo apenas llega una visita, una ruta o una posición (Server-Sent Events); además refresca cada 30 s.
 - Cada verificador puede (opcional, apagado por defecto) compartir su posición mientras tiene la app abierta: aparece en el mapa del jefe.

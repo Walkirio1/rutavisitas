@@ -59,6 +59,31 @@ function buildMsg(){
     +bloque('✅ HECHAS',hechas)+bloque('🔴 CERRADOS',cerradas)+bloque('⏳ PENDIENTES',pend)
     +'\n\n_Enviado desde LogiMap_';
 }
+// Resumen + PDF rellenado de cada visita + fotos, todo junto en la hoja de compartir (WhatsApp, mail, Drive…). No necesita Google.
+async function compartirInforme(){
+  const ids=puntos.filter(p=>(sel.has(p.id)||(visits[p.id]&&visits[p.id].done))&&visits[p.id]&&visits[p.id].done&&visits[p.id].planilla).map(p=>p.id);
+  if(!ids.length){showToast('Todavía no hay visitas hechas para mandar',true);return;}
+  showToast('Preparando PDFs y fotos...');
+  let files;
+  try{files=await prepararArchivos(ids);}catch(e){console.error(e);showToast('No se pudieron preparar los archivos',true);return;}
+  if(!files.length){showToast('No hay archivos para mandar',true);return;}
+  const datos={title:'Informe de visitas · '+new Date().toLocaleDateString('es-AR'),text:buildMsg(),files};
+  if(compartirArchivosOk()&&navigator.canShare(datos)){
+    try{await navigator.share(datos);return;}
+    catch(e){
+      if(e&&e.name==='AbortError') return;
+      _archivosListos=files;
+      mostrarDlgEnvio(files.length+' archivo'+(files.length>1?'s':'')+' listo'+(files.length>1?'s':'')+'. Tocá para elegir cómo mandarlos.',[
+        {txt:'📤 Compartir',cls:'ba',fn:async()=>{try{await navigator.share(datos);}catch(e2){if(!e2||e2.name!=='AbortError')descargarArchivos(files);}}},
+        {txt:'⬇️ Descargar',cls:'bd',fn:()=>descargarArchivos(files)},
+        {txt:'Cancelar',cls:'bd'}
+      ]);
+      return;
+    }
+  }
+  descargarArchivos(files);
+  showToast('Se descargaron los archivos. Adjuntalos al mail o al WhatsApp (en la compu).');
+}
 function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank');}
 function sendEmail(){
   if(!emails.length){showToast('Agregá destinatarios',true);return;}
