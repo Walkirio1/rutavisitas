@@ -118,3 +118,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeou
 
 // de 27-dupla.js
 dpIniciar();
+
+// de 28-contador.js
+setTimeout(contadorPing,4000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(contadorPing,3000);});

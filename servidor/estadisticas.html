@@ -1,0 +1,40 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LogiMap · Estadísticas</title>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--tx:#0f172a;--mu:#64748b;--ac:#2563eb;--ln:#e2e8f0}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1226;--card:#131c36;--tx:#e8eefc;--mu:#94a3b8;--ln:#24304f}}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,sans-serif;padding:16px}
+h1{font-size:20px;margin:4px 0 14px}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;max-width:760px}
+.c{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px}.c b{display:block;font-size:30px;line-height:1.1}.c span{color:var(--mu);font-size:12.5px}
+h2{font-size:14px;color:var(--mu);margin:22px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.bar{display:flex;align-items:flex-end;gap:3px;height:90px;max-width:760px;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:10px}
+.bar i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
+table{border-collapse:collapse;background:var(--card);border:1px solid var(--ln);border-radius:14px;overflow:hidden;min-width:260px}td{padding:8px 14px;border-bottom:1px solid var(--ln)}
+input,button{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--ln);background:var(--card);color:var(--tx)}button{background:var(--ac);color:#fff;border:0;font-weight:600}
+.e{color:#dc2626;margin-top:8px}.n{color:var(--mu);font-size:12px;margin-top:20px;max-width:760px}
+</style></head><body>
+<h1>📊 LogiMap · Estadísticas</h1>
+<div id="login"><input id="k" type="password" placeholder="Clave de estadísticas"> <button onclick="entrar()">Ver</button><div class="e" id="e"></div></div>
+<div id="vista" hidden>
+ <div class="g" id="g"></div>
+ <h2>Instalaciones nuevas · últimos 30 días</h2><div class="bar" id="barra"></div>
+ <h2>Versiones en uso</h2><table id="vers"></table>
+ <div class="n">Los números son anónimos: cada instalación se cuenta con un código al azar. No se guarda ningún nombre, mail, visita, foto ni dirección. «Activos» = abrieron la app en ese período.</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+async function cargar(k){
+  const r=await fetch('/api/estadisticas',{headers:{Authorization:'Bearer '+k}});
+  if(!r.ok) throw new Error(r.status===401?'Clave incorrecta':'Error '+r.status);
+  const d=await r.json();localStorage.setItem('logimap:stk',k);
+  $('login').hidden=true;$('vista').hidden=false;
+  const t=[['Instalaciones totales',d.total],['Nuevas (24 h)',d.nuevosHoy],['Activos hoy',d.hoy],['Activos 7 días',d.semana],['Activos 30 días',d.mes],['Instaladas en el celu',d.instalada],['Con planilla propia',d.conPdf],['Con Google',d.conGoogle],['En equipo',d.conEquipo],['En dupla',d.conDupla]];
+  $('g').innerHTML=t.map(([a,b])=>'<div class="c"><b>'+b+'</b><span>'+a+'</span></div>').join('');
+  const dias=[];for(let i=29;i>=0;i--)dias.push(new Date(Date.now()-10800000-i*864e5).toISOString().slice(0,10));
+  const m=Object.fromEntries(d.nuevosPorDia.map(x=>[x.d,x.n])),mx=Math.max(1,...dias.map(x=>m[x]||0));
+  $('barra').innerHTML=dias.map(x=>'<i title="'+x+': '+(m[x]||0)+'" style="height:'+Math.round((m[x]||0)/mx*100)+'%"></i>').join('');
+  $('vers').innerHTML=d.versiones.map(v=>'<tr><td>'+(v.v||'?')+'</td><td><b>'+v.n+'</b></td></tr>').join('')||'<tr><td>Todavía no hay datos</td></tr>';
+}
+function entrar(){cargar($('k').value.trim()).catch(e=>$('e').textContent=e.message);}
+const g=localStorage.getItem('logimap:stk');if(g)cargar(g).catch(()=>{});
+setInterval(()=>{const k=localStorage.getItem('logimap:stk');if(k&&!$('vista').hidden)cargar(k).catch(()=>{});},60000);
+</script></body></html>

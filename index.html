@@ -39,10 +39,11 @@
     <img class="hero-dark" src="icons/hero.webp" alt="">
     <h1>LogiMap</h1>
     <div class="tagline">Seguro · Rápido · Verificado</div>
-    <p>Entrá con tu cuenta de Google para que tu trabajo quede guardado en tu Drive.</p>
-    <button class="btn gbtn" onclick="entrarGate()"><svg class="gg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Continuar con Google</span></button>
-    <button class="btn gsin" onclick="entrarSinConectar()">Entrar sin conectar</button>
-    <div class="gnota">Sin conexión tus visitas quedan en este celular. Podés conectar Google más tarde desde tu perfil.</div>
+    <p>Armá tu ruta, llená las planillas y mandá el informe.</p>
+    <button class="btn gbtn" onclick="entrarGate()"><svg class="gg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Entrar con Google</span></button>
+    <div class="gsep">o</div>
+    <button class="btn ba gempezar" onclick="entrarSinConectar()">Entrar sin Google</button>
+    <div class="gnota">Con Google tus visitas se copian a tu Drive. Sin Google empezás ya, sin registro: todo queda en este celular y podés conectar Google después desde tu perfil.</div>
     <div class="gerr" id="gateErr"></div>
     <div class="gleg">Al continuar aceptás los <a href="terminos.html" target="_blank" rel="noopener">términos</a> y la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</div>
   </div>
@@ -361,7 +362,8 @@
     <span class="stit">Resumen del día</span>
     <div class="card" id="resCard"></div>
     <button class="btn bd" onclick="exportarExcel()">📊 Descargar Excel actualizado</button>
-    <button class="btn bw" onclick="sendWA()">💬 Enviar por WhatsApp</button>
+    <button class="btn ba" onclick="compartirInforme()">📎 Compartir informe con PDFs y fotos</button>
+    <button class="btn bw" style="margin-top:6px" onclick="sendWA()">💬 Enviar solo el resumen por WhatsApp</button>
     <button class="btn bd" style="margin-top:6px" onclick="sendEmail()"><svg class="ico" style="vertical-align:-2px"><use href="#i-mail"/></svg> Enviar por email</button>
   </div>
 
@@ -462,6 +464,7 @@
 <script src="js/25-ubicacion.js"></script>
 <script src="js/26-equipo.js"></script>
 <script src="js/27-dupla.js"></script>
+<script src="js/28-contador.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -498,6 +501,10 @@ setTimeout(go,2500);})();</script>
       <div class="popc-t">Prueba de visita (opcional)</div>
       <label class="popc-f"><span>📍 Registrar ubicación y hora<small>Muestra si estás en el local y lo guarda con la visita</small></span><input type="checkbox" id="optUbi" onchange="optUbiCambio(this.checked)"><i class="popc-sw"></i></label>
       <label class="popc-f"><span>📷 Sello en las fotos<small>Fecha, hora y lugar escritos en cada foto</small></span><input type="checkbox" id="optSello" onchange="optSelloCambio(this.checked)"><i class="popc-sw"></i></label>
+    </div>
+    <div class="popc">
+      <div class="popc-t">Privacidad</div>
+      <label class="popc-f"><span>📊 Contar mi uso de forma anónima<small>Solo suma "una instalación más". No manda visitas, fotos, direcciones ni datos tuyos</small></span><input type="checkbox" id="optContar" onchange="optContarCambio(this.checked)"><i class="popc-sw"></i></label>
     </div>
     <div class="popc" id="perfilEq"></div>
     <div class="pstats" id="perfilStats"></div>

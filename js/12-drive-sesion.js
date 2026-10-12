@@ -155,7 +155,7 @@ function actualizarGate(){
 function entrarSinConectar(){
   lsSet(SK_MODO,'local');
   actualizarGate();renderPerfilBtn();
-  showToast('Listo, sin Google por ahora. Tus visitas se guardan en este celular; podés conectar Google cuando quieras desde tu perfil.');
+  showToast('Listo ✓ Tus visitas se guardan en este celular. Si querés copia en tu Drive, conectá Google desde tu perfil.');
 }
 /* (se ejecuta al final, en js/99-arranque.js) */
 /* (se ejecuta al final, en js/99-arranque.js) */
