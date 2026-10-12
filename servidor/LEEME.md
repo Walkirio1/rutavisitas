@@ -28,3 +28,11 @@ El `docker-compose.yml` monta la carpeta de la app y el servidor la sirve en **`
 - Para actualizarla: `git pull` en la carpeta del repositorio (no hace falta reiniciar nada).
 - Si usás el inicio de sesión con Google desde esa dirección, hay que agregarla en Google Cloud → Credenciales → tu ID de cliente → **Orígenes de JavaScript autorizados** (solo el dominio, sin `/app/`).
 - La app instalada desde otra dirección (por ejemplo GitHub Pages) **no comparte datos** con esta: son instalaciones distintas.
+
+## Dónde se guardan los datos
+El servidor guarda **solo texto liviano** (equipos, miembros, rutas asignadas y el estado de cada visita: unos 300 bytes por visita). **No guarda PDFs, fotos ni Excel**: eso va al Drive de cada usuario.
+Para que los datos queden en otro disco, creá un archivo `.env` junto al `docker-compose.yml` con `DATOS_DIR=/datos/verific` (y la carpeta creada), y volvé a levantar con `docker compose up -d`.
+
+## En vivo
+- El panel se actualiza solo apenas llega una visita, una ruta o una posición (Server-Sent Events); además refresca cada 30 s.
+- Cada verificador puede (opcional, apagado por defecto) compartir su posición mientras tiene la app abierta: aparece en el mapa del jefe.

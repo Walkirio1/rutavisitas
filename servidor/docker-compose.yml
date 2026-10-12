@@ -6,7 +6,7 @@ services:
     ports:
       - "8787:8787"
     volumes:
-      - ./datos:/datos
+      - ${DATOS_DIR:-./datos}:/datos   # dónde se guardan los datos (en .env: DATOS_DIR=/datos/verific)
       - ..:/web:ro   # la app (para servirla en /app/)
     environment:
       - APP_DIR=/web
