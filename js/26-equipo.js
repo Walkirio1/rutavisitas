@@ -6,10 +6,16 @@ const equipo=()=>lsGet(SK_EQ)||null;
 
 async function eqApi(metodo,ruta,cuerpo,eq){
   const e=eq||equipo();if(!e) throw new Error('Sin equipo');
-  const r=await fetch(e.api.replace(/\/$/,'')+ruta,{method:metodo,headers:{'Content-Type':'application/json',...(e.token?{Authorization:'Bearer '+e.token}:{})},body:cuerpo?JSON.stringify(cuerpo):undefined});
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(j.error||'No se pudo conectar con el equipo');
-  return j;
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),10000); // si el servidor no contesta, no se queda esperando
+  try{
+    const r=await fetch(e.api.replace(/\/$/,'')+ruta,{method:metodo,signal:c.signal,headers:{'Content-Type':'application/json',...(e.token?{Authorization:'Bearer '+e.token}:{})},body:cuerpo?JSON.stringify(cuerpo):undefined});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||'No se pudo conectar con el equipo');
+    return j;
+  }catch(err){
+    if(err&&err.name==='AbortError') throw new Error('El servidor no responde');
+    throw err;
+  }finally{clearTimeout(t);}
 }
 // acepta el enlace de invitación completo o solo el código (si ya hay un servidor guardado)
 function eqLeerInvitacion(txt){
@@ -30,6 +36,7 @@ async function eqUnirseDesdeCampo(){
   try{await eqUnirse(codigo,api);}catch(e){showToast(e.message,true);}
 }
 function eqSalir(){
+  if(typeof closePerfil==='function') closePerfil();
   confirm2('¿Salir del equipo? Tus visitas ya hechas quedan como están.',()=>{lsDel(SK_EQ);lsDel(SK_EQCOLA);lsDel(SK_EQVISTO);renderPerfilEquipo();showToast('Saliste del equipo');});
 }
 function renderPerfilEquipo(){

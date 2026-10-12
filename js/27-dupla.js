@@ -42,10 +42,14 @@ async function dpUnirse(){
   }catch(e){showToast(e.message==='Failed to fetch'?'No hay conexión con el servidor':e.message,true);}
 }
 function dpSalir(){
-  confirm2('¿Salir de la dupla? Dejan de compartir la jornada. Lo que ya tenés en tu celular se queda.',async()=>{
-    try{await dpApi('POST','/api/dupla/salir',{});}catch(e){}
+  dpCerrar(); // se cierra la pantalla de la dupla para que se vea la confirmación
+  confirm2('¿Salir de la dupla? Dejan de compartir la jornada. Lo que ya tenés en tu celular se queda.',()=>{
+    const d=dupla();
+    // primero se sale acá, sin esperar al servidor
     if(_dpEs){_dpEs.close();_dpEs=null;}clearInterval(_dpPush);_dpPush=null;
-    lsDel(SK_DUPLA);lsDel(SK_DPVISTO);dpPintarDlg();dpPintarCabecera();if(typeof renderPerfilEquipo==='function')renderPerfilEquipo();showToast('Saliste de la dupla');
+    lsDel(SK_DUPLA);lsDel(SK_DPVISTO);dpPintarDlg();dpPintarCabecera();if(typeof renderPerfilEquipo==='function')renderPerfilEquipo();
+    showToast('Saliste de la dupla');
+    if(d) eqApi('POST','/api/dupla/salir',{},{api:d.api,token:d.token}).catch(()=>{}); // avisar al servidor, si se puede
   });
 }
 async function dpCambiarRol(rol){
