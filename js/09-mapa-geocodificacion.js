@@ -7,7 +7,7 @@ let markersLayer = null;
 let miUbicLayer = null;
 let ubicando = null;      // índice en puntos[] del punto que se está ubicando a mano
 let sinGeoAbierto = false;
-let modoMarcar = true;     // true: tocar un pin lo marca/desmarca (azul); false: tocar un pin abre su info
+let modoMarcar = false;     // true: tocar un pin lo marca/desmarca (azul); false: tocar un pin abre su info
 let manualQ = {};          // texto escrito en el buscador manual, por índice de punto
 let manualRes = {};        // resultados de la búsqueda manual, por índice de punto
 let geocodingInProgress = false;
@@ -170,7 +170,7 @@ function htmlResultadosManual(i){
 }
 
 // Busca candidatos para un texto libre (dirección corregida o nombre del lugar), siempre dentro de Rosario
-async function buscarCandidatos(texto){
+async function buscarCandidatos(texto,localidad){
   const out=[],vistos=new Set();
   let hubo=false;
   const add=(lat,lng,label)=>{
@@ -181,22 +181,27 @@ async function buscarCandidatos(texto){
   };
   const {calle,altura}=partirDireccion(texto);
   const cands=calle?variantesCalle(calle):[];
-  for(const c of cands.slice(0,4)){
-    try{
-      const url='https://apis.datos.gob.ar/georef/api/direcciones?max=3&provincia=Santa%20Fe&localidad_censal=Rosario&direccion='+encodeURIComponent(c+(altura?' '+altura:''));
-      const d=await fetchJson(url);hubo=true;
-      for(const r of (d&&d.direcciones)||[]){
-        const u=r.ubicacion;
-        if(u){
-          const et=r.nomenclatura||(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura));
-          add(u.lat,u.lon,/rosario/i.test(et)?et:et+', Rosario');
+  // primero en la localidad del punto (Funes, Roldán…); Rosario solo si ahí no aparece nada
+  const loc=(localidad||'Rosario').trim()||'Rosario',locs=loc.toLowerCase()==='rosario'?['Rosario']:[loc,'Rosario'];
+  for(const l of locs){
+    if(out.length) break;
+    for(const c of cands.slice(0,4)){
+      try{
+        const url='https://apis.datos.gob.ar/georef/api/direcciones?max=3&provincia=Santa%20Fe&localidad_censal='+encodeURIComponent(l)+'&direccion='+encodeURIComponent(c+(altura?' '+altura:''));
+        const d=await fetchJson(url);hubo=true;
+        for(const r of (d&&d.direcciones)||[]){
+          const u=r.ubicacion;
+          if(u){
+            const et=r.nomenclatura||(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura));
+            add(u.lat,u.lon,new RegExp(l,'i').test(et)?et:et+', '+l);
+          }
         }
-      }
-    }catch(e){console.warn('manual georef:',e);}
+      }catch(e){console.warn('manual georef:',e);}
+    }
   }
   const b=ROSARIO_BOX,vb=[b.lngMin,b.latMax,b.lngMax,b.latMin].join(',');
-  const pedidos=['&q='+encodeURIComponent(texto+', Rosario, Santa Fe')];
-  if(cands[0]) pedidos.unshift('&street='+encodeURIComponent((altura?altura+' ':'')+cands[0])+'&city=Rosario&state=Santa%20Fe');
+  const pedidos=['&q='+encodeURIComponent(texto+', '+loc+', Santa Fe')];
+  if(cands[0]) pedidos.unshift('&street='+encodeURIComponent((altura?altura+' ':'')+cands[0])+'&city='+encodeURIComponent(loc)+'&state=Santa%20Fe');
   for(const extra of pedidos){
     try{
       await esperarOsm();
@@ -212,7 +217,7 @@ async function buscarManual(i){
   const texto=(manualQ[i]!==undefined?manualQ[i]:pt.dir||'').trim();
   if(!texto){showToast('Escribí una dirección o un lugar',true);return;}
   manualRes[i]='buscando';renderMapa(true);
-  const {lista,hubo}=await buscarCandidatos(texto);
+  const {lista,hubo}=await buscarCandidatos(texto,pt.localidad);
   manualRes[i]=lista.length?lista:(hubo?[]:'sinred');
   renderMapa(true);
 }

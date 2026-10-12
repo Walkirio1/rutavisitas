@@ -77,12 +77,13 @@ function seccionesHtml(campos){
   }).join('');
 }
 function plTilde(id,el){plExtra[id]=plExtra[id]==='Sí'?'':'Sí';el.classList.toggle('on',plExtra[id]==='Sí');plCambio();}
+const fmtMonto=n=>Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); // 10,30 · 1.750,00
 // recalcula los totales (campos de suma) cada vez que algo cambia
 function plCambio(){
   const campos=camposActivos();
   campos.filter(c=>c.tipo==='suma').forEach(c=>{
     const t=valorSuma(c,plExtra,campos);plExtra[c.id]=t;
-    const el=document.getElementById('plsuma_'+c.id);if(el) el.textContent=(c.moneda?'$ ':'')+t;
+    const el=document.getElementById('plsuma_'+c.id);if(el) el.textContent=c.moneda?'$ '+fmtMonto(t):t;
   });
 }
 function plSiNo(id,val){

@@ -269,11 +269,11 @@ const NOMBRES_TIPO={tilde:'Casillas',auto:'Se completan solos',suma:'Totales',te
 function pintarRevision(){
   const g={};_rev.campos.forEach((c,i)=>{(g[c.tipo]=g[c.tipo]||[]).push([c,i]);});
   const orden=['tilde','auto','suma','numero','texto','fecha','firma'];
-  document.getElementById('revRes').textContent=(_rev.origen==='formulario'?'Es un formulario rellenable: usé sus campos reales. ':'Estos son los campos que encontré en la hoja. ')+'Destildá los que no sirvan y corregí los nombres o puntos.';
+  document.getElementById('revRes').textContent=(_rev.origen==='formulario'?'Es un formulario rellenable: usé sus campos reales. ':'Estos son los campos que encontré en la hoja. ')+(_rev.campos.some(c=>c.tipo==='tilde')?'En las casillas podés poner cuántos puntos vale cada una (opcional). ':'')+'Destildá los que no sirvan y corregí los nombres o puntos.';
   document.getElementById('revLista').innerHTML=orden.filter(t=>g[t]).map(t=>`<div class="rev-g">${NOMBRES_TIPO[t]} <span>${g[t].length}</span></div>`+g[t].map(([c,i])=>`
     <div class="rev-r"><input type="checkbox" ${c.on?'checked':''} onchange="_rev.campos[${i}].on=this.checked;actualizarRevCuenta()">
       <input type="text" class="rev-n" value="${escapeHtml(c.etiqueta)}" onchange="_rev.campos[${i}].etiqueta=this.value.trim()||_rev.campos[${i}].etiqueta"${c.tipo==='auto'?' disabled':''}>
-      ${c.tipo==='tilde'?`<input type="number" inputmode="decimal" class="rev-p" placeholder="pts" value="${c.puntos||''}" onchange="_rev.campos[${i}].puntos=parseFloat(this.value)||0;if(!_rev.campos[${i}].puntos)delete _rev.campos[${i}].puntos">`:''}
+      ${c.tipo==='tilde'?`<input type="number" inputmode="decimal" class="rev-p" placeholder="puntos" title="Cuántos puntos vale esta casilla (opcional)" value="${c.puntos||''}" onchange="_rev.campos[${i}].puntos=parseFloat(this.value)||0;if(!_rev.campos[${i}].puntos)delete _rev.campos[${i}].puntos">`:''}
     </div>`).join('')).join('');
   actualizarRevCuenta();
 }

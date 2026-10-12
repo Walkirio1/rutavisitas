@@ -127,8 +127,10 @@ async function rutaCompleta(){
   const orden=todo.slice(0,10); // Google Maps admite hasta 10 paradas por enlace
   const dest=orden[orden.length-1],via=orden.slice(0,-1).map(p=>p.lat+','+p.lng).join('|');
   const url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest.lat+','+dest.lng+(via?'&waypoints='+encodeURIComponent(via):'');
+  const sinUbi=puntos.filter(p=>!p.lat&&sel.has(p.id)&&!estadoVisita(p.id));
+  const aviso=sinUbi.length?`\n\n⚠️ ${sinUbi.length===1?'1 punto sin ubicación quedó afuera':sinUbi.length+' puntos sin ubicación quedaron afuera'}: ${sinUbi.slice(0,4).map(p=>p.nombre||p.dir).join(', ')}${sinUbi.length>4?'…':''}. Ubicalos en el mapa y volvé a tocar Ruta completa.`:'';
   const lista=todo.slice(0,15).map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n')+(todo.length>15?`\n… y ${todo.length-15} más`:'');
-  mostrarDlgEnvio(`${calles?'🛣️ Ruta por calles reales':'🗺️ Ruta optimizada'}: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
+  mostrarDlgEnvio(`${calles?'🛣️ Ruta por calles reales':'🗺️ Ruta optimizada'}: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${aviso}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
     {txt:'🧭 Abrir en Google Maps',cls:'ba',fn:()=>{window.open(url,'_blank');}},
     {txt:'Cerrar',cls:'bd'}
   ]);

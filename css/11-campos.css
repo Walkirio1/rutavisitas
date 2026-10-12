@@ -139,3 +139,12 @@
 .dp-roles button{border:2px solid #bcd3f5;background:#fff;border-radius:14px;padding:10px 6px;font-weight:800;color:#3b4d73;font-size:14px}
 .dp-roles button small{display:block;font-weight:500;font-size:11px;color:var(--text-mute);margin-top:2px}
 .dp-roles button.on{border-color:#10b981;background:#d6f5df;color:#14733a}
+/* Avisos (toast): arriba, para no tapar los botones de abajo; el texto se lee entero */
+.toast{top:calc(62px + env(safe-area-inset-top))!important;bottom:auto!important;transform:translateX(-50%) translateY(-14px)!important;white-space:normal!important;text-align:center;max-width:min(92vw,420px);width:max-content}
+.toast.show{transform:translateX(-50%) translateY(0)!important}
+/* si el banner de instalar está a la vista, el contenido deja lugar abajo */
+body:has(.inst-bar.show) .cnt{padding-bottom:170px}
+.inst-bar .it{white-space:normal}
+/* notas largas: solo las primeras líneas en las tarjetas */
+.obs-corta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.rev-p{width:72px!important;min-width:72px;text-align:center}
