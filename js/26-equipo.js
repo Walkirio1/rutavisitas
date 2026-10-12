@@ -1,5 +1,6 @@
 // Equipos: el verificador se une con una invitación, recibe la ruta que le asigna su jefe y le informa cada visita hecha.
 // (El servidor está en /servidor; el PDF y las fotos siguen yendo al Drive de cada uno.)
+const SERVIDOR_URL='https://hivemind.tail38381c.ts.net'; // servidor de Verific (rutas por calles y equipos)
 const SK_EQ='sube:eq',SK_EQCOLA='sube:eqcola',SK_EQVISTO='sube:eqvisto';
 const equipo=()=>lsGet(SK_EQ)||null;
 

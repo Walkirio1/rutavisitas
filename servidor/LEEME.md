@@ -36,3 +36,13 @@ Para que los datos queden en otro disco, creá un archivo `.env` junto al `docke
 ## En vivo
 - El panel se actualiza solo apenas llega una visita, una ruta o una posición (Server-Sent Events); además refresca cada 30 s.
 - Cada verificador puede (opcional, apagado por defecto) compartir su posición mientras tiene la app abierta: aparece en el mapa del jefe.
+
+## Rutas por calles reales (optimizador)
+`POST /api/optimizar` recibe el punto de partida y hasta 80 paradas, pide a OSRM las distancias y tiempos de manejo reales y devuelve el mejor orden (vecino más cercano + 2-opt + mover paradas). Lo usa cualquier usuario de la app (no hace falta equipo); si el servidor no responde, la app usa su método de siempre.
+Preparar el mapa de calles (una sola vez, tarda unos minutos y usa ~1 GB de disco en `/datos`):
+```
+cd servidor
+DATOS_DIR=/datos/verific sh osrm/preparar.sh          # Gran Rosario; otra zona: BBOX="oeste,sur,este,norte"
+DATOS_DIR=/datos/verific docker compose --profile calles up -d
+curl http://localhost:8787/api/salud                   # "calles":true
+```
