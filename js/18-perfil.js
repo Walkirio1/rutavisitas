@@ -43,6 +43,7 @@ function openPerfil(){
   reco.style.display=conn?'none':'';
   document.getElementById('perfilSinCon').style.display=conn?'':'none';
   document.getElementById('perfilEmpresa').value=p.emailEmpresa||'';
+  document.getElementById('optUbi').checked=ubiOn();document.getElementById('optSello').checked=selloOn();
   document.getElementById('perfilEnviarEmp').style.display=(conn&&p.emailEmpresa)?'':'none';
   const hechasHoy=Object.values(visits).filter(v=>v&&v.done).length;
   const totHist=historial.reduce((a,h)=>a+(h.hechos||0),0);
