@@ -59,8 +59,8 @@ async function dpCambiarRol(rol){
 }
 function dpCompartir(){
   const d=dupla();if(!d) return;
-  const t='Trabajemos en dupla en Verific. Abrí la app, entrá a tu perfil → Trabajar en dupla y escribí este código: '+d.codigo;
-  if(navigator.share) navigator.share({title:'Dupla en Verific',text:t}).catch(()=>{});
+  const t='Trabajemos en dupla en LogiMap. Abrí la app, entrá a tu perfil → Trabajar en dupla y escribí este código: '+d.codigo;
+  if(navigator.share) navigator.share({title:'Dupla en LogiMap',text:t}).catch(()=>{});
   else navigator.clipboard&&navigator.clipboard.writeText(d.codigo).then(()=>showToast('Código copiado ✓'));
 }
 

@@ -62,8 +62,8 @@ async function exportarCopia(){
     for(const id of Object.keys(visits||{})){
       const f=await fotoGet(id);if(f) fotos[id]=f;
     }
-    const json=JSON.stringify({app:'verific',version:1,fecha:new Date().toISOString(),datos,fotos});
-    const nombre='Verific_copia_'+new Date().toISOString().slice(0,10)+'.json';
+    const json=JSON.stringify({app:'logimap',version:1,fecha:new Date().toISOString(),datos,fotos});
+    const nombre='LogiMap_copia_'+new Date().toISOString().slice(0,10)+'.json';
     const file=new File([json],nombre,{type:'application/json'});
     if(compartirArchivosOk()&&navigator.canShare({files:[file]})){
       try{await navigator.share({files:[file],title:nombre});showToast('Copia lista ✓');return;}
@@ -78,8 +78,8 @@ function restaurarCopia(input){
   const r=new FileReader();
   r.onload=()=>{
     let c;
-    try{c=JSON.parse(r.result);if(c.app!=='verific'||!c.datos)throw 0;}
-    catch(e){showToast('Ese archivo no es una copia de Verific',true);return;}
+    try{c=JSON.parse(r.result);if((c.app!=='verific'&&c.app!=='logimap')||!c.datos)throw 0;}
+    catch(e){showToast('Ese archivo no es una copia de LogiMap',true);return;}
     confirm2('¿Restaurar la copia del '+(c.fecha||'').slice(0,10)+'? Reemplaza lo que hay ahora en este celular.',async function(){
       try{
         for(const [k,v] of Object.entries(c.datos)) localStorage.setItem(k,v);

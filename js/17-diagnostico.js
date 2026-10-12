@@ -2,7 +2,7 @@
 function textoDiagnostico(){
   let err=[];try{err=JSON.parse(localStorage.getItem('sube:errores')||'[]');}catch(e){}
   const l=[
-    'Verific · '+APP_VERSION,
+    'LogiMap · '+APP_VERSION,
     'Fecha: '+new Date().toLocaleString('es-AR'),
     'Instalada: '+((navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)?'sí':'no'),
     'Conexión: '+(navigator.onLine?'sí':'no')+' · Drive: '+(drv.connected?'conectado':'no conectado'),
@@ -20,7 +20,7 @@ function verDiagnostico(){
   const t=textoDiagnostico();
   mostrarDlgEnvio(t,[
     {txt:'📤 Compartir / copiar',cls:'ba',fn:async()=>{
-      try{if(navigator.share){await navigator.share({title:'Diagnóstico Verific',text:t});return;}}catch(e){if(e&&e.name==='AbortError')return;}
+      try{if(navigator.share){await navigator.share({title:'Diagnóstico LogiMap',text:t});return;}}catch(e){if(e&&e.name==='AbortError')return;}
       try{await navigator.clipboard.writeText(t);showToast('Copiado ✓');}catch(e){showToast('No se pudo copiar',true);}
     }},
     {txt:'Borrar registro de errores',cls:'bd',fn:()=>{lsDel('sube:errores');showToast('Registro borrado');}},

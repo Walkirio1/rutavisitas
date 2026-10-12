@@ -235,6 +235,6 @@ async function generarPlanillaGeneralPDF(punto,visita){
       page.drawText(et,{x:x0+(ancho-f.widthOfTextAtSize(et,8.5))/2,y:63,size:8.5,font:f,color:gris});
     }
   }
-  doc.getPages().forEach(p=>p.drawText('Generado con Verific',{x:40,y:20,size:8,font:f,color:gris}));
+  doc.getPages().forEach(p=>p.drawText('Generado con LogiMap',{x:40,y:20,size:8,font:f,color:gris}));
   return await doc.saveAsBase64({dataUri:false});
 }

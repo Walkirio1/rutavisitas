@@ -1,4 +1,4 @@
-# Pruebas de Verific
+# Pruebas de LogiMap
 
 Paquete para probar la app a fondo (con una persona o con una IA que maneje un navegador).
 
