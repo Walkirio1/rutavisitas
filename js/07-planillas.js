@@ -89,11 +89,11 @@ function openPl(id){
   if(pl&&pl.chC) CN.forEach((n,i)=>{const k=_ic.indexOf(n);if(k>=0&&pl.chC[k])plC['c'+i]=true;});
   if(pl&&pl.chV) VN.forEach((n,i)=>{const k=_iv.indexOf(n);if(k>=0&&pl.chV[k])plC['v'+i]=true;});
   // encabezado: la planilla general no lleva marcas de ninguna empresa
-  const gen=modoPlanilla()==='general';
-  document.getElementById('plHizq').textContent=gen?plantilla().titulo:'SUBE';
-  document.getElementById('plHizq').style.fontSize=gen?'18px':'';
-  document.getElementById('plHder').innerHTML=gen?'Visita':'Planilla de<br>Verificaciones';
-  document.getElementById('plLbId').textContent=gen?'ID':'ID PS';
+  const gen=modoPlanilla()==='general',esPdf=modoPlanilla()==='pdf',plPdf=esPdf?planillas.find(x=>x.id===plDefId):null;
+  document.getElementById('plHizq').textContent=gen?plantilla().titulo:(esPdf&&plPdf?plPdf.nombre.replace(/\.pdf$/i,'').slice(0,22):'SUBE');
+  document.getElementById('plHizq').style.fontSize=(gen||esPdf)?'18px':'';
+  document.getElementById('plHder').innerHTML=(gen||esPdf)?'Visita':'Planilla de<br>Verificaciones';
+  document.getElementById('plLbId').textContent=(gen||esPdf)?'ID':'ID PS';
   document.getElementById('plBoxId').style.display=gen?'none':''; // la planilla general no muestra el ID
   document.getElementById('plFotoSec').style.display=fotoModo()==='no'?'none':'';
   const conC=!!pdfConCampos(); // planilla PDF con campos propios: no se muestran las irregularidades de la oficial
