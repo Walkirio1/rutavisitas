@@ -36,7 +36,8 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const APP='https://walkirio1.github.io/rutavisitas/';
+let APP='https://walkirio1.github.io/rutavisitas/';
+fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{}); // si el servidor también sirve la app, la invitación apunta ahí
 let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null;
 const h=location.hash.match(/t=([a-f0-9]+)/);if(h){T=h[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);}
 async function api(m,p,b){

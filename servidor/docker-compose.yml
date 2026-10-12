@@ -7,3 +7,6 @@ services:
       - "8787:8787"
     volumes:
       - ./datos:/datos
+      - ..:/web:ro   # la app (para servirla en /app/)
+    environment:
+      - APP_DIR=/web
