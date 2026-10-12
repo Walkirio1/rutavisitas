@@ -38,20 +38,31 @@ function renderRes(){
 }
 
 function buildMsg(){
-  const enRuta=puntos.filter(p=>sel.has(p.id));
-  const hchos=enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length;
-  const now=new Date();
-  return '📋 *VERIFICACIONES SUBE*\n📅 '+now.toLocaleDateString('es-AR')+' · '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'\n✅ '+hchos+'/'+enRuta.length+' puntos verificados\n\n'
-    +enRuta.map((p,i)=>{
-      const v=visits[p.id]||{};
-      const irregs=irregsDe(v.planilla);
-      return (i+1)+'. '+p.nombre+' · ID:'+p.id+'\n   📍 '+p.dir+'\n   '+(v.done?'✓ Verificado':'<svg class="ico" style="vertical-align:-2px"><use href="#i-hourglass"/></svg> Pendiente')+(irregs.length?'\n   ⚠️ '+irregs.join(', '):'')+(v.planilla&&v.planilla.obs?'\n   📝 '+v.planilla.obs:'');
-    }).join('\n\n')+'\n\n_Planillas adjuntas._';
+  const enRuta=puntos.filter(p=>sel.has(p.id)||(visits[p.id]&&visits[p.id].done));
+  const est=p=>estadoVisita(p.id);
+  const hechas=enRuta.filter(p=>est(p)==='ok'),cerradas=enRuta.filter(p=>est(p)==='cerrado'),pend=enRuta.filter(p=>!est(p));
+  const irr=hechas.filter(p=>irregsDe((visits[p.id]||{}).planilla).length).length;
+  const now=new Date(),total=enRuta.length,hechos=hechas.length+cerradas.length;
+  const nombre=n=>(n||'').trim()||'Sin nombre';
+  const linea=(p,i)=>{
+    const v=visits[p.id]||{},pl=v.planilla,ir=irregsDe(pl),dir=[p.dir,p.localidad&&!new RegExp(p.localidad,'i').test(p.dir||'')?p.localidad:''].filter(Boolean).join(', ');
+    return (i+1)+'. *'+nombre(p.nombre)+'*\n   📍 '+dir+(ir.length?'\n   ⚠️ '+ir.join(', '):'')+(pl&&pl.obs?'\n   📝 '+pl.obs.replace(/\s+/g,' ').slice(0,100)+(pl.obs.length>100?'…':''):'');
+  };
+  const bloque=(tit,lista)=>lista.length?'\n\n*'+tit+' ('+lista.length+')*\n'+lista.map(linea).join('\n'):'';
+  return '📋 *INFORME DE VISITAS*\n📅 '+now.toLocaleDateString('es-AR')+' · '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+    +'\n━━━━━━━━━━━━━━'
+    +'\n✅ *'+hechos+' de '+total+'* verificados'+(total?' ('+Math.round(hechos/total*100)+'%)':'')
+    +(pend.length?'\n⏳ Pendientes: '+pend.length:'')
+    +(cerradas.length?'\n🔴 Cerrados / no atendidos: '+cerradas.length:'')
+    +(irr?'\n⚠️ Con irregularidades: '+irr:'')
+    +'\n━━━━━━━━━━━━━━'
+    +bloque('✅ HECHAS',hechas)+bloque('🔴 CERRADOS',cerradas)+bloque('⏳ PENDIENTES',pend)
+    +'\n\n_Enviado desde Verific_';
 }
 function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank');}
 function sendEmail(){
   if(!emails.length){showToast('Agregá destinatarios',true);return;}
-  window.location.href='mailto:'+emails.join(',')+'?subject=Verificaciones SUBE&body='+encodeURIComponent(buildMsg());
+  window.location.href='mailto:'+emails.join(',')+'?subject='+encodeURIComponent('Informe de visitas · '+new Date().toLocaleDateString('es-AR'))+'&body='+encodeURIComponent(buildMsg());
 }
 
 // ── CONFIRM DIALOG
