@@ -203,6 +203,7 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
     }
   }catch(e){console.warn('firma en la planilla:',e);}
 
+  await marcaDeAgua(pdfDoc,'discreta');
   // Serializar PDF resultante
   const pdfBytes = await pdfDoc.save();
   // Convertir a base64 plano

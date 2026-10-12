@@ -519,6 +519,14 @@ setTimeout(go,2500);})();</script>
     </div>
   </div>
 </div>
+<div class="dlg alto" id="plVistaDlg" onclick="if(event.target===this)plVistaCerrar()">
+  <div class="dlgw" style="max-width:430px;max-height:92vh;overflow-y:auto;text-align:center">
+    <div style="font-weight:800;font-size:15px;margin-bottom:2px">Vista previa</div>
+    <div class="pled-nota" style="margin-bottom:8px">Con datos de ejemplo. El plan gratis lleva el logo de LogiMap como marca de agua; el plan Pro sale sin marca.</div>
+    <div id="plVistaBox"></div>
+    <button class="btn bd" style="margin-top:10px" onclick="plVistaCerrar()">Cerrar</button>
+  </div>
+</div>
 <div class="dlg" id="plEditDlg">
   <div class="dlgw" style="max-width:380px;max-height:92vh;overflow-y:auto">
     <div style="font-weight:800;font-size:15px;margin-bottom:8px">Planilla general</div>
@@ -549,6 +557,7 @@ setTimeout(go,2500);})();</script>
       <option value="no">Sin foto</option>
     </select>
     <div style="display:grid;gap:8px;margin-top:14px">
+      <button class="btn bd" onclick="plEdVista()">👁 Vista previa</button>
       <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
       <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
       <button class="btn bd" onclick="plEdCerrar()">Cancelar</button>
