@@ -36,3 +36,45 @@ Entregar la lista ordenada por gravedad.
 
 ## Texto para pegarle a la IA
 > Sos un tester de software. Abrí https://walkirio1.github.io/rutavisitas/ en un navegador con tamaño de celular (390×844) y probá la app a fondo siguiendo el plan de `pruebas/PRUEBAS.md` del repositorio https://github.com/Walkirio1/rutavisitas. Usá solo "Entrar sin conectar". Los archivos de prueba están en https://github.com/Walkirio1/rutavisitas/tree/main/pruebas. Tu objetivo es encontrar errores, comportamientos confusos y cosas que se vean mal. Probá también casos raros. Para cada problema informá: título, pasos para repetirlo, esperado, obtenido, gravedad y captura. Al final, entregá la lista ordenada de más a menos grave. No inventes errores: si no podés repetir algo, decilo.
+
+---
+
+# Ronda 2 (versión 2026-10-11 · 53)
+
+## Primero: verificar las correcciones de la ronda 1
+Repetí estos casos y decí si quedaron **bien**, **igual** o **peor**:
+1. Importar `puntos-de-ejemplo.xlsx` y geocodificar: ¿"Kiosco Funes" (Santa Fe 450, Funes) queda con pin? Si no, ¿qué dice ahora?
+2. Búsqueda manual de un punto sin ubicación de Funes: ¿ofrece primero resultados de Funes?
+3. "Ruta completa" con un punto sin ubicación marcado: ¿avisa cuál quedó afuera?
+4. Avisos (verdes y rojos): ¿salen arriba, se leen enteros y ya no tapan botones? Con el banner "Instalá la app" a la vista, ¿tapa algo?
+5. Mapa: tocar un pin, ¿muestra la ficha sin cambiar la ruta?
+6. Observación larga (1500 caracteres): ¿la tarjeta muestra solo 2 líneas?
+7. Excel vacío y Excel con columnas «Foo» y «Bar»: ¿avisan con error? ¿Los puntos que ya había siguen igual?
+8. Total con Viáticos 10.10 y Peajes 0.20: ¿dice `$ 10,30`? Con 1500.50 + 249.50: ¿`$ 1.750,00`?
+9. Cerrar día con 1 visita hecha: ¿el texto está bien escrito?
+10. Revisión de campos: ¿el campo de cada casilla dice "puntos"? ¿Se ve el Total al abrir?
+
+## Lo que no se probó en la ronda 1
+- Detección (✨) de `planilla-fachadas.pdf`, `planilla-casillas-finas.pdf`, `planilla-casillas-varios-estilos.pdf` y `planilla-casillas-imagen-y-lineas.pdf`: ¿cuántas casillas encuentra de las que se ven? ¿Toma algo que no es una casilla (una letra, una celda de tabla)? ¿Los títulos de sección y los nombres son correctos?
+- Editor de campos (🧩 Campos): agregar un tipo (Suma, Foto, Firma), mover, cambiar el tamaño con las esquinas, borrar y "Editar todos". ¿Se puede agregar un campo tocando encima de otro?
+- 📋 Copiar campos entre dos planillas.
+- Guardar una visita completa con una planilla PDF y **revisar el PDF generado** (descargarlo): ¿casillas, importes, total, firma y foto quedan en su lugar? ¿La firma tiene fondo transparente?
+- Historial: 7 días, 30 días y "Compartir resumen".
+- Cerrar la app a mitad de una visita y volver a entrar; usar sin internet (modo avión); girar la pantalla; tocar muy rápido "Marcar hecha" y "Guardar visita" varias veces.
+
+## Dupla (solo si se pueden abrir **dos navegadores o perfiles distintos**)
+Hace falta que el servidor esté andando. En cada navegador: Perfil → **Trabajar en dupla**. En el primero, anotar el código de 6 letras; en el segundo, escribirlo y tocar Conectar.
+- ¿Aparece la foto o la inicial del compañero arriba, al lado del perfil?
+- Navegante: cargar puntos y marcarlos. ¿Le aparecen al verificador?
+- Navegante: "Siguiente punto" → "📣 Avisarle a mi compañero". ¿El verificador ve **Próxima parada** con el botón de abrir la planilla?
+- Verificador: guardar la visita. ¿El punto se pone verde en el otro navegador sin recargar?
+- Verificador: deshacer la visita. ¿Vuelve a quedar pendiente en el otro?
+- Cambiar de rol y volver a probar. Salir de la dupla desde uno: ¿qué ve el otro?
+- Con internet cortado en uno de los dos: ¿qué pasa y qué pasa al volver?
+
+## Qué informar además
+- **Qué versión** vio (Ajustes → "Versión …").
+- Errores de la **consola del navegador** (en rojo), si puede verlos.
+- Qué cosas **funcionaron**, aunque no haya errores.
+- Para cada error: título, pasos, esperado, obtenido, gravedad y captura. No repetir los de la ronda 1 que ya salieron bien.
+- Separar: **errores nuevos**, **correcciones que no funcionaron** y **cosas que no pudo probar** (y por qué).
