@@ -160,3 +160,6 @@ body:has(.inst-bar.show) .cnt{padding-bottom:170px}
 .inst-bar img{width:28px!important;height:28px!important}
 .inst-bar .it{font-size:12px!important;line-height:1.2!important}
 .inst-bar .it b{display:inline!important;margin-right:2px}
+/* campos de código (dupla / invitación): siempre fondo claro y letra oscura, también en modo oscuro */
+#dpCod,#eqInv{background:#fff!important;color:#0d2a78!important;-webkit-text-fill-color:#0d2a78!important;caret-color:#0d2a78;border:1.5px solid #bcd3f5!important;border-radius:12px;padding:10px}
+#dpCod::placeholder,#eqInv::placeholder{color:#8a98b3!important;-webkit-text-fill-color:#8a98b3!important}
