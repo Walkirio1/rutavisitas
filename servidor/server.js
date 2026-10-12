@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS asignaciones(id INTEGER PRIMARY KEY,miembro_id INTEGE
 CREATE TABLE IF NOT EXISTS posiciones(miembro_id INTEGER PRIMARY KEY,lat REAL,lng REAL,prec INTEGER,ts INTEGER);
 CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,miembro_id INTEGER NOT NULL,punto_id TEXT NOT NULL,nombre TEXT,localidad TEXT,estado TEXT,ts INTEGER,fecha TEXT,lat REAL,lng REAL,dist INTEGER,dur INTEGER,irr INTEGER,UNIQUE(miembro_id,punto_id,fecha));
 `);
+for(const m of ["ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
+db.exec('CREATE TABLE IF NOT EXISTS jornadas(equipo_id INTEGER PRIMARY KEY,json TEXT NOT NULL,version INTEGER NOT NULL,ts INTEGER)');
 const hoy=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); // fecha de Argentina (UTC-3)
 const tok=()=>crypto.randomBytes(24).toString('hex');
 const cod=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=a[crypto.randomInt(a.length)];return s;};
@@ -90,9 +92,54 @@ const rutas={
   },
   'POST /api/unirse':async(req,b)=>{
     const e=ult('SELECT * FROM equipos WHERE codigo=?',txt(b.codigo,10).toUpperCase().trim());if(!e) return [404,{error:'Ese código no existe'}];
-    const nombre=txt(b.nombre,60).trim()||'Sin nombre';const token=tok();
-    const r=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto) VALUES(?,?,?,?,?)',e.id,nombre,token,Date.now(),Date.now());
-    avisar(e.id,'miembro');return [200,{token,miembroId:Number(r.lastInsertRowid),nombre,equipo:e.nombre}];
+    const otros=todos('SELECT * FROM miembros WHERE equipo_id=?',e.id);
+    if(e.tipo==='dupla'&&otros.length>=2) return [409,{error:'Esa dupla ya tiene dos personas'}];
+    const nombre=txt(b.nombre,60).trim()||'Sin nombre',foto=txt(b.foto,60000),token=tok();
+    const rol=e.tipo==='dupla'?(otros[0]&&otros[0].rol==='verificador'?'navegante':'verificador'):null;
+    const r=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',e.id,nombre,token,Date.now(),Date.now(),foto,rol);
+    avisar(e.id,'miembro');
+    const c=otros[0];
+    return [200,{token,miembroId:Number(r.lastInsertRowid),nombre,equipo:e.nombre,tipo:e.tipo||'equipo',rol,companero:c?{nombre:c.nombre,foto:c.foto||'',rol:c.rol}:null}];
+  },
+  // ── Dupla: dos personas que comparten la misma jornada (uno navega, el otro baja a completar)
+  'POST /api/dupla/crear':async(req,b)=>{
+    const nombre=txt(b.nombre,60).trim()||'Sin nombre';let codigo=cod();while(ult('SELECT 1 FROM equipos WHERE codigo=?',codigo)) codigo=cod();
+    const r=run('INSERT INTO equipos(nombre,codigo,admin_token,creado,tipo) VALUES(?,?,?,?,?)','Dupla de '+nombre,codigo,tok(),Date.now(),'dupla');
+    const rol=b.rol==='verificador'?'verificador':'navegante',token=tok();
+    const m=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',Number(r.lastInsertRowid),nombre,token,Date.now(),Date.now(),txt(b.foto,60000),rol);
+    return [200,{token,miembroId:Number(m.lastInsertRowid),codigo,rol,equipo:'Dupla de '+nombre,tipo:'dupla'}];
+  },
+  'GET /api/dupla':async(req)=>{
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const e=ult('SELECT * FROM equipos WHERE id=?',m.equipo_id),c=ult('SELECT nombre,foto,rol,visto FROM miembros WHERE equipo_id=? AND id<>?',m.equipo_id,m.id);
+    const j=ult('SELECT json,version FROM jornadas WHERE equipo_id=?',m.equipo_id);
+    return [200,{codigo:e.codigo,yo:{rol:m.rol},companero:c||null,version:j?j.version:0,estado:j?JSON.parse(j.json):{}}];
+  },
+  'POST /api/dupla/rol':async(req,b)=>{
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const rol=b.rol==='verificador'?'verificador':'navegante',otro=rol==='navegante'?'verificador':'navegante';
+    run('UPDATE miembros SET rol=? WHERE id=?',rol,m.id);run('UPDATE miembros SET rol=? WHERE equipo_id=? AND id<>?',otro,m.equipo_id,m.id);
+    avisar(m.equipo_id,'rol');return [200,{ok:true,rol}];
+  },
+  'POST /api/dupla/estado':async(req,b)=>{
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const j=ult('SELECT json,version FROM jornadas WHERE equipo_id=?',m.equipo_id),est=j?JSON.parse(j.json):{},v=(j?j.version:0)+1;
+    const lista=(a,n)=>Array.isArray(a)?a.slice(0,n):null;
+    if(b.puntos){const l=lista(b.puntos,500);if(l) est.puntos=l.map(p=>({id:txt(p.id,60),nombre:txt(p.nombre),dir:txt(p.dir),localidad:txt(p.localidad,80),tipo:txt(p.tipo,60),lat:Number.isFinite(+p.lat)&&p.lat!=null?+p.lat:null,lng:Number.isFinite(+p.lng)&&p.lng!=null?+p.lng:null}));}
+    if(b.sel){const l=lista(b.sel,500);if(l) est.sel=l.map(x=>txt(x,60));}
+    if(b.orden){const l=lista(b.orden,500);if(l) est.orden=l.map(x=>txt(x,60));}
+    if('actual' in b) est.actual=b.actual?{id:txt(b.actual,60),ts:Date.now()}:null;
+    if(b.visita&&b.visita.id){est.visitas=est.visitas||{};est.visitas[txt(b.visita.id,60)]={estado:b.visita.estado==='cerrado'?'cerrado':'ok',ts:Date.now(),por:m.nombre,irr:!!b.visita.irr,nombre:txt(b.visita.nombre)};}
+    if(b.quitarVisita) {if(est.visitas) delete est.visitas[txt(b.quitarVisita,60)];}
+    if(b.reiniciar){est.visitas={};est.actual=null;}
+    run('INSERT INTO jornadas(equipo_id,json,version,ts) VALUES(?,?,?,?) ON CONFLICT(equipo_id) DO UPDATE SET json=excluded.json,version=excluded.version,ts=excluded.ts',m.equipo_id,JSON.stringify(est),v,Date.now());
+    avisar(m.equipo_id,'estado');return [200,{ok:true,version:v}];
+  },
+  'POST /api/dupla/salir':async(req)=>{
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    run('DELETE FROM miembros WHERE id=?',m.id);avisar(m.equipo_id,'miembro');
+    if(!ult('SELECT 1 FROM miembros WHERE equipo_id=?',m.equipo_id)){run('DELETE FROM jornadas WHERE equipo_id=?',m.equipo_id);run('DELETE FROM equipos WHERE id=?',m.equipo_id);}
+    return [200,{ok:true}];
   },
   'GET /api/mi-ruta':async(req)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
@@ -158,7 +205,9 @@ http.createServer(async(req,res)=>{
       res.writeHead(404);return res.end('No existe');
     }
     if(url.pathname==='/api/eventos'){ // el panel se queda escuchando
-      const e=ult('SELECT * FROM equipos WHERE admin_token=?',url.searchParams.get('t')||'');if(!e) return json(res,401,{error:'Sin permiso'});
+      const tk=url.searchParams.get('t')||'';let e=ult('SELECT * FROM equipos WHERE admin_token=?',tk);
+      if(!e){const mm=ult('SELECT equipo_id FROM miembros WHERE token=?',tk);if(mm) e=ult('SELECT * FROM equipos WHERE id=?',mm.equipo_id);}
+      if(!e) return json(res,401,{error:'Sin permiso'});
       res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache',Connection:'keep-alive','X-Accel-Buffering':'no',...CORS});res.write('retry: 4000\n\n');
       if(!oyentes.has(e.id)) oyentes.set(e.id,new Set());oyentes.get(e.id).add(res);
       req.on('close',()=>{const st=oyentes.get(e.id);if(st){st.delete(res);if(!st.size) oyentes.delete(e.id);}});return;

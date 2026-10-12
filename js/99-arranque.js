@@ -114,3 +114,6 @@ window.addEventListener('online',()=>setTimeout(eqVaciarCola,2500));
 setInterval(eqVaciarCola,60000);
 setInterval(eqPosEnviar,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(eqPosEnviar,1500);});
+
+// de 27-dupla.js
+dpIniciar();

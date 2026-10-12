@@ -178,7 +178,7 @@ async function pdfParaVisita(){
 
 // Deja el punto como si nunca se hubiera visitado (vuelve a "pendiente", sin color en el mapa)
 function desmarcarHecha(id){
-  delete visits[id];
+  delete visits[id];dpReportarVisita(id);
   fotoDel(id);fotosEnIDB.delete(String(id));
   guardarVisits();
   closeOv();renderV();updStats();
@@ -222,7 +222,7 @@ async function guardarVisita(soloGuardar,confirmado){
   guardarVisits();
   if(fotoData){ const idv=curId; guardarFotoSegura(idv,fotoData).then(ok=>{if(ok)guardarVisits();}); }
   else{ fotoDel(curId); fotosEnIDB.delete(String(curId)); }
-  eqReportarVisita(curId);
+  eqReportarVisita(curId);dpReportarVisita(curId);
   renderV();updStats();closeOv();showToast(soloGuardar?'Visita guardada (sin enviar) ✓':'Visita guardada ✓');
 
   // Enviar a Drive; si no se puede, queda pendiente y se avisa
