@@ -4,6 +4,8 @@ const http=require('http'),fs=require('fs'),path=require('path'),crypto=require(
 const {DatabaseSync}=require('node:sqlite');
 const PORT=+process.env.PORT||8787,DB=process.env.DB||path.join(__dirname,'datos','verific.db');
 fs.mkdirSync(path.dirname(DB),{recursive:true});
+const APP_DIR=process.env.APP_DIR?path.resolve(process.env.APP_DIR):null; // carpeta de la app (index.html, js/, css/…); si no se define, solo se sirve el panel
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.pdf':'application/pdf'};
 const db=new DatabaseSync(DB);
 db.exec(`
 PRAGMA journal_mode=WAL;
@@ -87,6 +89,14 @@ http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,CORS);return res.end();}
     const url=new URL(req.url,'http://x');
+    if(url.pathname==='/app') {res.writeHead(302,{Location:'/app/'});return res.end();}
+    if(url.pathname.startsWith('/app/')&&APP_DIR){ // la app (PWA) servida desde acá
+      let rel=decodeURIComponent(url.pathname.slice(5))||'index.html';if(rel.endsWith('/')) rel+='index.html';
+      const f=path.normalize(path.join(APP_DIR,rel));
+      const ext=path.extname(f).toLowerCase();
+      if(!f.startsWith(APP_DIR+path.sep)||/(^|[\\/])(servidor|\.git|node_modules)([\\/]|$)/.test(path.relative(APP_DIR,f))||!MIME[ext]||!fs.existsSync(f)||!fs.statSync(f).isFile()){res.writeHead(404);return res.end('No existe');}
+      res.writeHead(200,{'Content-Type':MIME[ext],'Cache-Control':'no-cache'});return fs.createReadStream(f).pipe(res);
+    }
     if(!url.pathname.startsWith('/api/')){ // el panel web
       const f=path.join(__dirname,url.pathname==='/'||url.pathname==='/panel'?'panel.html':'nada');
       if(fs.existsSync(f)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(fs.readFileSync(f));}

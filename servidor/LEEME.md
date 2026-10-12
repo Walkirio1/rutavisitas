@@ -22,3 +22,9 @@ Alcanza con copiar la carpeta `datos/` (por ejemplo, un `cp` diario).
 - Cada **verificador** abre la invitación en el celular: la app se une al equipo sola.
 - El jefe pega las filas desde Excel y asigna la ruta de hoy; el verificador toca "Traer mi ruta".
 - Cada visita hecha en la app se informa al panel (estado, hora, distancia al local si usa ubicación).
+
+## Servir también la app (opcional)
+El `docker-compose.yml` monta la carpeta de la app y el servidor la sirve en **`/app/`** (por ejemplo `https://hivemind.tu-nombre.ts.net/app/`).
+- Para actualizarla: `git pull` en la carpeta del repositorio (no hace falta reiniciar nada).
+- Si usás el inicio de sesión con Google desde esa dirección, hay que agregarla en Google Cloud → Credenciales → tu ID de cliente → **Orígenes de JavaScript autorizados** (solo el dominio, sin `/app/`).
+- La app instalada desde otra dirección (por ejemplo GitHub Pages) **no comparte datos** con esta: son instalaciones distintas.
