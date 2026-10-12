@@ -35,7 +35,7 @@ function renderPerfilEquipo(){
   const box=document.getElementById('perfilEq');if(!box) return;
   const e=equipo();
   box.innerHTML=e
-    ?`<div class="popc-t">Equipo</div><div class="peq-n">👥 ${escapeHtml(e.equipo)}</div><div style="display:grid;gap:6px"><button class="sm sma" onclick="eqTraerRuta()">📥 Traer mi ruta de hoy</button><button class="sm smh" onclick="eqSalir()">Salir del equipo</button></div>`
+    ?`<div class="popc-t">Equipo</div><div class="peq-n">👥 ${escapeHtml(e.equipo)}</div><div style="display:grid;gap:6px"><label class="popc-f"><span>📍 Compartir mi posición con el equipo<small>Tu jefe te ve en el mapa mientras tenés la app abierta</small></span><input type="checkbox" id="eqPos" onchange="eqPosCambio(this.checked)"${eqPosOn()?' checked':''}><i class="popc-sw"></i></label><button class="sm sma" onclick="eqTraerRuta()">📥 Traer mi ruta de hoy</button><button class="sm smh" onclick="eqSalir()">Salir del equipo</button></div>`
     :`<div class="popc-t">Equipo (opcional)</div><input type="text" id="eqInv" placeholder="Pegá la invitación de tu jefe" autocomplete="off" style="width:100%;font-size:13px;text-align:center;border-radius:12px;padding:9px 10px;border:1px solid rgba(120,150,200,.4)"><button class="sm smh" style="margin-top:6px" onclick="eqUnirseDesdeCampo()">👥 Unirme al equipo</button>`;
 }
 // trae los puntos asignados y los suma a la ruta
@@ -94,4 +94,17 @@ function eqInvitacionEnUrl(){
   history.replaceState(null,'',location.pathname);
   if(equipo()) return;
   confirm2('👥 Te invitaron a un equipo. ¿Unirte? Tu jefe va a ver cuántas visitas hacés y vas a poder recibir tus rutas.',()=>eqUnirse(codigo.toUpperCase(),api).catch(e=>showToast(e.message,true)));
+}
+
+// posición en vivo para el mapa del jefe (opcional, apagada por defecto; solo con la app abierta)
+const eqPosOn=()=>!!lsGet('sube:eqpos');
+async function eqPosEnviar(){
+  if(!equipo()||!eqPosOn()||document.hidden||!navigator.onLine) return;
+  const g=await ubiPos(8000);if(!g) return;
+  try{await eqApi('POST','/api/posicion',{lat:g.lat,lng:g.lng,prec:g.prec});}catch(e){}
+}
+async function eqPosCambio(on){
+  lsSet('sube:eqpos',on);
+  if(on){showToast('Activado: tu jefe te ve en el mapa mientras usás la app');eqPosEnviar();}
+  else{try{await eqApi('POST','/api/posicion',{off:true});}catch(e){}showToast('Ya no compartís tu posición');}
 }

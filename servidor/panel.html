@@ -65,12 +65,12 @@ function pintar(){
   <main>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
   <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
-  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
+  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
     <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
     <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
     `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
-  <div class="card"><h2>Mapa de hoy</h2><div id="mapa"></div></div>
+  <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2><div id="mapa"></div></div>
   <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
   </main>`;
   setTimeout(dibujarMapa,50);
@@ -81,6 +81,7 @@ function dibujarMapa(){
   const pts=[],add=(lat,lng,col,tx)=>{if(lat==null||lng==null) return;pts.push([lat,lng]);L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).bindPopup(tx).addTo(mapa);};
   D.miembros.forEach(m=>m.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===m.id)) add(p.lat,p.lng,'#94a3b8',esc(p.nombre)+'<br>'+esc(m.nombre)+' · pendiente');}));
   D.visitas.forEach(v=>add(v.lat,v.lng,v.estado==='ok'?'#10b981':'#ef4444',esc(v.nombre)+'<br>'+esc(v.miembro)));
+  D.miembros.forEach(m=>{if(m.pos){pts.push([m.pos.lat,m.pos.lng]);L.circleMarker([m.pos.lat,m.pos.lng],{radius:11,color:'#fff',weight:3,fillColor:'#2563eb',fillOpacity:1}).bindTooltip(esc(m.nombre),{permanent:true,direction:'top',offset:[0,-8]}).addTo(mapa);}});
   pts.length?mapa.fitBounds(pts,{padding:[30,30],maxZoom:15}):mapa.setView([-32.95,-60.65],11);
 }
 function copiar(t){navigator.clipboard.writeText(t).then(()=>alert('Invitación copiada. Mandala por WhatsApp a tu equipo.'),()=>prompt('Copiá esta invitación:',t));}
@@ -109,5 +110,12 @@ async function enviarRuta(id){
   const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:pts.slice(Math.floor(i*pts.length/ms.length),Math.floor((i+1)*pts.length/ms.length))}));
   try{const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓');cargar();}catch(e){alert(e.message);}
 }
-cargar();setInterval(()=>{if(T&&!$('#dlg').classList.contains('on')) cargar();},30000);
+let es=null,pend=null;
+function enVivo(){
+  if(!T||es) return;
+  es=new EventSource('/api/eventos?t='+T);
+  es.onmessage=()=>{clearTimeout(pend);pend=setTimeout(()=>{if(!$('#dlg').classList.contains('on')) cargar();},400);};
+  es.onerror=()=>{};
+}
+cargar().then(enVivo);setInterval(()=>{if(T&&!$('#dlg').classList.contains('on')) cargar();},30000);
 </script></body></html>
