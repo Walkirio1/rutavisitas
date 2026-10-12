@@ -108,7 +108,7 @@ function openPl(id){
     `<div class="plr${plC['v'+i]?' on':''}" onclick="plT('v${i}',this)"><div class="plrn">${escapeHtml(n)}</div><div class="plck"><span class="plx">✕</span></div></div>`
   ).join('');
 
-  pintarCamposExtra(pl);
+  { const b=borradorDe(id,pl); if(b) Object.keys(b.plC||{}).forEach(k=>{plC[k]=true;}); pintarCamposExtra(b&&!(pl&&pl.fecha)?{extra:b.extra}:pl); }
   document.getElementById('plF').value=(pl&&pl.fecha)||hoy();
   document.getElementById('plH').value=(pl&&pl.hora)||ahora();
   ubiAlAbrir(p,pl);
@@ -116,6 +116,7 @@ function openPl(id){
   document.getElementById('plD').value=p.dir||'';
   document.getElementById('plR').value=(pl&&pl.rubro)||p.tipo||'';
   document.getElementById('plO').value=(pl&&pl.obs)||'';
+  borradorRestaurar(id,pl);
 
   // foto
   fotoData=(pl&&pl.foto)||null;
@@ -213,13 +214,13 @@ async function guardarVisita(soloGuardar,confirmado){
   let pdfActivoB64 = null, pdfActivoNombre = 'Planilla_Verificaciones.pdf';
   if(drv.connected&&!soloGuardar){ const r=await pdfParaVisita(); pdfActivoB64=r.b64; pdfActivoNombre=r.nombre; }
   visits[curId]={done:true,planilla:{
-    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final'})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,cierra:camposActivos().some(c=>c.tipo==='tilde'&&c.cierra&&plExtra[c.id]==='Sí'),obs:document.getElementById('plO').value,
+    chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final',irregular:!!c.irregular,cierra:!!c.cierra})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,cierra:camposActivos().some(c=>c.tipo==='tilde'&&c.cierra&&plExtra[c.id]==='Sí'),obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
     ...ubiParaVisita(puntos.find(x=>x.id===curId),previa),
     driveFotoUrl:null,drivePdfUrl:null,
   }};
-  guardarVisits();
+  guardarVisits();borradorBorrar();
   if(fotoData){ const idv=curId; guardarFotoSegura(idv,fotoData).then(ok=>{if(ok)guardarVisits();}); }
   else{ fotoDel(curId); fotosEnIDB.delete(String(curId)); }
   eqReportarVisita(curId);dpReportarVisita(curId);
@@ -274,3 +275,24 @@ function cpHacer(idOrigen){
   delete d.firma;lsSet(SK.planillas,planillas);cpCerrar();renderPlanillas();
   showToast('Campos copiados ✓ ('+d.campos.length+')');
 }
+
+// Borrador: lo que se escribe a mitad de una visita se guarda solo, por si se cierra o se recarga la app
+let _borT=null;
+function borradorGuardar(){
+  if(!curId||!document.getElementById('ov').classList.contains('show')) return;
+  lsSet('sube:borrador',{id:curId,ts:Date.now(),obs:document.getElementById('plO').value,extra:plExtra,plC});
+}
+function borradorDe(id,pl){
+  const b=lsGet('sube:borrador');
+  if(!b||b.id!==id||Date.now()-b.ts>24*3600*1000) return null;
+  if(pl&&pl.fecha) return null; // la visita ya estaba guardada: se abre la guardada
+  return b;
+}
+function borradorRestaurar(id,pl){
+  const b=borradorDe(id,pl);if(!b) return;
+  if(b.obs) document.getElementById('plO').value=b.obs;
+  showToast('Recuperé lo que habías escrito ✓');
+}
+function borradorBorrar(){lsDel('sube:borrador');}
+document.addEventListener('input',e=>{if(e.target.closest&&e.target.closest('#ov')){clearTimeout(_borT);_borT=setTimeout(borradorGuardar,500);}},true);
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#ov .plr, #ov .sc-f, #ov .sc-chip, #ov .plsino')){clearTimeout(_borT);_borT=setTimeout(borradorGuardar,500);}},true);

@@ -155,3 +155,8 @@ body:has(.inst-bar.show) .cnt{padding-bottom:170px}
 .dp-cod{flex-wrap:wrap}.dp-cod b{flex:1 1 auto;letter-spacing:.14em}.dp-cod button{flex:1 1 100%}
 /* los avisos de confirmar y de envío siempre van por encima de las ventanas altas (dupla, campos…) */
 #dlg,#envioDlg{z-index:2900}
+/* aviso de instalar: más chico (una línea) */
+.inst-bar{padding:6px 10px!important;gap:8px!important;bottom:calc(86px + env(safe-area-inset-bottom))!important}
+.inst-bar img{width:28px!important;height:28px!important}
+.inst-bar .it{font-size:12px!important;line-height:1.2!important}
+.inst-bar .it b{display:inline!important;margin-right:2px}

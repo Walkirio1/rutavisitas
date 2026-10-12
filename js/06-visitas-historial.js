@@ -98,7 +98,7 @@ function marcarNoVisitado(id){
 
 function markDone(id){
   if(!visits[id])visits[id]={};
-  visits[id].done=true;
+  visits[id].done=true;if(!visits[id].fecha) visits[id].fecha=hoy();
   guardarVisits();
   renderV();updStats();showToast('Marcada como hecha ✓');
   triggerAutosave();

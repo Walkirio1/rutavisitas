@@ -65,7 +65,7 @@ async function exportarCopia(){
     const json=JSON.stringify({app:'verific',version:1,fecha:new Date().toISOString(),datos,fotos});
     const nombre='Verific_copia_'+new Date().toISOString().slice(0,10)+'.json';
     const file=new File([json],nombre,{type:'application/json'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
+    if(compartirArchivosOk()&&navigator.canShare({files:[file]})){
       try{await navigator.share({files:[file],title:nombre});showToast('Copia lista ✓');return;}
       catch(e){if(e&&e.name==='AbortError') return;}
     }

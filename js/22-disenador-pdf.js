@@ -231,6 +231,8 @@ function dsEditar(i,nuevo){
   document.getElementById('dsEdPuntos').value=c.puntos||'';
   document.getElementById('dsEdCierraBox').style.display=c.tipo==='tilde'?'':'none';
   document.getElementById('dsEdCierra').checked=!!c.cierra;
+  document.getElementById('dsEdIrregBox').style.display=c.tipo==='tilde'?'':'none';
+  document.getElementById('dsEdIrreg').checked=!!c.irregular;
   document.getElementById('dsEdObligBox').style.display=(c.tipo==='auto'||c.tipo==='suma'||c.tipo==='foto')?'none':'';
   document.getElementById('dsEdOblig').checked=!!c.obligatorio;
   // suma: de qué campos
@@ -274,7 +276,7 @@ function dsEdGuardar(){
     if(!n){showToast('Escribí el nombre del campo',true);return;}
     c.etiqueta=n;
   }
-  if(c.tipo==='tilde'){c.puntos=parseFloat(document.getElementById('dsEdPuntos').value)||0;if(!c.puntos)delete c.puntos;c.cierra=document.getElementById('dsEdCierra').checked;}
+  if(c.tipo==='tilde'){c.puntos=parseFloat(document.getElementById('dsEdPuntos').value)||0;if(!c.puntos)delete c.puntos;c.cierra=document.getElementById('dsEdCierra').checked;c.irregular=document.getElementById('dsEdIrreg').checked;if(!c.irregular)delete c.irregular;}
   if(c.tipo!=='auto'&&c.tipo!=='suma') c.obligatorio=document.getElementById('dsEdOblig').checked;
   if(c.tipo==='suma'){
     if(document.getElementById('dsEdModoZona').checked){

@@ -119,7 +119,7 @@ async function guardarEnCelular(ids){
   try{files=await prepararArchivos(ids);}catch(e){console.error(e);showToast('No se pudieron preparar los archivos',true);return;}
   if(!files.length){showToast('No hay archivos para guardar',true);return;}
   _archivosListos=files;marcarCopiaLocal(ids);
-  if(navigator.canShare&&navigator.canShare({files})){
+  if(compartirArchivosOk()&&navigator.canShare({files})){
     try{
       await navigator.share({files,title:'Visitas SUBE'});
       showToast('✓ Elegí "Guardar en Archivos" para dejarlas en el celular');

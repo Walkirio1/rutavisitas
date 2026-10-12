@@ -52,7 +52,7 @@ function setPlModo(m){
 function irregsDe(pl){
   if(!pl) return [];
   const a=pl.itemsC||CN,b=pl.itemsV||VN;
-  const tild=(pl.extraDef||[]).filter(c=>c.tipo==='tilde'&&pl.extra&&pl.extra[c.id]==='Sí').map(c=>c.etiqueta); // tildes de planillas PDF con campos
+  const tild=(pl.extraDef||[]).filter(c=>c.tipo==='tilde'&&(c.irregular||c.cierra)&&pl.extra&&pl.extra[c.id]==='Sí').map(c=>c.etiqueta); // solo las casillas que el usuario marcó como irregularidad
   return a.filter((_,i)=>pl.chC&&pl.chC[i]).concat(b.filter((_,i)=>pl.chV&&pl.chV[i])).concat(tild);
 }
 
