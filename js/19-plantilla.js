@@ -120,7 +120,12 @@ async function firmaRecortada(doc,dataUrl,cajaW,cajaH,ajustar){
   const m=6;x0=Math.max(0,x0-m);y0=Math.max(0,y0-m);x1=Math.min(cw-1,x1+m);y1=Math.min(ch-1,y1+m);
   const bw=x1-x0+1,bh=y1-y0+1;
   const r=document.createElement('canvas');r.width=bw;r.height=bh;
-  r.getContext('2d').drawImage(c,x0,y0,bw,bh,0,0,bw,bh);
+  const rx=r.getContext('2d',{willReadFrequently:true});rx.drawImage(c,x0,y0,bw,bh,0,0,bw,bh);
+  { // fondo transparente: el blanco del lienzo no tapa las líneas ni el texto de la planilla
+    const id=rx.getImageData(0,0,bw,bh),dd=id.data;
+    for(let k=0;k<dd.length;k+=4){const mn=Math.min(dd[k],dd[k+1],dd[k+2]);if(mn>=240)dd[k+3]=0;else if(mn>170)dd[k+3]=Math.min(dd[k+3],Math.round((240-mn)/70*255));}
+    rx.putImageData(id,0,0);
+  }
   const im=await doc.embedPng(Uint8Array.from(atob(r.toDataURL('image/png').split(',')[1]),ch2=>ch2.charCodeAt(0)));
   // escala de antes: la imagen entera entraba en la caja; ahora la tinta mide 2,25 veces lo que medía
   if(ajustar){const e2=Math.min(cajaW/bw,cajaH/bh);return {im,w:bw*e2,h:bh*e2};} // firma que entra justo en un recuadro elegido por el usuario

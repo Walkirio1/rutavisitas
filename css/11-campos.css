@@ -95,3 +95,10 @@
 .sc-auto .sc-av{font-size:14px;font-weight:600;color:#17325c;background:#eef3fb;border-radius:10px;padding:8px 10px;margin-top:2px}
 .sc-auto{opacity:.85}
 .sc-opc .sc-chip{font-size:12.5px;padding:5px 11px}
+/* Firma: línea de firma como en el papel (sin recuadro) */
+.plfirma{border:0!important;border-bottom:2px solid #17325c!important;border-radius:0!important;background:transparent!important;min-height:96px;position:relative;align-items:flex-end;justify-content:flex-start;padding:0 0 4px 22px;color:#8a98b3!important;font-weight:500!important}
+.plfirma::before{content:"✕";position:absolute;left:2px;bottom:5px;font-size:15px;font-weight:800;color:#17325c}
+.plfirma span{font-size:13px}
+.plfirma img{max-height:90px;margin:0 auto}
+/* marca de firma en el diseñador: solo un borde fino */
+.ds-m.ds-firma{border-width:1px;border-style:dashed;background:color-mix(in srgb,var(--c) 7%,transparent)}
