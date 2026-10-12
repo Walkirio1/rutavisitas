@@ -47,7 +47,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   25-ubicacion.js         ubicación y hora de cada visita, sello en las fotos y reportes (hoy / 7 días / 30 días)
   26-equipo.js            equipos: unirse con invitación, traer la ruta asignada e informar cada visita (servidor en /servidor)
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
-privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
+privacidad.html / terminos.html   páginas legales
 sw.js                   Service worker (funciona sin señal, guarda el mapa)
 manifest.webmanifest    Datos de la app instalable
 icons/                  Íconos, fondos e imágenes de la barra
