@@ -294,6 +294,7 @@ function revUsar(){
   const campos=_rev.campos.filter(c=>c.on).map(c=>{const k={...c};delete k.on;return k;});
   if(!campos.length){showToast('No hay campos elegidos',true);return;}
   pl.campos=campos;delete pl.firma;lsSet(SK.planillas,planillas);
+  plDefId=pl.id;lsSet(SK.plDef,pl.id); // queda en uso: la visita ya sale con estos campos
   document.getElementById('revDlg').classList.remove('show');aplicarPlantilla();renderPlanillas();
   showToast('Listo ✓ '+campos.length+' campos. Si algo no queda bien, usá «🧩 Campos» para ajustarlo.');
 }

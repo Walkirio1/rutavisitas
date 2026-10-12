@@ -175,9 +175,9 @@ async function buscarCandidatos(texto,localidad){
   let hubo=false;
   const add=(lat,lng,label)=>{
     if(lat==null||lng==null||!enRosario(lat,lng)) return;
-    const k=lat.toFixed(4)+','+lng.toFixed(4);
-    if(vistos.has(k)) return;
-    vistos.add(k);out.push({lat,lng,label});
+    const k=lat.toFixed(4)+','+lng.toFixed(4),kl='t:'+String(label).trim().toLowerCase();
+    if(vistos.has(k)||vistos.has(kl)) return; // mismo lugar o mismo texto: no repetir
+    vistos.add(k);vistos.add(kl);out.push({lat,lng,label});
   };
   const {calle,altura}=partirDireccion(texto);
   const cands=calle?variantesCalle(calle):[];
