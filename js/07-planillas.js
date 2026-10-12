@@ -222,6 +222,7 @@ async function guardarVisita(soloGuardar,confirmado){
   guardarVisits();
   if(fotoData){ const idv=curId; guardarFotoSegura(idv,fotoData).then(ok=>{if(ok)guardarVisits();}); }
   else{ fotoDel(curId); fotosEnIDB.delete(String(curId)); }
+  eqReportarVisita(curId);
   renderV();updStats();closeOv();showToast(soloGuardar?'Visita guardada (sin enviar) ✓':'Visita guardada ✓');
 
   // Enviar a Drive; si no se puede, queda pendiente y se avisa

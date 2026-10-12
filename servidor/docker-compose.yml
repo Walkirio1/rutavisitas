@@ -1,0 +1,9 @@
+services:
+  verific:
+    build: .
+    container_name: verific
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./datos:/datos
