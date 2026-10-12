@@ -55,11 +55,13 @@ function sendEmail(){
 }
 
 // ── CONFIRM DIALOG
-function confirm2(msg,cb){
+let dlgNoCb=null;
+function confirm2(msg,cb,cbNo){
   document.getElementById('dlgMsg').textContent=msg;
-  dlgCb=cb;document.getElementById('dlg').classList.add('show');
+  dlgCb=cb;dlgNoCb=cbNo||null;document.getElementById('dlg').classList.add('show');
 }
-function dlgOk(){if(dlgCb)dlgCb();closeDlg();}
+function dlgOk(){const f=dlgCb;dlgNoCb=null;closeDlg();if(f)f();}
+function dlgNo(){const f=dlgNoCb;closeDlg();if(f)f();}
 function closeDlg(){document.getElementById('dlg').classList.remove('show');dlgCb=null;}
 
 // ── TOAST

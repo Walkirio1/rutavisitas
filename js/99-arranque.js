@@ -106,3 +106,9 @@ setTimeout(()=>{
 
 // de 16-app-instalacion.js
 actualizarGate();
+
+// de 26-equipo.js
+eqInvitacionEnUrl();
+setTimeout(()=>{eqRevisarRuta();eqVaciarCola();},2500);
+window.addEventListener('online',()=>setTimeout(eqVaciarCola,2500));
+setInterval(eqVaciarCola,60000);

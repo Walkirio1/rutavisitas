@@ -426,7 +426,7 @@
     <p id="dlgMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px"></p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn br" onclick="dlgOk()">Sí, confirmar</button>
-      <button class="btn bd" onclick="closeDlg()">Cancelar</button>
+      <button class="btn bd" onclick="dlgNo()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -458,6 +458,7 @@
 <script src="js/22-disenador-pdf.js"></script>
 <script src="js/23-detector-pdf.js"></script>
 <script src="js/25-ubicacion.js"></script>
+<script src="js/26-equipo.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -495,6 +496,7 @@ setTimeout(go,2500);})();</script>
       <label class="popc-f"><span>📍 Registrar ubicación y hora<small>Muestra si estás en el local y lo guarda con la visita</small></span><input type="checkbox" id="optUbi" onchange="optUbiCambio(this.checked)"><i class="popc-sw"></i></label>
       <label class="popc-f"><span>📷 Sello en las fotos<small>Fecha, hora y lugar escritos en cada foto</small></span><input type="checkbox" id="optSello" onchange="optSelloCambio(this.checked)"><i class="popc-sw"></i></label>
     </div>
+    <div class="popc" id="perfilEq"></div>
     <div class="pstats" id="perfilStats"></div>
     <div class="pinf" id="perfilInf"></div>
     <div style="display:grid;gap:8px">

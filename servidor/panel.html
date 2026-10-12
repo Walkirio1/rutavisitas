@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verific · Panel del equipo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#eef3fb;--card:#fff;--tx:#12244d;--mut:#6b7fa6;--az:#2563eb;--vd:#10b981;--rj:#ef4444;--am:#f59e0b;--ln:#dbe6f7}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:16px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{margin:0;font-size:20px;flex:1;min-width:160px}header small{display:block;font-weight:500;opacity:.85;font-size:12px}
+.cod{background:rgba(255,255,255,.18);padding:6px 12px;border-radius:20px;font-weight:800;letter-spacing:.12em}
+main{max-width:1100px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:14px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:15px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--az);color:#fff}
+button.s{background:#e8effc;color:#1d4fb8}button.r{background:#fde4e4;color:#b42318}
+input,select,textarea{font:inherit;width:100%;padding:10px;border:1.5px solid var(--ln);border-radius:10px;background:#fff}
+textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.nums div{background:#f4f8ff;border:1px solid var(--ln);border-radius:12px;padding:10px;text-align:center}
+.nums b{display:block;font-size:26px}.nums span{font-size:11px;color:var(--mut);font-weight:600}
+.mb{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--ln);flex-wrap:wrap}
+.mb:first-of-type{border-top:0}
+.mb .n{flex:1;min-width:150px}.mb .n b{font-size:15px}.mb .n small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.barra{height:10px;background:#e4ecf8;border-radius:6px;overflow:hidden;margin-top:6px}.barra i{display:block;height:100%;background:var(--vd)}
+.pt{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--ln);font-size:13px}
+.pt:first-child{border-top:0}.pt .d{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pt small{color:var(--mut)}.pt span{margin-left:auto;color:var(--mut);font-size:12px;white-space:nowrap}
+#mapa{height:340px;border-radius:12px;border:1px solid var(--ln)}
+.dlg{position:fixed;inset:0;background:rgba(10,20,50,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
+.dlg.on{display:flex}.dlg>div{background:#fff;border-radius:18px;padding:18px;width:min(640px,100%);max-height:92vh;overflow:auto}
+.vacio{color:var(--mut);text-align:center;padding:18px;font-size:14px}
+@media(max-width:600px){.nums{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<div id="app"></div>
+<div class="dlg" id="dlg"><div id="dlgc"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const APP='https://walkirio1.github.io/rutavisitas/';
+let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null;
+const h=location.hash.match(/t=([a-f0-9]+)/);if(h){T=h[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);}
+async function api(m,p,b){
+  const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(T?{Authorization:'Bearer '+T}:{})},body:b?JSON.stringify(b):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'Error');return j;
+}
+function entrada(){
+  $('#app').innerHTML=`<header><h1>Verific<small>Panel del equipo</small></h1></header><main><div class="card" style="max-width:460px;margin:30px auto">
+  <h2>Creá tu equipo</h2><p style="color:var(--mut);font-size:14px;margin-top:0">Después invitás a tus verificadores con un código y les asignás sus rutas.</p>
+  <input id="nom" placeholder="Nombre del equipo (ej: Verificaciones Rosario)"><div style="height:10px"></div><button onclick="crear()">Crear equipo</button>
+  <p style="color:var(--mut);font-size:12px;margin-bottom:0">¿Ya tenés uno? Abrí el enlace de acceso que te dimos al crearlo.</p></div></main>`;
+}
+async function crear(){try{const r=await api('POST','/api/equipo/crear',{nombre:$('#nom').value});T=r.adminToken;localStorage.setItem('vf_admin',T);
+  alert('Guardá este enlace de acceso (es tu llave):\n\n'+location.origin+'/#t='+T);cargar();}catch(e){alert(e.message);}}
+async function cargar(){
+  if(!T) return entrada();
+  try{D=await api('GET','/api/panel');}catch(e){localStorage.removeItem('vf_admin');T='';return entrada();}
+  pintar();
+}
+function hora(ts){return ts?new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'';}
+function pintar(){
+  const m=D.miembros,as=m.reduce((a,x)=>a+x.asignados,0),ok=m.reduce((a,x)=>a+x.hechos,0),ce=m.reduce((a,x)=>a+x.cerrados,0),pe=m.reduce((a,x)=>a+x.pendientes,0);
+  const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
+  $('#app').innerHTML=`<header><h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1><span class="cod">${D.codigo}</span><button class="s" onclick="copiar('${inv}')">🔗 Copiar invitación</button></header>
+  <main>
+  <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
+  <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
+  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
+    <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
+    <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
+    <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
+    `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
+  <div class="card"><h2>Mapa de hoy</h2><div id="mapa"></div></div>
+  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
+  </main>`;
+  setTimeout(dibujarMapa,50);
+}
+function dibujarMapa(){
+  const el=$('#mapa');if(!el||!window.L) return;
+  mapa=L.map(el);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapa);
+  const pts=[],add=(lat,lng,col,tx)=>{if(lat==null||lng==null) return;pts.push([lat,lng]);L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).bindPopup(tx).addTo(mapa);};
+  D.miembros.forEach(m=>m.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===m.id)) add(p.lat,p.lng,'#94a3b8',esc(p.nombre)+'<br>'+esc(m.nombre)+' · pendiente');}));
+  D.visitas.forEach(v=>add(v.lat,v.lng,v.estado==='ok'?'#10b981':'#ef4444',esc(v.nombre)+'<br>'+esc(v.miembro)));
+  pts.length?mapa.fitBounds(pts,{padding:[30,30],maxZoom:15}):mapa.setView([-32.95,-60.65],11);
+}
+function copiar(t){navigator.clipboard.writeText(t).then(()=>alert('Invitación copiada. Mandala por WhatsApp a tu equipo.'),()=>prompt('Copiá esta invitación:',t));}
+async function quitar(id,n){if(confirm('¿Sacar a '+n+' del equipo?')){await api('DELETE','/api/miembro/'+id);cargar();}}
+function dlgAsignar(id){
+  $('#dlgc').innerHTML=`<h2>${id?'Asignar ruta':'Repartir ruta entre todos'}</h2>
+  <p style="color:var(--mut);font-size:13px;margin-top:0">Pegá las filas desde tu Excel: <b>ID, Nombre, Dirección, Localidad</b> (con o sin encabezado; si tenés lat y lng, mejor).</p>
+  <textarea id="pega" placeholder="1001	Kiosco Don Pepe	Córdoba 1500	Rosario"></textarea>
+  <div style="display:flex;gap:8px;margin-top:10px"><button onclick="enviarRuta(${id})" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
+  $('#dlg').classList.add('on');
+}
+function leerFilas(t){
+  const L=t.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.split(/\t|;/).map(c=>c.trim()));
+  if(!L.length) return [];
+  let col={id:0,nombre:1,dir:2,localidad:3,tipo:4,lat:5,lng:6};
+  if(/id|direcc/i.test(L[0].join(' '))&&!/^\d/.test(L[0][0])){
+    const c=L.shift().map(x=>x.toLowerCase());const f=rx=>c.findIndex(x=>rx.test(x));
+    col={id:Math.max(0,f(/^(ubicaci[oó]n\s*id|id)$/)),nombre:f(/^(ubicaci[oó]n|nombre)$/),dir:f(/direcci/),localidad:f(/localidad/),tipo:f(/tipo/),lat:f(/^lat/),lng:f(/^(lng|lon)/)};
+  }
+  const g=(r,k)=>col[k]>=0?(r[col[k]]||''):'';
+  return L.map(r=>({id:g(r,'id'),nombre:g(r,'nombre'),dir:g(r,'dir'),localidad:g(r,'localidad'),tipo:g(r,'tipo'),lat:parseFloat(String(g(r,'lat')).replace(',','.')),lng:parseFloat(String(g(r,'lng')).replace(',','.'))})).filter(p=>p.id&&p.dir);
+}
+async function enviarRuta(id){
+  const pts=leerFilas($('#pega').value);if(!pts.length) return alert('No encontré filas con ID y dirección.');
+  const ms=D.miembros;
+  const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:pts.slice(Math.floor(i*pts.length/ms.length),Math.floor((i+1)*pts.length/ms.length))}));
+  try{const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓');cargar();}catch(e){alert(e.message);}
+}
+cargar();setInterval(()=>{if(T&&!$('#dlg').classList.contains('on')) cargar();},30000);
+</script></body></html>
