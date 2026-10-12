@@ -601,6 +601,7 @@ setTimeout(go,2500);})();</script>
     <div id="dsEdAuto" style="display:none"><label class="pllb">Se completa solo con</label><select class="pli" id="dsEdFuente"></select></div>
     <div id="dsEdPuntosBox" style="margin-top:8px"><label class="pllb">Puntos que suma si se tilda (opcional)</label><input class="pli" id="dsEdPuntos" type="number" inputmode="decimal" placeholder="Ej: 5"></div>
     <label class="ds-chk" id="dsEdCierraBox" style="margin-top:8px"><input type="checkbox" id="dsEdCierra"> Si se tilda, el punto queda en rojo (cerrado / no se pudo visitar)</label>
+    <label class="ds-chk" id="dsEdIrregBox" style="margin-top:8px"><input type="checkbox" id="dsEdIrreg"> Si se tilda, cuenta como irregularidad en los reportes</label>
     <label class="ds-chk" id="dsEdObligBox" style="margin-top:8px"><input type="checkbox" id="dsEdOblig"> Obligatorio</label>
     <div id="dsEdSumaBox" style="margin-top:8px"><label class="pllb">¿Qué suma?</label>
       <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoLista" onchange="dsEdModoSuma()"> Los campos que yo elijo</label>
@@ -651,7 +652,7 @@ setTimeout(go,2500);})();</script>
 
 <div class="inst-bar" id="instBar">
   <img src="icons/hero.webp" alt="">
-  <div class="it"><b>Instalá la app</b>Ícono en tu pantalla y sin barra del navegador</div>
+  <div class="it"><b>Instalá la app</b> en tu pantalla</div>
   <button class="sm sma" onclick="instalarApp();cerrarInstBar()">Instalar</button>
   <button class="ix" onclick="cerrarInstBar(true)" aria-label="Cerrar">✕</button>
 </div>

@@ -88,6 +88,7 @@ setTimeout(()=>{
   const cerrado=lsGet('sube:instdismiss');
   if(ya||(cerrado&&Date.now()-cerrado<14*864e5)) return;
   document.getElementById('instBar').classList.add('show');
+  setTimeout(()=>cerrarInstBar(false),9000); // el aviso se va solo: no tapa nada por mucho tiempo
 },4000);
 
 // de 16-app-instalacion.js

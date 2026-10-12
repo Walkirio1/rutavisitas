@@ -103,7 +103,7 @@ async function exportarExcel(){
   if(drv.connected){
     subirExcelADrive(file).then(()=>showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-cloud"/></svg> Excel guardado en tu Drive')).catch(e=>{console.warn('excel a Drive:',e);});
   }
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
+  if(compartirArchivosOk()&&navigator.canShare({files:[file]})){
     try{await navigator.share({files:[file],title:file.name});return;}
     catch(e){if(e&&e.name==='AbortError') return;}
   }

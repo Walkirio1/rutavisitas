@@ -192,8 +192,8 @@ async function buscarCandidatos(texto,localidad){
         for(const r of (d&&d.direcciones)||[]){
           const u=r.ubicacion;
           if(u){
-            const et=r.nomenclatura||(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura));
-            add(u.lat,u.lon,new RegExp(l,'i').test(et)?et:et+', '+l);
+            const loca=(r.localidad_censal&&r.localidad_censal.nombre)||l;
+            add(u.lat,u.lon,(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura)).trim()+', '+loca+', Santa Fe');
           }
         }
       }catch(e){console.warn('manual georef:',e);}

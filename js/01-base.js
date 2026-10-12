@@ -135,3 +135,6 @@ let plDefId  = lsGet(SK.plDef) || null; // null = planilla oficial incluida
 // modal state
 let curId=null, plC={}, fotoData=null;
 let dlgCb=null, histOpenIdx=null;
+
+// compartir archivos con la hoja del sistema: solo en celulares (en la compu puede quedar esperando)
+const compartirArchivosOk=()=>/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)&&!!navigator.canShare;

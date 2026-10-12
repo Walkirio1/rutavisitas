@@ -200,11 +200,22 @@ async function detectarCampos(pdf){
       const esTotal=/total|suma|puntaje/i.test(nom);
       campos.push({id:nid(),tipo:esTotal?'suma':'numero',moneda:true,etiqueta:nom,pag:p,x,y:s.y-2.5,w,h:14});
     }
+    // recuadro de foto: una frase como "pegar o insertar fotografía aquí" marca el lugar de la foto de la visita
+    if(!campos.some(k=>k.tipo==='foto')){
+      const fr=frases.find(f=>/(foto|imagen)/i.test(f.s)&&/(aqu[ií]|insertar|pegar|adjuntar|colocar)/i.test(f.s));
+      if(fr){const cx=fr.x+fr.w/2,w=Math.min(300,vp.width-60),h=150;
+        campos.push({id:nid(),tipo:'foto',etiqueta:'Foto de la visita',pag:p,x:Math.max(20,Math.min(vp.width-w-20,cx-w/2)),y:Math.max(20,fr.y-h/2),w,h});usadas.add(fr);}
+    }
     // datos automáticos, totales, firma y otros campos "Etiqueta:"
     for(const s of frases){
       if(usadas.has(s)) continue;
       const t=s.s.trim(),hasta=Math.min(vp.width-30,s.x+s.w+190);
-      if(/firma|aclaraci[oó]n/i.test(t)&&t.length<40){campos.push({id:nid(),tipo:'firma',etiqueta:limpiarEt(t)||'Firma',pag:p,x:Math.max(10,Math.min(vp.width-180,s.x)),y:s.y+6,w:170,h:62});continue;}
+      if(/firma|aclaraci[oó]n/i.test(t)&&t.length<40){
+        // el recuadro de la firma va del lado que tiene lugar libre: arriba de la leyenda (línea de firma abajo) o abajo de ella
+        const bx=Math.max(10,Math.min(vp.width-180,s.x)),choques=(y0,y1)=>frases.filter(q=>q!==s&&q.y+q.h>y0&&q.y<y1&&q.x<bx+170&&q.x+q.w>bx).length;
+        const arriba=choques(s.y+6,s.y+68),abajo=choques(s.y-66,s.y-4);
+        const yy=(abajo<arriba&&s.y-66>10)?s.y-66:s.y+6;
+        campos.push({id:nid(),tipo:'firma',etiqueta:limpiarEt(t)||'Firma',pag:p,x:bx,y:yy,w:170,h:62});continue;}
       if(!/[:_]\s*$/.test(t)&&t.length>26) continue; // solo etiquetas cortas o que terminan en ":"
       if(!/[:_]\s*$/.test(t)) continue;
       const base=limpiarEt(t),x=s.x+s.w+4,w=Math.max(40,Math.min(160,hasta-x));
@@ -265,10 +276,10 @@ async function detectarYRevisar(id){
   }catch(e){console.error('detectar:',e);showToast(e.message||'No se pudo leer la planilla',true);}
 }
 let _rev=null;
-const NOMBRES_TIPO={tilde:'Casillas',auto:'Se completan solos',suma:'Totales',texto:'Textos',numero:'Números',fecha:'Fechas',firma:'Firma'};
+const NOMBRES_TIPO={tilde:'Casillas',auto:'Se completan solos',suma:'Totales',texto:'Textos',numero:'Números',fecha:'Fechas',firma:'Firma',foto:'Foto'};
 function pintarRevision(){
   const g={};_rev.campos.forEach((c,i)=>{(g[c.tipo]=g[c.tipo]||[]).push([c,i]);});
-  const orden=['tilde','auto','suma','numero','texto','fecha','firma'];
+  const orden=['suma','numero','firma','tilde','auto','texto','fecha','foto'];
   document.getElementById('revRes').textContent=(_rev.origen==='formulario'?'Es un formulario rellenable: usé sus campos reales. ':'Estos son los campos que encontré en la hoja. ')+(_rev.campos.some(c=>c.tipo==='tilde')?'En las casillas podés poner cuántos puntos vale cada una (opcional). ':'')+'Destildá los que no sirvan y corregí los nombres o puntos.';
   document.getElementById('revLista').innerHTML=orden.filter(t=>g[t]).map(t=>`<div class="rev-g">${NOMBRES_TIPO[t]} <span>${g[t].length}</span></div>`+g[t].map(([c,i])=>`
     <div class="rev-r"><input type="checkbox" ${c.on?'checked':''} onchange="_rev.campos[${i}].on=this.checked;actualizarRevCuenta()">
