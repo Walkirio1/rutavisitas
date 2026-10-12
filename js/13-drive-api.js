@@ -282,7 +282,7 @@ async function compartirDiaConEmpresa(avisar){
     if(!hecho.includes(clave)){
       await gapi.client.drive.permissions.create({
         fileId:dia,sendNotificationEmail:true,
-        emailMessage:'Jornada de verificaciones compartida desde Verific'+((lsGet('sube:perfil')||{}).nombre?' por '+(lsGet('sube:perfil')||{}).nombre:'')+'.',
+        emailMessage:'Jornada de verificaciones compartida desde LogiMap'+((lsGet('sube:perfil')||{}).nombre?' por '+(lsGet('sube:perfil')||{}).nombre:'')+'.',
         resource:{type:'user',role:'reader',emailAddress:mail}
       });
       lsSet('sube:compartidos',[...hecho,clave].slice(-60));

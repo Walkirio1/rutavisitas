@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Verific · Panel del equipo</title>
+<title>LogiMap · Panel del equipo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root{--bg:#eef3fb;--card:#fff;--tx:#12244d;--mut:#6b7fa6;--az:#2563eb;--vd:#10b981;--rj:#ef4444;--am:#f59e0b;--ln:#dbe6f7}
@@ -45,7 +45,7 @@ async function api(m,p,b){
   const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'Error');return j;
 }
 function entrada(){
-  $('#app').innerHTML=`<header><h1>Verific<small>Panel del equipo</small></h1></header><main><div class="card" style="max-width:460px;margin:30px auto">
+  $('#app').innerHTML=`<header><h1>LogiMap<small>Panel del equipo</small></h1></header><main><div class="card" style="max-width:460px;margin:30px auto">
   <h2>Creá tu equipo</h2><p style="color:var(--mut);font-size:14px;margin-top:0">Después invitás a tus verificadores con un código y les asignás sus rutas.</p>
   <input id="nom" placeholder="Nombre del equipo (ej: Verificaciones Rosario)"><div style="height:10px"></div><button onclick="crear()">Crear equipo</button>
   <p style="color:var(--mut);font-size:12px;margin-bottom:0">¿Ya tenés uno? Abrí el enlace de acceso que te dimos al crearlo.</p></div></main>`;

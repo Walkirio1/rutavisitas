@@ -1,7 +1,7 @@
 {
-  "name": "Verificaciones SUBE",
-  "short_name": "Verific. SUBE",
-  "description": "Ruta de visitas y planillas de verificación SUBE",
+  "name": "LogiMap",
+  "short_name": "LogiMap",
+  "description": "Ruta de visitas, planillas y mapa para el trabajo de campo",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",

@@ -1,4 +1,4 @@
-# Verific (Verificaciones SUBE)
+# LogiMap (antes Verific)
 
 App web para celular (PWA) para armar rutas de visitas, completar planillas PDF, sacar fotos y subirlo todo al Drive de cada persona.
 Publicada en GitHub Pages: https://walkirio1.github.io/rutavisitas/

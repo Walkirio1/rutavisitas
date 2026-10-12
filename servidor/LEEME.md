@@ -1,4 +1,4 @@
-# Servidor del equipo de Verific
+# Servidor del equipo de LogiMap
 
 Guarda los equipos, las rutas asignadas y el avance de las visitas. **No guarda PDFs ni fotos** (eso queda en el Drive de cada uno).
 Es un solo archivo (`server.js`), sin dependencias. Datos en SQLite (carpeta `datos/`). Incluye el panel web del jefe en `/`.

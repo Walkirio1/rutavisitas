@@ -86,10 +86,9 @@ if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone
 setTimeout(()=>{
   const ya=navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
   const cerrado=lsGet('sube:instdismiss');
-  if(ya||(cerrado&&Date.now()-cerrado<14*864e5)) return;
+  if(ya||(cerrado&&Date.now()-cerrado<3*864e5)) return;
   document.getElementById('instBar').classList.add('show');
-  setTimeout(()=>cerrarInstBar(false),9000); // el aviso se va solo: no tapa nada por mucho tiempo
-},4000);
+},2500);
 
 // de 16-app-instalacion.js
 if('serviceWorker' in navigator && location.protocol==='https:'){

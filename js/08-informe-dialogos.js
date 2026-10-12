@@ -57,7 +57,7 @@ function buildMsg(){
     +(irr?'\n⚠️ Con irregularidades: '+irr:'')
     +'\n━━━━━━━━━━━━━━'
     +bloque('✅ HECHAS',hechas)+bloque('🔴 CERRADOS',cerradas)+bloque('⏳ PENDIENTES',pend)
-    +'\n\n_Enviado desde Verific_';
+    +'\n\n_Enviado desde LogiMap_';
 }
 function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank');}
 function sendEmail(){
