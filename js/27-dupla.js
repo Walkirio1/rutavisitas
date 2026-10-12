@@ -73,12 +73,12 @@ function dpPintarDlg(){
   if(!d){box.innerHTML='<div class="dp-t">Creando tu dupla…</div>';return;}
   const c=d.companero,av=c&&c.foto?`<img src="${c.foto}" alt="">`:escapeHtml((c&&c.nombre||'?').slice(0,1).toUpperCase());
   box.innerHTML=`
-    <div class="dp-cod"><small>Tu código</small><b>${escapeHtml(d.codigo)}</b><button class="sm sma" onclick="dpCompartir()">📤 Mandarlo</button></div>
+    <div class="dp-cod"><small>Tu código</small><b>${escapeHtml(d.codigo)}</b><button class="sm sma" onclick="dpCompartir()">📤 Mandar</button></div>
     <div class="dp-comp">${c?`<span class="dp-av">${av}</span><div><b>${escapeHtml(c.nombre)}</b><small>${c.rol==='navegante'?'🚗 Navegante':'🚶 Verificador'}</small></div>`:'<div class="dp-esp">⏳ Esperando a tu compañero…<small>Que escriba este código en su app, en Perfil → Trabajar en dupla.</small></div>'}</div>
     <div class="dp-t">Mi rol</div>
     <div class="dp-roles"><button class="${d.rol==='navegante'?'on':''}" onclick="dpCambiarRol('navegante')">🚗 Navegante<small>Mapa y ruta</small></button><button class="${d.rol==='verificador'?'on':''}" onclick="dpCambiarRol('verificador')">🚶 Verificador<small>Baja y completa</small></button></div>
     <div class="dp-t" style="margin-top:12px">¿Tu compañero ya tiene un código?</div>
-    <div style="display:flex;gap:6px"><input id="dpCod" maxlength="6" autocapitalize="characters" placeholder="ABC123" style="flex:1;text-align:center;letter-spacing:.2em;font-weight:800;text-transform:uppercase"><button class="sm sma" onclick="dpUnirse()">Conectar</button></div>
+    <div style="display:flex;gap:6px"><input id="dpCod" maxlength="6" autocapitalize="characters" placeholder="ABC123" style="flex:1;min-width:0;text-align:center;letter-spacing:.15em;font-weight:800;text-transform:uppercase"><button class="sm sma" onclick="dpUnirse()">Conectar</button></div>
     <button class="btn bd" style="margin-top:12px" onclick="dpSalir()">Salir de la dupla</button>`;
 }
 // foto del compañero al lado de la tuya, arriba

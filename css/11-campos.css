@@ -148,3 +148,8 @@ body:has(.inst-bar.show) .cnt{padding-bottom:170px}
 /* notas largas: solo las primeras líneas en las tarjetas */
 .obs-corta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .rev-p{width:72px!important;min-width:72px;text-align:center}
+/* Dupla: que los botones no se corten en pantallas angostas */
+.dp-cod b{font-size:23px;letter-spacing:.16em;min-width:0}
+.dp-cod button,#dpBox .sm{flex-shrink:0;white-space:nowrap;padding-left:14px;padding-right:14px}
+#dpBox input#dpCod{min-width:0;width:100%}
+.dp-cod{flex-wrap:wrap}.dp-cod b{flex:1 1 auto;letter-spacing:.14em}.dp-cod button{flex:1 1 100%}
