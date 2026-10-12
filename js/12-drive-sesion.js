@@ -2,7 +2,7 @@
 // ═══════════════════════════════════════════════════════════
 // ── GOOGLE DRIVE: AUTH + UPLOAD + AUTOSAVE JORNADA
 // ═══════════════════════════════════════════════════════════
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file openid email profile'; // drive.file: solo lo que crea la app; openid/email/profile: nombre, correo y foto del perfil
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata openid email profile'; // drive.file: solo lo que crea la app; openid/email/profile: nombre, correo y foto del perfil
 // Client ID público de la app (no es un secreto). Si está cargado, nadie tiene que pegarlo.
 const GOOGLE_CLIENT_ID = '197847834069-dagdtb4k8mq45vakhipof65j0gf286ro.apps.googleusercontent.com';
 const SK_DRV_USER='sube:drvuser', SK_DRV_ON='sube:drvon';
