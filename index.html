@@ -87,6 +87,7 @@
     <div class="logo"><img class="hlogo" src="icons/hero.webp" alt=""></div>
     <div style="display:flex;gap:10px;align-items:center">
       <span id="fechaHdr" style="font-size:11px;color:var(--text-mute)"></span>
+      <button class="dup-btn" id="dupBtn" style="display:none" onclick="dpAbrir()" aria-label="Mi dupla"></button>
       <button class="perfil-btn off" id="perfilBtn" onclick="openPerfil()" aria-label="Mi perfil"><span class="pav"></span><span class="pdot" style="display:none"></span></button>
     </div>
   </div>
@@ -459,6 +460,7 @@
 <script src="js/23-detector-pdf.js"></script>
 <script src="js/25-ubicacion.js"></script>
 <script src="js/26-equipo.js"></script>
+<script src="js/27-dupla.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
@@ -618,6 +620,13 @@ setTimeout(go,2500);})();</script>
     <div id="cpTxt" style="font-size:12px;color:var(--text-mute);line-height:1.45;margin-bottom:10px"></div>
     <div id="cpLista" style="display:grid;gap:8px"></div>
     <button class="btn bd" style="margin-top:10px" onclick="cpCerrar()">Cancelar</button>
+  </div>
+</div>
+<div class="dlg alto" id="dpDlg" onclick="if(event.target===this)dpCerrar()">
+  <div class="dlgw" style="max-width:380px">
+    <div style="font-weight:800;font-size:17px;margin-bottom:10px;text-align:center">🤝 Trabajar en dupla</div>
+    <div id="dpBox"></div>
+    <button class="btn bd" style="margin-top:10px" onclick="dpCerrar()">Cerrar</button>
   </div>
 </div>
 <div class="dlg alto" id="revDlg">

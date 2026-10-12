@@ -46,3 +46,9 @@ DATOS_DIR=/datos/verific sh osrm/preparar.sh          # Gran Rosario; otra zona:
 DATOS_DIR=/datos/verific docker compose --profile calles up -d
 curl http://localhost:8787/api/salud                   # "calles":true
 ```
+
+## Dupla (dos personas, una jornada)
+Para dos personas que trabajan juntas: una navega (mapa y ruta) y la otra baja a completar la planilla.
+- Cualquiera crea la dupla desde Perfil → "Trabajar en dupla" (sale un código de 6 letras); el otro lo escribe en su app.
+- El navegante sube la ruta (puntos, marcados y orden) y avisa la "próxima parada"; el verificador informa cada visita hecha y el navegante la ve en su mapa al instante (Server-Sent Events).
+- Roles intercambiables en cualquier momento. Solo viaja texto liviano: las fotos y los PDF quedan en el celular y en el Drive de quien completa la planilla.

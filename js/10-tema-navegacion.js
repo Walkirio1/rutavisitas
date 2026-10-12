@@ -70,6 +70,7 @@ async function siguientePunto(){
   if(mapa) mapa.setView([p.lat,p.lng],16);
   mostrarDlgEnvio(msg,[
     {txt:'🧭 Navegar con '+NAV_APPS[appNav()].nombre,cls:'ba',fn:()=>{window.open(urlNavegar(p.lat,p.lng),'_blank');}},
+    ...(typeof dpEsNavegante==='function'&&dpEsNavegante()?[{txt:'📣 Avisarle a mi compañero',cls:'ba',fn:()=>dpAvisarParada(p.id)}]:[]),
     ...(cand.length>1?[{txt:'Otro punto',cls:'bd',fn:()=>{_saltados.add(p.id);siguientePunto();}}]:[]),
     {txt:'Cerrar',cls:'bd'}
   ]);
