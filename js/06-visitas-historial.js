@@ -68,9 +68,9 @@ function renderV(){
         <div class="vb">
           <div class="va">${p.nombre}${!p.lat?' <span class="geo-tag err" style="vertical-align:middle"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin mapa</span>':''}</div>
           <div class="vid2">📍 ${p.dir} · ID: ${p.id}</div>
-          ${p.obs?`<div style="font-size:10px;color:var(--text-mute)">ℹ️ ${p.obs}</div>`:''}
+          ${p.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute)">ℹ️ ${escapeHtml(p.obs)}</div>`:''}
           ${pl?`<div style="font-size:11px;color:#10b981;margin-top:4px">📄 ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
-          ${pl&&pl.obs?`<div style="font-size:10px;color:var(--text-mute);margin-top:2px">📝 ${pl.obs}</div>`:''}
+          ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:2px">📝 ${escapeHtml(pl.obs)}</div>`:''}
         </div>
         ${v.done
           ?`<button class="vst ${estadoVisita(p.id)==='ok'?'vsd':'vsr'} vbtn" onclick="openPl('${p.id}')" aria-label="Abrir la planilla para modificarla">${estadoVisita(p.id)==='ok'?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha ›':(estadoVisita(p.id)==='cerrado'?'✕ Cerrado ›':'✕ No visitada ›')}</button>`
@@ -130,7 +130,7 @@ function renderH(){
             <div style="font-size:11px;font-weight:700">${p.nombre}</div>
             <div style="font-size:10px;color:var(--text-mute)">📍 ${p.dir} · ID: ${p.id}</div>
             ${irregs.length?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">⚠️ ${irregs.join(', ')}</div>`:''}
-            ${pl&&pl.obs?`<div style="font-size:10px;color:var(--text-mute);margin-top:1px">📝 ${pl.obs}</div>`:''}
+            ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:1px">📝 ${escapeHtml(pl.obs)}</div>`:''}
           </div>
         </div>
       </div>`;

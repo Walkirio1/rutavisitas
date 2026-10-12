@@ -16,7 +16,7 @@ const NOMBRES=new Set(['jose','juan','pedro','maria','carlos','luis','manuel','f
 const sinAcentos=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');
 // Calles con fecha ("9 de Julio", "3 de Febrero"): un número + una palabra alcanzan para identificarlas
 const esFecha=toks=>toks.some(t=>/^\d{1,2}$/.test(t))&&toks.some(t=>t.length>=3&&!/^\d+$/.test(t)&&t!=='de');
-const esUtil=toks=>esFecha(toks)||toks.some(t=>t.length>=4&&!NOMBRES.has(t)&&!GENERICAS.has(t)&&!TITULOS.has(t)&&!TIPOS.has(t)&&!/^\d+$/.test(t));
+const esUtil=toks=>esFecha(toks)||toks.some(t=>t.length>=4&&!NOMBRES.has(t)&&!GENERICAS.has(t)&&!TITULOS.has(t)&&!TIPOS.has(t)&&!/^\d+$/.test(t))||(toks.length>=2&&toks.join('').length>=6&&toks.every(t=>!/^\d+$/.test(t))); // "Santa Fe", "San Luis": varias palabras cortas también identifican una calle
 
 // "dr:pedro medrano 2870" → {calle:'dr pedro medrano', altura:'2870'}
 function partirDireccion(dir){
@@ -44,7 +44,9 @@ function coincide(devuelto,buscado){
   const d=new Set(sinAcentos(devuelto).toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/));
   const bt=buscado.split(' ');
   if(esFecha(bt)) return bt.filter(t=>t!=='de').every(t=>d.has(t));
-  return bt.some(t=>t.length>=4&&!NOMBRES.has(t)&&!GENERICAS.has(t)&&!TITULOS.has(t)&&!TIPOS.has(t)&&d.has(t));
+  const claves=bt.filter(t=>t.length>=4&&!NOMBRES.has(t)&&!GENERICAS.has(t)&&!TITULOS.has(t)&&!TIPOS.has(t));
+  if(!claves.length) return bt.filter(t=>t.length>=2&&!/^\d+$/.test(t)).every(t=>d.has(t)); // calle de palabras cortas ("Santa Fe"): tienen que estar todas
+  return claves.some(t=>d.has(t));
 }
 
 // Pide un JSON con reintentos. Un 4xx significa "sin resultados" (devuelve null); sólo los cortes
@@ -107,7 +109,7 @@ async function geocodeOne(p){
   const loc=(p.localidad||'Rosario').trim()||'Rosario';
   const cands=variantesCalle(calle);
   const probadas=cands.map(c=>c+(altura?' '+altura:''));
-  let hubo=false;
+  let hubo=cands.length===0; // sin variantes útiles no se consultó la red: no es un problema de conexión
   for(const c of cands){
     for(const l of (loc.toLowerCase()==='rosario'?['Rosario']:[loc,'Rosario'])){
       try{

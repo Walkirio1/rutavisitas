@@ -177,7 +177,6 @@ function importXL(input){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws);
       // se guarda el Excel tal cual vino (todas las filas y columnas) para devolverlo actualizado
-      try{lsSet('sube:excel',{name:file.name,aoa:XLSX.utils.sheet_to_json(ws,{header:1,defval:''}),ts:Date.now()});}catch(e){}
       const nuevos=rows.map(r=>({
         id:String(r['Ubicación ID']||r['ID']||''),
         nombre:String(r['Ubicación']||r['Nombre']||''),
@@ -187,6 +186,12 @@ function importXL(input){
         obs:String(r['Observaciones']||''),
         lat:null,lng:null,geoErr:null,
       })).filter(r=>r.dir&&r.id);
+      if(!nuevos.length){
+        const cols=Object.keys(rows[0]||{});
+        showToast(!rows.length?'El Excel no tiene filas: no se importó nada':'No encontré las columnas «Ubicación ID» y «Dirección»'+(cols.length?' (el archivo tiene: '+cols.slice(0,4).join(', ')+')':''),true);
+        return;
+      }
+      try{lsSet('sube:excel',{name:file.name,aoa:XLSX.utils.sheet_to_json(ws,{header:1,defval:''}),ts:Date.now()});}catch(e){}
       // mantener lat/lng de puntos existentes si coincide ID
       puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos.map(n=>{
         const ex=puntos.find(p=>p.id===n.id);

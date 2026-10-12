@@ -343,7 +343,7 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
       try{
         if(c.tipo==='tilde'){const cb=form.getCheckBox(c.nombreForm);if(v==='Sí')cb.check();else cb.uncheck();}
         else if(c.tipo==='texto'||c.tipo==='numero'||c.tipo==='fecha'||c.tipo==='auto'||c.tipo==='suma'){
-          const txt=c.tipo==='auto'?auto[c.fuente]:(c.tipo==='suma'?String(valorSuma(c,val,campos)):v);
+          const txt=c.tipo==='auto'?auto[c.fuente]:(c.tipo==='suma'?(c.moneda?fmtMonto(valorSuma(c,val,campos)):String(valorSuma(c,val,campos))):v);
           if(txt) form.getTextField(c.nombreForm).setText(L(txt));
         }
       }catch(e){console.warn('campo del formulario:',e);}
@@ -352,7 +352,7 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
     if(c.tipo==='tilde'){
       if(v==='Sí'){const t=Math.min(c.w,c.h)*1.15;pg.drawText('X',{x:c.x+(c.w-fb.widthOfTextAtSize('X',t))/2,y:c.y+(c.h-t)/2+t*.12,size:t,font:fb,color:rgb(0,0,0)});}
     }else if(c.tipo==='auto') texto(pg,c,auto[c.fuente]);
-    else if(c.tipo==='suma') texto(pg,c,String(valorSuma(c,val,campos)));
+    else if(c.tipo==='suma') texto(pg,c,c.moneda?fmtMonto(valorSuma(c,val,campos)):String(valorSuma(c,val,campos)));
     else if(c.tipo==='foto'){ // la foto de la visita va dentro de la planilla, en este recuadro
       if(pl.foto){
         try{

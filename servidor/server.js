@@ -25,7 +25,7 @@ const ult=(t,...a)=>db.prepare(t).get(...a);
 const todos=(t,...a)=>db.prepare(t).all(...a);
 const run=(t,...a)=>db.prepare(t).run(...a);
 
-const CORS={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,POST,DELETE,OPTIONS'};
+const CORS={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Private-Network':'true','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,POST,DELETE,OPTIONS'};
 const json=(res,code,obj)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8',...CORS});res.end(JSON.stringify(obj));};
 const leer=req=>new Promise((ok,mal)=>{let b='';req.on('data',c=>{b+=c;if(b.length>3e6){mal(new Error('grande'));req.destroy();}});req.on('end',()=>{try{ok(b?JSON.parse(b):{});}catch(e){mal(e);}});});
 const bearer=req=>((req.headers.authorization||'').match(/^Bearer\s+(\S+)/)||[])[1]||'';

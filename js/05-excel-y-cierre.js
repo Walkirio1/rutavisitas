@@ -130,7 +130,7 @@ function cerrarDia(){
   const hechos=puntos.filter(p=>estadoVisita(p.id)==='ok'); // los verdes
   if(!hechos.length){showToast('No hay visitas hechas (verdes) para cerrar',true);return;}
   const quedan=puntos.length-hechos.length;
-  confirm2('¿Cerrar el día? Las '+hechos.length+' visitas hechas (verdes) salen del mapa y se guardan en el historial. Quedan '+quedan+' punto'+(quedan===1?'':'s')+' (cerrados y sin marcar).',function(){
+  confirm2('¿Cerrar el día? '+(hechos.length===1?'La visita hecha (verde) sale':'Las '+hechos.length+' visitas hechas (verdes) salen')+' del mapa y se guarda'+(hechos.length===1?'':'n')+' en el historial. '+(quedan?'Quedan '+quedan+' punto'+(quedan===1?'':'s')+' (sin visitar o cerrados).':'No queda ningún punto.'),function(){
     // el Excel del día queda en Drive antes de limpiar
     try{const fx=generarExcelJornada();if(drv.connected)subirExcelADrive(fx).then(()=>emailEmpresa()?compartirDiaConEmpresa(true):0).catch(e=>console.warn('excel del día:',e));}catch(e){console.warn(e);}
     const entrada={
@@ -150,7 +150,7 @@ function cerrarDia(){
     lsSet(SK.puntos,puntos);lsSet(SK.sel,[...sel]);guardarVisits();
     renderP();updStats();renderH();renderV();
     if(typeof renderMapa==='function'&&mapa) renderMapa(true);
-    showToast('Día cerrado: '+hechos.length+' hechas guardadas ✓');
+    showToast('Día cerrado: '+hechos.length+(hechos.length===1?' visita guardada':' visitas guardadas')+' ✓');
     if(drv.connected) borrarJornadaActualDrive().catch(()=>{});
     showTab(3);
   });
