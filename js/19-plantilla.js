@@ -258,10 +258,9 @@ async function marcaDeAgua(doc,modo){
       if(modo==='grande'){ // planilla armada por la app: logo grande y muy suave en el centro
         const w=Math.min(W,H)*.5,h=w*im.height/im.width;
         pg.drawImage(im,{x:(W-w)/2,y:(H-h)/2,width:w,height:h,opacity:.1});
-      }else{ // planilla de la empresa: solo una marca chica en la esquina, sin tapar nada
-        const h=22,w=h*im.width/im.height,t='Hecho con LogiMap',tw=f.widthOfTextAtSize(t,6.5);
-        pg.drawImage(im,{x:W-w-tw-14,y:8,width:w,height:h,opacity:.8});
-        pg.drawText(t,{x:W-tw-10,y:15,size:6.5,font:f,color:rgb(.45,.5,.6),opacity:.85});
+      }else{ // planilla de la empresa: el mismo logo, más chico y transparente, en el centro (tamaño y lugar a definir)
+        const w=Math.min(W,H)*.26,h=w*im.height/im.width;
+        pg.drawImage(im,{x:(W-w)/2,y:(H-h)/2,width:w,height:h,opacity:.12});
       }
     }
   }catch(e){console.warn('marca de agua:',e);}
