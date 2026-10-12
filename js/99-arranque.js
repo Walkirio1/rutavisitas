@@ -123,5 +123,3 @@ dpIniciar();
 setTimeout(contadorPing,4000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(contadorPing,3000);});
 
-// de 19-plantilla.js: interruptor provisorio del plan Pro (?pro=1 activa, ?pro=0 desactiva) hasta que haya cobro
-(function(){try{const q=new URLSearchParams(location.search).get('pro');if(q==='1'){lsSet('sube:pro',true);showToast('Plan Pro activado: los PDF salen sin marca');}else if(q==='0'){lsSet('sube:pro',false);showToast('Plan gratis: los PDF llevan marca');}}catch(e){}})();

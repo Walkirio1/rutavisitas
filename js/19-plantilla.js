@@ -244,7 +244,7 @@ async function generarPlanillaGeneralPDF(punto,visita){
 
 
 // ── MARCA DE AGUA (plan gratis) · el plan Pro sale sin marca
-// Todavía no hay cobro: se activa a mano con ?pro=1 en la dirección (y se quita con ?pro=0)
+// Todavía no hay cobro: se activa desde Ajustes con una contraseña provisoria (el sistema real de cuentas y pago reemplaza esto)
 const esPro=()=>lsGet('sube:pro')===true;
 let _logoMarcaBytes=null;
 async function marcaDeAgua(doc,modo){
@@ -294,3 +294,29 @@ async function plEdVista(){
   }catch(err){console.error(err);box.innerHTML='<div class="pv-carga">No se pudo armar la vista previa. Probá de nuevo.</div>';}
 }
 function plVistaCerrar(){document.getElementById('plVistaDlg').classList.remove('show');}
+
+const PRO_HASH='b58bf8d0d9b8f62ea5b8c7f40978ebbb3f1c3bac743796a0ebd381aae969906d'; // SHA-256 de la contraseña provisoria
+async function sha256Hex(t){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function proSync(){
+  const c=document.getElementById('optPro'),r=document.getElementById('proClaveFila'),e=document.getElementById('proEstado');
+  if(c) c.checked=esPro();
+  if(r) r.style.display='none';
+  if(e) e.textContent=esPro()?'Activo: los PDF salen sin marca de agua':'Los PDF llevan el logo como marca de agua';
+}
+function optProCambio(on){
+  if(!on){lsSet('sube:pro',false);proSync();showToast('Plan gratis: los PDF llevan marca');return;}
+  document.getElementById('optPro').checked=false; // hasta que ponga la clave
+  const r=document.getElementById('proClaveFila');r.style.display='flex';
+  const i=document.getElementById('proClave');i.value='';setTimeout(()=>i.focus(),50);
+}
+async function proActivar(){
+  const i=document.getElementById('proClave'),v=i.value.trim();
+  if(!v) return;
+  let ok=false;
+  try{ok=(await sha256Hex(v))===PRO_HASH;}catch(e){}
+  if(!ok){showToast('Contraseña incorrecta',true);i.value='';return;}
+  lsSet('sube:pro',true);proSync();showToast('⭐ Plan Pro activado: los PDF salen sin marca');
+}
