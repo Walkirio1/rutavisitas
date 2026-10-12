@@ -1,4 +1,5 @@
 // Prueba de visita: ubicación y hora en cada visita y en las fotos + reportes (hoy / semana / mes)
+const ubiOn=()=>!!lsGet('sube:ubi'),selloOn=()=>!!lsGet('sube:sello'); // opciones del usuario (apagadas por defecto)
 let _ubi=null,_tIni=0; // última posición conocida y momento en que se abrió la planilla
 
 function ubiPos(maxMs=7000){
@@ -32,13 +33,14 @@ function ubiEstado(gps,punto){
 function ubiAlAbrir(punto,pl){
   _tIni=Date.now();
   const b=document.getElementById('plUbi');if(!b) return;
+  if(!ubiOn()){b.className='plubi';b.textContent='';return;}
   if(pl&&pl.gps){const e=ubiEstado(pl.gps,punto);b.className='plubi '+e.clase;b.textContent=e.txt;return;}
   b.className='plubi';b.textContent='📍 Buscando tu ubicación…';
   ubiPos().then(g=>{if(curId!==(punto&&punto.id)) return;const e=ubiEstado(g,punto);b.className='plubi '+e.clase;b.textContent=e.txt;});
 }
 // datos que se guardan con la visita
 function ubiParaVisita(punto,previa){
-  const gps=previa&&previa.gps?previa.gps:(_ubi&&Date.now()-_ubi.ts<30*60000?{..._ubi}:null);
+  const gps=previa&&previa.gps?previa.gps:(!ubiOn()?null:_ubi&&Date.now()-_ubi.ts<30*60000?{..._ubi}:null);
   const o={gps};
   if(gps&&punto&&punto.lat&&punto.lng) o.dist=distM(gps.lat,gps.lng,punto.lat,punto.lng);
   o.durMin=previa&&previa.durMin!=null?previa.durMin:(_tIni?Math.max(1,Math.round((Date.now()-_tIni)/60000)):null);
@@ -47,18 +49,19 @@ function ubiParaVisita(punto,previa){
 
 // sello en la foto: fecha, hora y coordenadas
 async function sellarFoto(dataUrl,punto){
+  if(!selloOn()) return dataUrl;
   try{
-    const g=await ubiPos(4000);
+    const g=ubiOn()?await ubiPos(4000):null;
     const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=dataUrl;});
     const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
     const x=c.getContext('2d');x.drawImage(img,0,0);
     const f=Math.max(12,Math.round(c.width/42)),l1=hoy()+' '+ahora()+(punto&&punto.nombre?' · '+punto.nombre:''),
-      l2=g?'📍 '+g.lat+', '+g.lng+(g.prec?' (±'+g.prec+' m)':''):'📍 sin ubicación';
-    const h=f*2.9;
+      l2=g?'📍 '+g.lat+', '+g.lng+(g.prec?' (±'+g.prec+' m)':''):'';
+    const h=l2?f*2.9:f*1.9;
     x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,c.height-h,c.width,h);
     x.fillStyle='#fff';x.font='600 '+f+'px system-ui,sans-serif';x.textBaseline='top';
     x.fillText(l1.slice(0,70),f*.6,c.height-h+f*.45);
-    x.font=f+'px system-ui,sans-serif';x.fillText(l2,f*.6,c.height-h+f*1.6);
+    if(l2){x.font=f+'px system-ui,sans-serif';x.fillText(l2,f*.6,c.height-h+f*1.6);}
     return c.toDataURL('image/jpeg',.8);
   }catch(e){console.warn('sello de la foto:',e);return dataUrl;}
 }
@@ -84,7 +87,7 @@ function repDatos(per){
 }
 function repTexto(per){
   const d=repDatos(per),tit={hoy:'hoy',semana:'últimos 7 días',mes:'últimos 30 días'}[per];
-  return `📋 Resumen (${tit})\n✅ Visitas hechas: ${d.n}\n🔴 Cerrados / no atendidos: ${d.cerr}\n⚠️ Con irregularidades: ${d.irr}\n📍 Con ubicación: ${d.conGps}${d.n?` (${Math.round(d.conGps/d.n*100)}%)`:''}${d.prom?`\n⏱️ Tiempo promedio por visita: ${d.prom} min`:''}${d.loc.length?'\n🏘️ '+d.loc.map(([k,n])=>k+' '+n).join(' · '):''}`;
+  return `📋 Resumen (${tit})\n✅ Visitas hechas: ${d.n}\n🔴 Cerrados / no atendidos: ${d.cerr}\n⚠️ Con irregularidades: ${d.irr}${d.conGps?`\n📍 Con ubicación: ${d.conGps} (${Math.round(d.enLocal/d.conGps*100)}% en el local)`:''}${d.prom?`\n⏱️ Tiempo promedio por visita: ${d.prom} min`:''}${d.loc.length?'\n🏘️ '+d.loc.map(([k,n])=>k+' '+n).join(' · '):''}`;
 }
 function renderReporte(){
   const box=document.getElementById('hReporte');if(!box) return;
@@ -95,7 +98,7 @@ function renderReporte(){
       <div><b>${d.n}</b><span>visitas hechas</span></div>
       <div><b>${d.cerr}</b><span>cerrados</span></div>
       <div><b>${d.irr}</b><span>con irregularidades</span></div>
-      <div><b>${d.n?Math.round(d.enLocal/d.n*100)+'%':'–'}</b><span>verificadas en el local</span></div>
+      <div><b>${d.conGps?Math.round(d.enLocal/d.conGps*100)+'%':'–'}</b><span>verificadas en el local</span></div>
     </div>
     ${d.prom?`<div class="rep-l">⏱️ ${d.prom} min por visita en promedio</div>`:''}
     ${d.loc.length?`<div class="rep-l">🏘️ ${d.loc.map(([k,n])=>escapeHtml(k)+' <b>'+n+'</b>').join(' · ')}</div>`:''}
@@ -107,3 +110,10 @@ async function repCompartir(){
   try{if(navigator.share){await navigator.share({title:'Resumen de visitas',text:t});return;}}catch(e){if(e&&e.name==='AbortError') return;}
   try{await navigator.clipboard.writeText(t);showToast('Resumen copiado ✓');}catch(e){showToast('No se pudo compartir',true);}
 }
+
+// opciones (en el perfil)
+async function optUbiCambio(on){
+  lsSet('sube:ubi',on);
+  if(on){showToast('Activado: te va a pedir permiso de ubicación');const g=await ubiPos(9000);if(!g) showToast('No se pudo tomar la ubicación: revisá el permiso del navegador',true);}
+}
+function optSelloCambio(on){lsSet('sube:sello',on);showToast(on?'Las fotos nuevas llevan fecha y hora':'Sello desactivado');}

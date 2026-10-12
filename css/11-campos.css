@@ -114,3 +114,12 @@
 .rep-g div{background:#fff;border:1px solid #dbe6f7;border-radius:12px;padding:10px;text-align:center}
 .rep-g b{display:block;font-size:24px;color:#0d2a78}.rep-g span{font-size:11px;color:#6b7fa6;font-weight:600}
 .rep-l{font-size:12px;color:#3b4d73;margin-top:8px}
+/* Opciones de prueba de visita (en el perfil) */
+.popc{margin:0 0 12px;text-align:left}
+.popc-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute);margin-bottom:6px;text-align:center}
+.popc-f{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(120,150,200,.35);border-radius:12px;margin-bottom:6px;background:rgba(255,255,255,.5);cursor:pointer}
+.popc-f span{flex:1;font-size:13px;font-weight:700}.popc-f small{display:block;font-size:10.5px;font-weight:500;color:var(--text-mute);margin-top:1px}
+.popc-f input{display:none}
+.popc-sw{width:44px;height:26px;border-radius:13px;background:#c5cfe2;position:relative;flex-shrink:0;transition:background .2s}
+.popc-sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.popc-f input:checked+.popc-sw{background:#10b981}.popc-f input:checked+.popc-sw::after{transform:translateX(18px)}
