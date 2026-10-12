@@ -73,7 +73,7 @@ function seccionesHtml(campos){
   const unico=grupos.length===1&&!grupos[0].t;
   return grupos.map(g=>{
     const filas=g.filas.map(f=>filaHtml(f.c.sort((a,b)=>a.x-b.x))).join('');
-    return `<div class="sc">${g.t?`<div class="sc-t">${escapeHtml(g.t)}</div>`:(unico?'':`<div class="sc-t">Otros datos</div>`)}${filas}</div>`;
+    return `<div class="tj">${g.t?`<div class="sc-t">${escapeHtml(g.t)}</div>`:(unico?'':`<div class="sc-t">Otros datos</div>`)}${filas}</div>`;
   }).join('');
 }
 function plTilde(id,el){plExtra[id]=plExtra[id]==='Sí'?'':'Sí';el.classList.toggle('on',plExtra[id]==='Sí');plCambio();}

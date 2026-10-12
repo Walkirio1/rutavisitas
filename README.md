@@ -44,6 +44,7 @@ js/                     Lógica, en orden (comparten el mismo ámbito global)
   21-firma-pdf.js         firma en planillas PDF subidas: elegir dónde va (visor de PDF)
   22-disenador-pdf.js     marcar sobre un PDF dónde va cada campo (tilde, texto, número, fecha, firma, suma, dato auto) y rellenarlo
   23-detector-pdf.js      detección automática de campos en el PDF (casillas, datos, totales, firma, formularios)
+  25-ubicacion.js         ubicación y hora de cada visita, sello en las fotos y reportes (hoy / 7 días / 30 días)
   99-arranque.js          lo que se ejecuta al cargar, después de definir todo
 privacidad.html / terminos.html   páginas legales (completar [correo de contacto])
 sw.js                   Service worker (funciona sin señal, guarda el mapa)

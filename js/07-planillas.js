@@ -111,6 +111,7 @@ function openPl(id){
   pintarCamposExtra(pl);
   document.getElementById('plF').value=(pl&&pl.fecha)||hoy();
   document.getElementById('plH').value=(pl&&pl.hora)||ahora();
+  ubiAlAbrir(p,pl);
   document.getElementById('plI').value=p.id||'';
   document.getElementById('plD').value=p.dir||'';
   document.getElementById('plR').value=(pl&&pl.rubro)||p.tipo||'';
@@ -144,7 +145,7 @@ async function loadFoto(input){
   const file=input.files[0];if(!file)return;
   showToast('Procesando foto...');
   try{
-    fotoData=await comprimirFoto(file);
+    fotoData=await sellarFoto(await comprimirFoto(file),puntos.find(x=>x.id===curId)); // con fecha, hora y ubicación
   }catch(e){
     // si el navegador no puede achicarla, se usa la original
     fotoData=await new Promise(res=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.readAsDataURL(file);});
@@ -215,6 +216,7 @@ async function guardarVisita(soloGuardar,confirmado){
     chC,chV,ti,extra:{...plExtra},extraDef:camposActivos().map(c=>({id:c.id,tipo:c.tipo,etiqueta:c.etiqueta,pos:c.pos||'final'})),itemsC:CN.slice(),itemsV:VN.slice(),titA:TIT_A,titB:TIT_B,cierra:camposActivos().some(c=>c.tipo==='tilde'&&c.cierra&&plExtra[c.id]==='Sí'),obs:document.getElementById('plO').value,
     rubro:document.getElementById('plR').value,
     foto:fotoData,fecha:previa?previa.fecha:hoy(),hora:previa?previa.hora:ahora(),
+    ...ubiParaVisita(puntos.find(x=>x.id===curId),previa),
     driveFotoUrl:null,drivePdfUrl:null,
   }};
   guardarVisits();
