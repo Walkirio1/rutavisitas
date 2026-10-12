@@ -1,6 +1,6 @@
 // Versión, ajuste de pantalla iPhone, instalar como app, modo sin señal
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 63';
+const APP_VERSION='2026-10-11 · 64';
 /* (se ejecuta al final, en js/99-arranque.js) */
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -41,10 +41,7 @@ async function instalarApp(){
     _instalarEvt=null;
     return;
   }
-  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  confirm2(ios
-    ? 'En iPhone: tocá el botón Compartir (cuadrado con flecha) de Safari y elegí "Agregar a pantalla de inicio".'
-    : 'En Android: abrí el menú ⋮ de Chrome y elegí "Instalar app" o "Agregar a pantalla de inicio".',()=>{});
+  instGuiaAbrir();
 }
 /* (se ejecuta al final, en js/99-arranque.js) */
 
@@ -62,3 +59,20 @@ async function actualizarAhora(){
   }catch(e){console.warn('actualizar:',e);}
   setTimeout(()=>location.reload(),600);
 }
+
+// Guía para instalar a mano (iPhone y celulares sin el botón automático de instalar)
+function instGuiaAbrir(){
+  const ua=navigator.userAgent,ios=/iphone|ipad|ipod/i.test(ua),otro=/CriOS|FxiOS|EdgiOS/i.test(ua); // Chrome/Firefox/Edge en iPhone
+  const paso=(n,ico,tx)=>`<div class="ig-p"><b>${n}</b><span class="ig-i">${ico}</span><div>${tx}</div></div>`;
+  document.getElementById('instGuiaPasos').innerHTML=ios
+    ?paso(1,'⬆️',otro?'Tocá el botón <b>Compartir</b> (el cuadrado con la flecha), arriba junto a la barra de direcciones.':'Tocá el botón <b>Compartir</b> (el cuadrado con la flecha), abajo en el centro de Safari.')
+      +paso(2,'➕','Deslizá la lista y elegí <b>«Agregar a pantalla de inicio»</b>.')
+      +paso(3,'✅','Tocá <b>«Agregar»</b>. ¡Listo! LogiMap aparece como una app.')
+    :paso(1,'⋮','Abrí el menú <b>⋮</b> del navegador (arriba a la derecha).')
+      +paso(2,'📲','Elegí <b>«Instalar app»</b> o <b>«Agregar a pantalla de inicio»</b>.')
+      +paso(3,'✅','Confirmá. ¡Listo! LogiMap aparece como una app.');
+  document.getElementById('instGuiaDlg').classList.add('show');
+  const f=document.getElementById('instGuiaFlecha');
+  f.style.display=ios&&!otro?'flex':'none'; // la flecha señala el botón Compartir de Safari (abajo)
+}
+function instGuiaCerrar(){document.getElementById('instGuiaDlg').classList.remove('show');document.getElementById('instGuiaFlecha').style.display='none';}
