@@ -2,6 +2,7 @@
 // Guarda equipos, miembros, rutas asignadas y el avance de las visitas (no guarda PDFs ni fotos: eso va al Drive de cada uno).
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const {DatabaseSync}=require('node:sqlite');
+const OSRM=(process.env.OSRM_URL||'http://osrm:5000').replace(/\/$/,'');
 const PORT=+process.env.PORT||8787,DB=process.env.DB||path.join(__dirname,'datos','verific.db');
 fs.mkdirSync(path.dirname(DB),{recursive:true});
 const APP_DIR=process.env.APP_DIR?path.resolve(process.env.APP_DIR):null; // carpeta de la app (index.html, js/, css/…); si no se define, solo se sirve el panel
@@ -41,8 +42,46 @@ const oyentes=new Map(); // equipo_id -> Set(res)
 const avisar=(equipoId,tipo)=>{const set=oyentes.get(equipoId);if(set)for(const r of set)r.write('data: '+JSON.stringify({tipo,ts:Date.now()})+'\n\n');};
 setInterval(()=>{for(const set of oyentes.values())for(const r of set)r.write(': latido\n\n');},25000);
 
+
+// ── Optimizador de rutas por calles reales (usa OSRM para las distancias y ordena acá)
+async function osrmGet(p){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);
+  try{const r=await fetch(OSRM+p,{signal:c.signal});if(!r.ok) throw new Error('osrm '+r.status);return await r.json();}finally{clearTimeout(t);}
+}
+// camino abierto que arranca en el punto 0: vecino más cercano + 2-opt + mover paradas, con la matriz de duraciones
+function ordenar(T){
+  const n=T.length,resto=[];for(let i=1;i<n;i++) resto.push(i);
+  let ruta=[0];while(resto.length){let k=0,m=Infinity;resto.forEach((q,i)=>{const x=T[ruta[ruta.length-1]][q];if(x<m){m=x;k=i;}});ruta.push(resto.splice(k,1)[0]);}
+  const costo=r=>{let c=0;for(let i=1;i<r.length;i++) c+=T[r[i-1]][r[i]];return c;};
+  let mejor=costo(ruta),mejora=true,vueltas=0;
+  while(mejora&&vueltas++<40){
+    mejora=false;
+    for(let i=1;i<n-1;i++)for(let j=i+1;j<n;j++){ // invertir un tramo
+      const r=ruta.slice(0,i).concat(ruta.slice(i,j+1).reverse(),ruta.slice(j+1)),c=costo(r);
+      if(c+1e-6<mejor){ruta=r;mejor=c;mejora=true;}
+    }
+    for(let i=1;i<n;i++)for(let j=1;j<n;j++){ // mover una parada a otro lugar
+      if(i===j) continue;const r=ruta.slice(),[x]=r.splice(i,1);r.splice(j,0,x);const c=costo(r);
+      if(c+1e-6<mejor){ruta=r;mejor=c;mejora=true;}
+    }
+  }
+  return ruta;
+}
+async function optimizar(b){
+  const ini=b.inicio,pts=Array.isArray(b.puntos)?b.puntos:[];
+  const ok=p=>p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180;
+  if(!ok(ini)||!pts.length||pts.length>80||!pts.every(ok)) return [400,{error:'Datos de ruta inválidos (hasta 80 puntos)'}];
+  const todos=[ini,...pts],coords=todos.map(p=>(+p.lng).toFixed(6)+','+(+p.lat).toFixed(6)).join(';');
+  let t;try{t=await osrmGet('/table/v1/driving/'+coords+'?annotations=duration,distance');}catch(e){return [503,{error:'El mapa de calles no está disponible'}];}
+  if(!t.durations||t.durations.some(f=>f.some(x=>x==null))) return [422,{error:'Hay puntos fuera de la zona del mapa'}];
+  const r=ordenar(t.durations);let min=0,km=0;const tramos=[];
+  for(let i=1;i<r.length;i++){const d=t.durations[r[i-1]][r[i]],m=t.distances[r[i-1]][r[i]];min+=d;km+=m;tramos.push({id:String(pts[r[i]-1].id),min:Math.round(d/60),km:Math.round(m/100)/10});}
+  return [200,{fuente:'calles',orden:r.slice(1).map(i=>String(pts[i-1].id)),km:Math.round(km/100)/10,min:Math.round(min/60),tramos}];
+}
+
 const rutas={
-  'GET /api/salud':async()=>[200,{ok:true,hora:Date.now()}],
+  'GET /api/salud':async()=>{let calles=false;try{await osrmGet('/nearest/v1/driving/-60.65,-32.95');calles=true;}catch(e){}return [200,{ok:true,hora:Date.now(),calles}];},
+  'POST /api/optimizar':async(req,b)=>optimizar(b),
   'POST /api/equipo/crear':async(req,b)=>{
     const nombre=txt(b.nombre,60).trim();if(nombre.length<2) return [400,{error:'Poné el nombre del equipo'}];
     let codigo=cod();while(ult('SELECT 1 FROM equipos WHERE codigo=?',codigo)) codigo=cod();

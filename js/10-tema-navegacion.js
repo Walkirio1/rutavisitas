@@ -99,14 +99,27 @@ function estimarRuta(start,orden){
   return {km,min};
 }
 function fmtMin(m){return m>=60?Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min':m+' min';}
+// Orden por calles reales: lo calcula el servidor (si no responde, se usa el orden en línea recta de acá)
+async function optimizarPorCalles(start,pts){
+  const e=typeof equipo==='function'?equipo():null,base=(e&&e.api)||lsGet('sube:srv')||SERVIDOR_URL;
+  if(!base||!navigator.onLine||pts.length>80) return null;
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),9000);
+  try{
+    const r=await fetch(base.replace(/\/$/,'')+'/api/optimizar',{method:'POST',headers:{'Content-Type':'application/json'},signal:c.signal,body:JSON.stringify({inicio:start,puntos:pts.map(p=>({id:p.id,lat:p.lat,lng:p.lng}))})});
+    if(!r.ok) return null;
+    const j=await r.json(),por=new Map(pts.map(p=>[String(p.id),p])),orden=(j.orden||[]).map(id=>por.get(String(id))).filter(Boolean);
+    return orden.length===pts.length?{orden,km:j.km,min:j.min}:null;
+  }catch(err){return null;}finally{clearTimeout(t);}
+}
 async function rutaCompleta(){
   const faltan=faltanVisitar();
   if(!faltan.length){showToast(sel.size?'¡Ruta completa! No quedan puntos por visitar ✓':'Marcá puntos en azul en el mapa primero',true);return;}
   showToast('Optimizando la ruta...');
   const yo=await ubicacionActual();
   const start=yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng};
-  const todo=optimizarOrden(start,faltan);
-  const est=estimarRuta(start,todo);
+  let todo=optimizarOrden(start,faltan),est=estimarRuta(start,todo),calles=false;
+  const sv=await optimizarPorCalles(start,faltan);
+  if(sv){todo=sv.orden;est={km:sv.km,min:Math.round(sv.min+todo.length*8)};calles=true;}
   // el orden queda guardado: la lista de Visitas se muestra en este orden
   const hechos=puntos.filter(p=>sel.has(p.id)&&!faltan.includes(p)).map(p=>p.id);
   ordenRuta=[...hechos,...todo.map(p=>p.id)];lsSet(SK_ORDEN,ordenRuta);renderV();
@@ -114,7 +127,7 @@ async function rutaCompleta(){
   const dest=orden[orden.length-1],via=orden.slice(0,-1).map(p=>p.lat+','+p.lng).join('|');
   const url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest.lat+','+dest.lng+(via?'&waypoints='+encodeURIComponent(via):'');
   const lista=todo.slice(0,15).map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n')+(todo.length>15?`\n… y ${todo.length-15} más`:'');
-  mostrarDlgEnvio(`🗺️ Ruta optimizada: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
+  mostrarDlgEnvio(`${calles?'🛣️ Ruta por calles reales':'🗺️ Ruta optimizada'}: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
     {txt:'🧭 Abrir en Google Maps',cls:'ba',fn:()=>{window.open(url,'_blank');}},
     {txt:'Cerrar',cls:'bd'}
   ]);

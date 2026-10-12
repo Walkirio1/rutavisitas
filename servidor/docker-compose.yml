@@ -10,3 +10,15 @@ services:
       - ..:/web:ro   # la app (para servirla en /app/)
     environment:
       - APP_DIR=/web
+      - OSRM_URL=http://osrm:5000
+
+  # Mapa de calles para optimizar rutas. Se levanta con:  docker compose --profile calles up -d
+  # (antes hay que preparar el mapa una vez con osrm/preparar.sh)
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend
+    container_name: verific-osrm
+    restart: unless-stopped
+    profiles: ["calles"]
+    command: osrm-routed --algorithm mld --max-table-size 120 /data/zona.osrm
+    volumes:
+      - ${DATOS_DIR:-./datos}/osrm:/data:ro
