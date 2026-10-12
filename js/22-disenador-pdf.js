@@ -371,5 +371,6 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
     }else texto(pg,c,v);
   }
   try{if(form) form.flatten();}catch(e){}
+  await marcaDeAgua(doc,'discreta');
   return await doc.saveAsBase64({dataUri:false});
 }

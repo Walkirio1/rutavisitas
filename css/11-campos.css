@@ -200,3 +200,7 @@ body:has(.inst-bar.show) .cnt{padding-bottom:170px}
 /* Entrada: «Entrar con Google» y «Entrar sin Google» pesan lo mismo (mismo ancho, alto y sombra) */
 .gate .gempezar,.gate .gbtn{width:100%;min-height:50px;margin:0;box-shadow:0 8px 22px -10px rgba(20,40,100,.45)}
 .gate .gsep{font-size:12px;color:var(--text-mute);margin:10px 0}
+
+/* Vista previa de la planilla */
+#plVistaBox .pv-hoja{width:100%;height:auto;border:1px solid var(--line-2);border-radius:6px;box-shadow:0 6px 18px -8px rgba(0,0,0,.35);background:#fff;margin-bottom:8px;display:block}
+#plVistaBox .pv-carga{padding:40px 10px;color:var(--text-mute);font-size:13px}

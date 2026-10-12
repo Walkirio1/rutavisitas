@@ -8,7 +8,9 @@ const PLANTILLA_BASE={
   secB:{nombre:'Otras observaciones',items:['Sin stock','Otro']},
   campos:[] // campos adicionales: {id,tipo,etiqueta,obligatorio,opciones} (ver js/20-campos.js)
 };
+let _plVista=null; // mientras se arma la vista previa del editor, se usa la planilla sin guardar
 function plantilla(){
+  if(_plVista) return _plVista;
   const t=lsGet(SK_PLTPL);
   return t&&t.secA&&t.secB?t:JSON.parse(JSON.stringify(PLANTILLA_BASE));
 }
@@ -235,6 +237,61 @@ async function generarPlanillaGeneralPDF(punto,visita){
       page.drawText(et,{x:x0+(ancho-f.widthOfTextAtSize(et,8.5))/2,y:63,size:8.5,font:f,color:gris});
     }
   }
-  doc.getPages().forEach(p=>p.drawText('Generado con LogiMap',{x:40,y:20,size:8,font:f,color:gris}));
+  if(!esPro()) doc.getPages().forEach(p=>p.drawText('Generado con LogiMap',{x:40,y:20,size:8,font:f,color:gris}));
+  await marcaDeAgua(doc,'grande');
   return await doc.saveAsBase64({dataUri:false});
 }
+
+
+// ── MARCA DE AGUA (plan gratis) · el plan Pro sale sin marca
+// Todavía no hay cobro: se activa a mano con ?pro=1 en la dirección (y se quita con ?pro=0)
+const esPro=()=>lsGet('sube:pro')===true;
+let _logoMarcaBytes=null;
+async function marcaDeAgua(doc,modo){
+  if(esPro()) return;
+  try{
+    if(!_logoMarcaBytes){const r=await fetch('icons/marca-agua.png');_logoMarcaBytes=new Uint8Array(await r.arrayBuffer());}
+    const im=await doc.embedPng(_logoMarcaBytes),{StandardFonts,rgb}=window.PDFLib;
+    const f=await doc.embedFont(StandardFonts.HelveticaBold);
+    for(const pg of doc.getPages()){
+      const {width:W,height:H}=pg.getSize();
+      if(modo==='grande'){ // planilla armada por la app: logo grande y muy suave en el centro
+        const w=Math.min(W,H)*.5,h=w*im.height/im.width;
+        pg.drawImage(im,{x:(W-w)/2,y:(H-h)/2,width:w,height:h,opacity:.1});
+      }else{ // planilla de la empresa: solo una marca chica en la esquina, sin tapar nada
+        const h=22,w=h*im.width/im.height,t='Hecho con LogiMap',tw=f.widthOfTextAtSize(t,6.5);
+        pg.drawImage(im,{x:W-w-tw-14,y:8,width:w,height:h,opacity:.8});
+        pg.drawText(t,{x:W-tw-10,y:15,size:6.5,font:f,color:rgb(.45,.5,.6),opacity:.85});
+      }
+    }
+  }catch(e){console.warn('marca de agua:',e);}
+}
+
+// ── VISTA PREVIA de la planilla general mientras se edita (con datos de ejemplo)
+async function plEdVista(){
+  const dlg=document.getElementById('plVistaDlg'),box=document.getElementById('plVistaBox');
+  box.innerHTML='<div class="pv-carga">Armando la vista previa…</div>';dlg.classList.add('show');
+  try{
+    const e=JSON.parse(JSON.stringify(_plEd));
+    e.titulo=document.getElementById('plEdTitulo').value.trim()||PLANTILLA_BASE.titulo;
+    e.foto=document.getElementById('plEdFoto').value;
+    e.secA.nombre=document.getElementById('plEdNomA').value.trim()||PLANTILLA_BASE.secA.nombre;
+    e.secB.nombre=document.getElementById('plEdNomB').value.trim()||PLANTILLA_BASE.secB.nombre;
+    const extra={};
+    (e.campos||[]).forEach(c=>{extra[c.id]=c.tipo==='numero'?'1250':c.tipo==='fecha'?hoy():c.tipo==='si_no'?'Sí':c.tipo==='opciones'?((c.opciones||[])[0]||''):c.tipo==='firma'?'':'Ejemplo';});
+    const punto={id:'ej',nombre:'Kiosco de ejemplo',dir:'Calle Ejemplo 123',localidad:'Rosario',tipo:'Kiosco'};
+    const visita={done:true,planilla:{fecha:hoy(),hora:ahora(),chC:e.secA.items.map((_,i)=>i===2),chV:e.secB.items.map((_,i)=>i===0),obs:'Así se ve una observación escrita en la visita.',extra}};
+    _plVista=e;
+    let b64;try{b64=await generarPlanillaGeneralPDF(punto,visita);}finally{_plVista=null;}
+    await cargarPdfJs();
+    const bin=atob(b64),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
+    box.innerHTML='';
+    for(let n=1;n<=Math.min(pdf.numPages,3);n++){
+      const pg=await pdf.getPage(n),vp=pg.getViewport({scale:1.6}),c=document.createElement('canvas');
+      c.width=vp.width;c.height=vp.height;c.className='pv-hoja';
+      await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;box.appendChild(c);
+    }
+  }catch(err){console.error(err);box.innerHTML='<div class="pv-carga">No se pudo armar la vista previa. Probá de nuevo.</div>';}
+}
+function plVistaCerrar(){document.getElementById('plVistaDlg').classList.remove('show');}
