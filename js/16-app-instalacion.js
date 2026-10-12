@@ -1,6 +1,6 @@
 // Versión, ajuste de pantalla iPhone, instalar como app, modo sin señal
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-10-11 · 54';
+const APP_VERSION='2026-10-11 · 55';
 /* (se ejecuta al final, en js/99-arranque.js) */
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -51,3 +51,13 @@ async function instalarApp(){
 // Refrescar estado de Drive al iniciar
 /* (se ejecuta al final, en js/99-arranque.js) */
 /* (se ejecuta al final, en js/99-arranque.js) */
+
+// Fuerza la última versión: borra la copia guardada de la app (no toca tus datos ni los mapas sin señal) y recarga
+async function actualizarAhora(){
+  showToast('Buscando la última versión…');
+  try{
+    if('serviceWorker' in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));}
+    if(window.caches){const ks=await caches.keys();await Promise.all(ks.filter(k=>/^sube-v\d+/.test(k)).map(k=>caches.delete(k)));}
+  }catch(e){console.warn('actualizar:',e);}
+  setTimeout(()=>location.reload(),600);
+}
