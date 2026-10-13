@@ -58,7 +58,6 @@ body{font-weight:400;letter-spacing:0}
 .tabs .tab:nth-child(3){--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14'/></svg>")}
 .tabs .tab:nth-child(4){--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2'/></svg>")}
 .cnt{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important}
-.toast{bottom:calc(76px + env(safe-area-inset-bottom))!important}
 .inst-bar,#instBar{bottom:calc(72px + env(safe-area-inset-bottom))!important}
 
 /* tarjetas */
@@ -243,3 +242,43 @@ svg.ico{width:16px;height:16px;flex:none;vertical-align:-3px}
 :root[data-theme] .tab.on .ti::before{background:rgb(var(--acc))!important}
 :root[data-theme="dark"] .tab.on .ti::before{background:#bcd0ff!important}
 .leaflet-bar a,.leaflet-bar a:hover{background:#fff!important;color:#0b1220!important;border-bottom:1px solid #d0d5dd!important}
+
+/* ═══ Ronda 5: aviso, horizontal, "No visitada", foco, separador ═══ */
+/* aviso (toast): una sola posición, arriba, con la altura de su texto */
+.toast,:root[data-theme] .toast{top:calc(64px + env(safe-area-inset-top))!important;bottom:auto!important;height:auto!important;min-height:0!important;background:#0b1220!important;color:#fff!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:12px!important;box-shadow:0 8px 24px -8px rgba(11,18,32,.5)!important;padding:11px 18px!important;font-size:13.5px!important;font-weight:500!important;font-family:inherit!important;line-height:1.35!important}
+.toast.err{background:#912018!important}
+:root[data-theme="dark"] .toast{background:#e7ecf6!important;color:#0b1220!important;border-color:transparent!important}
+:root[data-theme="dark"] .toast.err{background:#fda29b!important;color:#3b0a06!important}
+
+/* "No visitada": gris pizarra, distinta de "Cerrada" (roja) */
+.vsn,:root[data-theme] .vsn{background:rgba(71,84,103,.16)!important;color:#344054!important}
+.vsn::before{background:#667085!important}
+:root[data-theme] .vi:has(.vsn){background:rgba(71,84,103,.08)!important;border-color:rgba(71,84,103,.4)!important;box-shadow:inset 5px 0 0 #667085,var(--card-sh)!important}
+:root[data-theme] .vi:has(.vsn) .vnum{background:#667085!important;border-color:#667085!important;color:#fff!important}
+:root[data-theme="dark"] .vsn{color:#cfd6e4!important}
+
+/* foco del teclado visible */
+:focus-visible{outline:2px solid rgb(var(--acc))!important;outline-offset:2px!important}
+.tab:focus-visible{outline-offset:-3px!important;border-radius:12px!important}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none!important}
+
+/* separador "o" de la entrada */
+.gsep{display:flex!important;align-items:center;gap:12px;color:var(--text-mute)!important;font-size:13px!important}
+.gsep::before,.gsep::after{content:"";flex:1;height:1px;background:var(--line-2)}
+
+/* zonas táctiles de 44 px */
+.dup-btn,.pl-close-x,.cfg-close,.perfil-btn,.help-btn,#helpBtn,.hdr button{min-width:44px;min-height:44px}
+.cfg-head button,.cfg-x{min-width:44px;min-height:44px}
+
+/* horizontal / pantallas bajas: barra compacta y mapa visible */
+@media (max-height:520px){
+  .tabs{padding-bottom:2px!important}
+  .tab{flex-direction:row!important;gap:6px!important;justify-content:center!important;padding:6px 4px!important;margin:3px 2px!important;font-size:12px!important}
+  .tab .ti,.tab .ti::before{width:18px!important;height:18px!important}
+  .cnt{padding-bottom:calc(52px + env(safe-area-inset-bottom))!important}
+  #mapa{height:max(300px,calc(100dvh - 130px))!important;min-height:300px}
+  .hdr{padding-top:6px!important;padding-bottom:6px!important}
+  .toast{top:calc(8px + env(safe-area-inset-top))!important}
+  #mapaLeyenda{display:none!important}
+  .sm{padding:6px 10px!important;font-size:12px!important}
+}

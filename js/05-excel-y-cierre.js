@@ -159,7 +159,7 @@ function cerrarDia(){
 // ── STATS
 function updStats(){
   const enRuta=puntos.filter(p=>sel.has(p.id));
-  const hchos=enRuta.filter(p=>visits[p.id]&&visits[p.id].done).length;
+  const hchos=enRuta.filter(p=>{const e=estadoVisita(p.id);return e==='ok'||e==='cerrado';}).length; // verificadas: hechas + cerradas (la «no visitada» no cuenta)
   document.getElementById('s0').textContent=enRuta.length;
   document.getElementById('s1').textContent=hchos;
   document.getElementById('s2').textContent=enRuta.length-hchos;
