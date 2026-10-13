@@ -48,7 +48,12 @@ function renderPerfilEquipo(){
   else if(d) box.innerHTML=`<div class="popc-t">Dupla</div><button class="sm sma" style="width:100%" onclick="dpAbrir()">🤝 Mi dupla${d.companero?' con '+escapeHtml(d.companero.nombre):' (esperando compañero)'}</button>`;
   else box.innerHTML=`<div class="popc-t">Trabajo en grupo (opcional)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="sm smh" onclick="eqMostrarInvitacion()">👥 Unirme al equipo</button><button class="sm sma" onclick="dpAbrir()">🤝 Trabajar en dupla</button></div><div id="eqInvBox" style="display:none;margin-top:8px"><input type="text" id="eqInv" placeholder="Pegá la invitación" autocomplete="off" style="width:100%;font-size:13px;text-align:center;border-radius:12px;padding:9px 10px;border:1px solid rgba(120,150,200,.4)"><button class="sm sma" style="margin-top:6px;width:100%" onclick="eqUnirseDesdeCampo()">Unirme</button></div>`;
 }
-function eqMostrarInvitacion(){const b=document.getElementById('eqInvBox');b.style.display=b.style.display==='none'?'':'none';if(b.style.display==='') document.getElementById('eqInv').focus();}
+function eqMostrarInvitacion(){
+  const b=document.getElementById('eqInvBox');b.style.display=b.style.display==='none'?'':'none';
+  if(b.style.display===''){const i=document.getElementById('eqInv');i.focus();
+    // si copió la invitación, se pega sola
+    try{navigator.clipboard.readText().then(t=>{if(!i.value&&/[?&]e=/.test(t||'')) i.value=t.trim();},()=>{});}catch(e){}}
+}
 // trae los puntos asignados y los suma a la ruta
 async function eqTraerRuta(silencioso){
   try{
@@ -128,7 +133,13 @@ function eqInvitacionEnUrl(){
   if(!codigo||!api) return;
   history.replaceState(null,'',location.pathname);
   if(equipo()) return;
-  confirm2('👥 Te invitaron a un equipo. ¿Unirte? Tu jefe va a ver cuántas visitas hacés y vas a poder recibir tus rutas.',()=>eqUnirse(codigo.toUpperCase(),api).catch(e=>showToast(e.message,true)));
+  const enApp=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(enApp) return confirm2('👥 Te invitaron a un equipo. ¿Unirte? Tu jefe va a ver cuántas visitas hacés y vas a poder recibir tus rutas.',()=>eqUnirse(codigo.toUpperCase(),api).catch(e=>showToast(e.message,true)));
+  // abierto en el navegador: puede unirse acá, o copiar la invitación para pegarla en la app instalada
+  const inv=location.origin+location.pathname+'?e='+encodeURIComponent(codigo)+'&s='+encodeURIComponent(api);
+  confirm2('👥 Te invitaron a un equipo. Tocá «Sí, confirmar» para unirte desde esta ventana. Si usás LogiMap instalada en el celular, tocá «Cancelar»: te copio la invitación y la pegás en la app (Perfil → Unirme al equipo).',
+    ()=>eqUnirse(codigo.toUpperCase(),api).catch(e=>showToast(e.message,true)),
+    ()=>{try{navigator.clipboard.writeText(inv).then(()=>showToast('Invitación copiada ✓ Abrí LogiMap → Perfil → Unirme al equipo'),()=>showToast('No pude copiarla: pedile el enlace a tu jefe',true));}catch(e){showToast('No pude copiarla',true);}});
 }
 
 // posición en vivo para el mapa del jefe (opcional, apagada por defecto; solo con la app abierta)
