@@ -166,6 +166,11 @@
         <span class="cfg-ar">›</span>
       </button>
       <input type="file" id="copiaFile" accept=".json,application/json" style="display:none" onchange="restaurarCopia(this)"/>
+      <button class="cfg-item" onclick="tutAbrir()">
+        <span class="cfg-ic">📖</span>
+        <div class="cfg-tx"><div class="cfg-nm">Cómo se usa</div><div class="cfg-ds">Guía rápida de 5 pasos</div></div>
+        <span class="cfg-ar">›</span>
+      </button>
       <button class="cfg-item" onclick="verDiagnostico()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg></span>
         <div class="cfg-tx"><div class="cfg-nm">Diagnóstico</div><div class="cfg-ds">Información para soporte si algo falla</div></div>
@@ -465,6 +470,7 @@
 <script src="js/26-equipo.js"></script>
 <script src="js/27-dupla.js"></script>
 <script src="js/28-contador.js"></script>
+<script src="js/29-tutorial.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}
