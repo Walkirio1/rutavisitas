@@ -2,12 +2,21 @@
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Política de privacidad · LogiMap</title>
 <style>
-:root{color-scheme:light dark}
-body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f3f8ff;color:#12244a}
-main{max-width:720px;margin:0 auto;padding:28px 20px 60px}
-h1{font-size:26px;margin:0 0 4px;color:#0d2a78}h2{font-size:18px;margin:28px 0 6px;color:#0d2a78}
-p,li{color:#2b3a5e}a{color:#2563eb}small{color:#5b6b8f}
-@media (prefers-color-scheme:dark){body{background:#070d1c;color:#e6eefc}h1,h2{color:#9cc2ff}p,li{color:#c6d4ee}small{color:#8ea0c4}a{color:#7db0ff}}
+@font-face{font-family:'IBM Plex Sans';font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;font-display:swap;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;font-display:swap;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+:root{color-scheme:light dark;--bg:#e6eaf1;--card:#fff;--line:#d5dbe6;--tx:#0b1220;--soft:#475467;--mute:#5b6678;--ac:#1d4ed8}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.65 'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
+main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+main>a:first-child{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--tx);text-decoration:none;font-size:14px;font-weight:500;margin-bottom:18px}
+h1{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px}
+small{color:var(--mute);font-size:13.5px}
+h2{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:30px 2px 10px}
+p,ul{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 10px;color:var(--soft);font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,.07)}
+ul{padding-left:36px}li{margin:6px 0}li::marker{color:var(--ac)}
+b{color:var(--tx);font-weight:600}a{color:var(--ac)}code{background:#eef1f6;border-radius:5px;padding:1px 6px;font-size:13.5px}
+@media (prefers-color-scheme:dark){:root{--bg:#070d19;--card:#131c2e;--line:#27334d;--tx:#eef1f7;--soft:#b3bdd1;--mute:#8b97ae;--ac:#7ea3ff}code{background:#1c2840}}
 </style></head><body><main>
 <a href="./">← Volver a la app</a>
 
@@ -34,7 +43,7 @@ p,li{color:#2b3a5e}a{color:#2563eb}small{color:#5b6b8f}
 <li><b>Georef AR (datos.gob.ar)</b> y <b>OpenStreetMap / Nominatim</b>: se les envía la dirección de cada punto para ubicarla en el mapa.</li>
 <li><b>OpenStreetMap</b>: se descargan los mosaicos del mapa que ves.</li>
 <li><b>Google</b>: para el inicio de sesión y para guardar en tu Drive.</li>
-<li>Librerías de código (por ejemplo para leer Excel, completar PDF, mostrar el mapa y leer texto de fotos) que se descargan de redes de distribución públicas.</li>
+<li>Para leer texto de una foto de lista, la app descarga una librería (Tesseract) de una red pública. El resto de las librerías (Excel, PDF y mapa) vienen dentro de la app.</li>
 </ul>
 
 <h2>Qué no hacemos</h2>

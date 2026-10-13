@@ -36,7 +36,7 @@ function openPerfil(){
   document.getElementById('perfilNom').value=p.nombre||'';
   document.getElementById('perfilMail').textContent=p.email||drv.user||(modo==='local'?'Sin cuenta de Google':'');
   const est=document.getElementById('perfilEst');
-  est.textContent=conn?'● Conectado a Google Drive':(modo==='local'?'● Sin Google · solo en este celular':'● Sin conexión con Drive');
+  est.innerHTML=conn?'<span class="gmark">'+G_SVG+'</span>Conectado a Google Drive':(modo==='local'?'Sin Google · solo en este celular':'Sin conexión con Drive');
   est.classList.toggle('off',!conn);
   const reco=document.getElementById('perfilReco');
   reco.innerHTML=G_SVG+'<span>'+(modo==='local'?'Conectar con Google':'Reconectar con Google')+'</span>';
