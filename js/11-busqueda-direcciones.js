@@ -146,7 +146,7 @@ async function esperarRed(){
 }
 
 async function geocodificarTodos(silent){
-  if(geocodingInProgress){showToast('Ya hay un proceso en curso',true);return;}
+  if(geocodingInProgress){if(!silent)showToast('Ya hay un proceso en curso',true);return;}
   const pendientes=puntos.filter(p=>!p.lat);
   if(!pendientes.length){
     if(!silent)showToast('No hay puntos pendientes ✓');
@@ -197,6 +197,7 @@ async function geocodificarTodos(silent){
     geocodingInProgress=false;
     mantenerPantalla(false);
     if(mapa)renderMapa();
+    renderP(); // la lista se entera sola de que ya hay ubicación
   }
 
   const quedan=puntos.filter(p=>!p.lat).length;

@@ -333,6 +333,7 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
   const pl=visita.planilla||{},val=pl.extra||{},campos=plPdf.campos||[],paginas=doc.getPages();
   const L=s=>String(s==null?'':s).replace(/[^\x20-\x7EÀ-ÿ]/g,'');
   const auto={fecha:pl.fecha||hoy(),hora:pl.hora||ahora(),id:punto.id||'',direccion:(punto.dir||'')+(punto.localidad?' - '+punto.localidad:''),nombre:punto.nombre||'',rubro:pl.rubro||punto.tipo||''};
+  const monto=(c,v)=>(c.tipo==='numero'&&c.moneda&&v!==undefined&&String(v).trim()!=='')?fmtMonto(parseFloat(String(v).replace(',','.'))||0):v; // 12,50 como en pantalla
   const texto=(pg,c,s)=>{
     s=L(s);if(!s) return;
     let tam=Math.max(7,Math.min(12,c.h*.8));
@@ -340,7 +341,7 @@ async function rellenarPorCampos(pdfB64,plPdf,punto,visita){
     pg.drawText(s,{x:c.x+1,y:c.y+(c.h-tam)/2+tam*.18,size:tam,font:f,color:rgb(0,0,0)});
   };
   for(const c of campos){
-    const pg=paginas[Math.min(c.pag||0,paginas.length-1)],v=val[c.id];
+    const pg=paginas[Math.min(c.pag||0,paginas.length-1)],v=monto(c,val[c.id]);
     if(c.via==='form'&&form){ // campo real del formulario del PDF
       try{
         if(c.tipo==='tilde'){const cb=form.getCheckBox(c.nombreForm);if(v==='Sí')cb.check();else cb.uncheck();}

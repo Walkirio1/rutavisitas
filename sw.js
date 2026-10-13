@@ -2,10 +2,11 @@
 // - Archivos de la app: red primero (siempre la versión nueva), con respaldo en caché.
 // - Librerías externas (mapas, Excel, PDF, fuentes): caché primero.
 // - Todo lo demás (Google Drive, geocodificación, mapa base) va directo a la red.
-const CACHE = 'sube-v63';
+const CACHE = 'sube-v64';
 const TILES = 'sube-tiles'; // mapa guardado para usar sin señal (no se borra al actualizar)
 const PRECACHE = [
-  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './icons/icon-192.png', './icons/marca-agua.png',
+  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/marca-agua.png',
+  './icons/hero.webp', './icons/nav-puntos.webp', './icons/nav-visitas.webp', './icons/nav-mapa.webp', './icons/nav-ajustes.webp', './icons/bg-claro.webp', './icons/bg-oscuro.webp',
   './css/01-base.css',
   './css/02-movil-y-entrada.css',
   './css/03-nuevo-diseno.css',

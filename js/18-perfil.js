@@ -36,7 +36,7 @@ function openPerfil(){
   document.getElementById('perfilNom').value=p.nombre||'';
   document.getElementById('perfilMail').textContent=p.email||drv.user||(modo==='local'?'Sin cuenta de Google':'');
   const est=document.getElementById('perfilEst');
-  est.textContent=conn?'● Conectado a Google Drive':(modo==='local'?'● Modo sin conexión':'● Sin conexión con Drive');
+  est.textContent=conn?'● Conectado a Google Drive':(modo==='local'?'● Sin Google · solo en este celular':'● Sin conexión con Drive');
   est.classList.toggle('off',!conn);
   const reco=document.getElementById('perfilReco');
   reco.innerHTML=G_SVG+'<span>'+(modo==='local'?'Conectar con Google':'Reconectar con Google')+'</span>';
@@ -77,9 +77,9 @@ async function perfilCambiarFoto(input){
   }catch(e){showToast('No se pudo usar esa foto',true);}
 }
 function perfilSeguirSinConexion(){
-  confirm2('¿Desconectar Google y seguir sin conexión? Tus visitas quedan solo en este celular (no se envían a Drive). Podés volver a conectar cuando quieras.',function(){
+  confirm2('¿Desconectar Google y seguir sin Google? Tus visitas quedan solo en este celular (no se envían a Drive). Podés volver a conectar cuando quieras.',function(){
     closePerfil();disconnectDrive();lsSet(SK_MODO,'local');renderPerfilBtn();
-    showToast('Seguís sin conexión');
+    showToast('Seguís sin Google: tus visitas quedan en este celular');
   });
 }
 function closePerfil(){document.getElementById('perfilDlg').classList.remove('show');}

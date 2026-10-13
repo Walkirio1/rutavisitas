@@ -113,5 +113,5 @@ function showToast(msg,err){
   const t=document.getElementById('toast');
   t.innerHTML=htmlConIconos(msg);t.classList.toggle('err',!!err);
   t.classList.add('show');
-  toastTm=setTimeout(()=>t.classList.remove('show'),3000);
+  toastTm=setTimeout(()=>t.classList.remove('show'),err?3400:2400);
 }

@@ -25,7 +25,12 @@ async function dpCrear(){
     lsSet(SK_DUPLA,{api:dpBase(),token:r.token,codigo:r.codigo,rol:r.rol,companero:null,version:0});
     if(_dpEs){_dpEs.close();_dpEs=null;}
     dpArrancar();dpPintarDlg();dpPintarCabecera();
-  }catch(e){showToast(e.message==='Failed to fetch'?'No hay conexión con el servidor':e.message,true);}
+  }catch(e){
+    const msg=e.message==='Failed to fetch'||e.name==='AbortError'?'No hay conexión con el servidor':e.message;
+    showToast(msg,true);
+    const box=document.getElementById('dpBox');
+    if(box&&!dupla()) box.innerHTML='<div class="dp-t">No pude crear la dupla</div><div style="font-size:13px;color:var(--text-soft);margin:6px 0 12px">'+escapeHtml(msg)+'. Revisá tu internet y probá de nuevo.</div><button class="btn ba" onclick="dpPintarDlg();dpCrear()">Reintentar</button>';
+  }
 }
 async function dpUnirse(){
   const cod=(document.getElementById('dpCod').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
