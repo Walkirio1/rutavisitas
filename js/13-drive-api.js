@@ -215,6 +215,31 @@ async function rellenarPlanillaPDF(pdfB64, punto, visita){
   return btoa(bin2);
 }
 
+// Nombre de los archivos de una visita: primero la dirección y al lado el nombre del comercio ("Córdoba 1500 - Kiosco Pedro")
+function limpiarParaArchivo(t){return String(t||'').replace(/[\\/:*?"<>|\r\n\t]+/g,' ').replace(/\s+/g,' ').trim();}
+function nombreVisita(punto){
+  const dir=limpiarParaArchivo(punto&&punto.dir),nom=limpiarParaArchivo(punto&&punto.nombre);
+  let base=dir&&nom&&dir.toLowerCase()!==nom.toLowerCase()?dir+' - '+nom:(dir||nom||('Punto '+((punto&&punto.id)||'')));
+  // si otro punto de la lista se llama igual, se suma el ID para que no se pisen
+  const igual=(typeof puntos!=='undefined'?puntos:[]).filter(q=>q&&punto&&q.id!==punto.id&&limpiarParaArchivo(q.dir).toLowerCase()===dir.toLowerCase()&&limpiarParaArchivo(q.nombre).toLowerCase()===nom.toLowerCase()).length;
+  if(igual) base+=' ('+punto.id+')';
+  return base.substring(0,110).trim();
+}
+// sube el archivo; si ya había uno con ese nombre en la carpeta (por ejemplo al reenviar), lo reemplaza en vez de duplicarlo
+async function driveSubirOReemplazar(nombre,mime,content,parentId){
+  let viejos=[];
+  try{
+    await ensureToken();
+    const q=[`name='${nombre.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'`,'trashed=false'];
+    if(parentId) q.push(`'${parentId}' in parents`);
+    const r=await gapi.client.drive.files.list({q:q.join(' and '),fields:'files(id)',pageSize:10});
+    viejos=(r.result.files||[]).map(f=>f.id);
+  }catch(e){console.warn('buscar archivo previo:',e);}
+  const nuevo=await driveUploadFile(nombre,mime,content,parentId);
+  for(const id of viejos){try{await gapi.client.drive.files.delete({fileId:id});}catch(e){console.warn('borrar archivo previo:',e);}}
+  return nuevo;
+}
+
 // Subir visita (foto + PDF rellenado) a Drive
 async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   if(!drv.connected){marcarEnvio(punto.id,'pendiente','Sin conexión con Drive');return false;}
@@ -223,16 +248,12 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
     const root = await driveGetRootFolderId();
     const fechaCarpeta = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
     const dia = await driveGetOrCreateFolder(fechaCarpeta, root);
-    const subNombre = safeName(punto.id+'_'+(punto.nombre||'punto'));
-    const sub = await driveGetOrCreateFolder(subNombre, dia);
-
-    const hora = (new Date()).toTimeString().slice(0,5).replace(':','');
-    const prefix = `${fechaCarpeta}_${hora}`;
+    const base = nombreVisita(punto); // todo va directo en la carpeta del día, sin subcarpeta por visita
 
     // Subir foto si hay
     if(visita.planilla && visita.planilla.foto && fotoModo()==='aparte'){
       try{
-        const r = await driveUploadFile(`${prefix}_foto.jpg`,'image/jpeg',visita.planilla.foto,sub);
+        const r = await driveSubirOReemplazar(`${base} (foto).jpg`,'image/jpeg',visita.planilla.foto,dia);
         if(visits[punto.id]&&visits[punto.id].planilla) visits[punto.id].planilla.driveFotoUrl = r.webViewLink;
       }catch(e){console.error('foto:',e);fallos.push('la foto');}
     }
@@ -247,8 +268,7 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
           console.error('Error rellenando PDF, subo el original:',e);
           showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> No pude rellenar el PDF, se sube en blanco',true);
         }
-        const nombreLimpio = safeName(pdfNombre||'planilla').replace(/\.pdf$/i,'');
-        const r = await driveUploadFile(`${prefix}_${nombreLimpio}_rellenado.pdf`,'application/pdf',pdfFinal,sub);
+        const r = await driveSubirOReemplazar(`${base}.pdf`,'application/pdf',pdfFinal,dia);
         if(visits[punto.id]&&visits[punto.id].planilla) visits[punto.id].planilla.drivePdfUrl = r.webViewLink;
       }catch(e){console.error('pdf:',e);fallos.push('el PDF');}
     }else{
