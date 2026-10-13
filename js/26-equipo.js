@@ -133,13 +133,28 @@ function eqInvitacionEnUrl(){
 
 // posición en vivo para el mapa del jefe (opcional, apagada por defecto; solo con la app abierta)
 const eqPosOn=()=>!!lsGet('sube:eqpos');
-async function eqPosEnviar(){
-  if(!equipo()||!eqPosOn()||document.hidden||!navigator.onLine) return;
-  const g=await ubiPos(8000);if(!g) return;
-  try{await eqApi('POST','/api/posicion',{lat:g.lat,lng:g.lng,prec:g.prec});}catch(e){}
+// pide la posición: primero con GPS y, si no llega (adentro, sin señal), con la ubicación aproximada
+function eqPosPedir(){
+  return new Promise(res=>{
+    if(!navigator.geolocation) return res({err:'Este celular no permite usar la ubicación'});
+    const pedir=(alta,ms,sig)=>navigator.geolocation.getCurrentPosition(
+      p=>{_ubi={lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),prec:Math.round(p.coords.accuracy||0),ts:Date.now()};res({pos:_ubi});},
+      er=>{if(er.code===1) return res({err:'Permiso de ubicación denegado: activalo en los ajustes del navegador (candado → Permisos → Ubicación) y recargá'});
+        if(sig) return sig();res({err:'No pude obtener tu ubicación (probá afuera o con el GPS prendido)'});},
+      {enableHighAccuracy:alta,timeout:ms,maximumAge:120000});
+    pedir(true,12000,()=>pedir(false,15000,null));
+  });
+}
+async function eqPosEnviar(manual){
+  if(!equipo()||!eqPosOn()||!navigator.onLine) return;
+  if(document.hidden&&!manual) return;
+  const r=await eqPosPedir();
+  if(!r.pos){if(manual===true) showToast(r.err,true);return;}
+  try{await eqApi('POST','/api/posicion',{lat:r.pos.lat,lng:r.pos.lng,prec:r.pos.prec});if(manual===true) showToast('Tu jefe ya te ve en el mapa ✓');}
+  catch(e){if(manual===true) showToast('No pude avisarle a tu jefe: '+e.message,true);}
 }
 async function eqPosCambio(on){
   lsSet('sube:eqpos',on);
-  if(on){showToast('Activado: tu jefe te ve en el mapa mientras usás la app');eqPosEnviar();}
+  if(on){showToast('Buscando tu ubicación…');eqPosEnviar(true);}
   else{try{await eqApi('POST','/api/posicion',{off:true});}catch(e){}showToast('Ya no compartís tu posición');}
 }

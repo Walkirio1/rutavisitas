@@ -116,8 +116,8 @@ setInterval(eqVaciarCola,60000);
 setInterval(eqDuplaAvisar,60000);
 setTimeout(eqPerfilSync,3000);setInterval(eqPerfilSync,60000);
 setInterval(()=>{if(document.visibilityState==='visible') eqRevisarRuta();},60000);
-setInterval(eqPosEnviar,60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(eqPosEnviar,1500);});
+setInterval(()=>eqPosEnviar(),60000);setTimeout(()=>eqPosEnviar(),4000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(()=>eqPosEnviar(),1500);});
 
 // de 27-dupla.js
 dpIniciar();
