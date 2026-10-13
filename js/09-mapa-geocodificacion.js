@@ -63,8 +63,21 @@ function initMapa(){
     showToast('✓ Ubicado: '+(pt.nombre||pt.dir));
     renderMapa();
   });
-  // Pequeño delay para que el contenedor calcule bien el tamaño
+  // El contenedor puede estar oculto o sin tamaño cuando se crea: se recalcula cada vez que cambia de tamaño
+  try{new ResizeObserver(()=>{if(mapa) mapa.invalidateSize();}).observe(document.getElementById('mapa'));}catch(e){}
   setTimeout(()=>mapa.invalidateSize(),200);
+}
+// Si el mapa quedó en blanco (sin tamaño o sin cuadros dibujados), lo redibuja: evita tener que cerrar y abrir la app
+function repararMapa(intento){
+  if(!mapa) return;
+  const el=document.getElementById('mapa');
+  if(!el||el.style.display==='none'||!el.offsetHeight) return;
+  mapa.invalidateSize();
+  const hay=el.querySelectorAll('.leaflet-tile-loaded').length;
+  if(!hay&&(intento||0)<4){
+    mapa.eachLayer(l=>{if(l.redraw) l.redraw();});
+    setTimeout(()=>repararMapa((intento||0)+1),1500);
+  }
 }
 
 // Renderizar markers en el mapa + lista de pendientes

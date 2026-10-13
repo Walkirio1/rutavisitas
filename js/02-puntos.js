@@ -21,7 +21,7 @@ function showTab(n){
   if(bar) bar.classList.toggle('show', n>=3);
   document.body.classList.toggle('sin-inst',n===2||n>=3); // el cartel de instalar no tapa el mapa ni Ajustes
   if(n===1){renderV();updStats();}
-  if(n===2){initMapa();renderMapa();}
+  if(n===2){initMapa();renderMapa();[60,300,900].forEach(ms=>setTimeout(()=>{if(_tabPos===2) repararMapa();},ms));}
   if(n===5){renderDriveTab();}
   if(n===6) renderRes();
 }

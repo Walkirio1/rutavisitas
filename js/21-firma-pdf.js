@@ -6,11 +6,11 @@ async function cargarPdfJs(){
   if(window.pdfjsLib) return;
   await new Promise((res,rej)=>{
     const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.src='lib/pdfjs/pdf.min.js';
     s.onload=res;s.onerror=()=>rej(new Error('No se pudo cargar el visor de PDF. Revisá tu internet.'));
     document.head.appendChild(s);
   });
-  if(!window.pdfjsLib.GlobalWorkerOptions.workerSrc) window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  if(!window.pdfjsLib.GlobalWorkerOptions.workerSrc) window.pdfjsLib.GlobalWorkerOptions.workerSrc=new URL('lib/pdfjs/pdf.worker.min.js',location.href).href;
 }
 
 // Después de guardar una planilla nueva: ¿es igual a la oficial o se marcan sus campos?
