@@ -25,7 +25,8 @@ function eqLeerInvitacion(txt){
 }
 async function eqUnirse(codigo,api){
   const nombre=(perfil&&perfil().nombre)||'';
-  const r=await eqApi('POST','/api/unirse',{codigo,nombre},{api});
+  const foto=typeof dpMiniatura==='function'?await dpMiniatura():'';
+  const r=await eqApi('POST','/api/unirse',{codigo,nombre,foto},{api});
   lsSet(SK_EQ,{api,token:r.token,equipo:r.equipo,codigo,nombre:r.nombre});
   showToast('Te uniste a «'+r.equipo+'» ✓');renderPerfilEquipo();
   eqRevisarRuta(true);
@@ -75,6 +76,14 @@ async function eqRevisarRuta(forzar){
     if(!r.puntos.length||(!forzar&&lsGet(SK_EQVISTO)===clave)) return;
     confirm2('📥 '+r.nombre+', tu jefe te asignó '+r.puntos.length+' punto'+(r.puntos.length>1?'s':'')+' para hoy. ¿Traerlos a tu ruta?',()=>eqTraerRuta(),()=>lsSet(SK_EQVISTO,clave));
   }catch(err){}
+}
+// nombre y foto de tu perfil, para que el jefe te vea con tu nombre y tu cara (se reenvía si los cambiás)
+async function eqPerfilSync(){
+  const e=equipo();if(!e||!navigator.onLine) return;
+  const nombre=((typeof perfil==='function'&&perfil().nombre)||'').trim(),foto=typeof dpMiniatura==='function'?await dpMiniatura():'';
+  const clave=e.token+'|'+nombre+'|'+foto.length+'|'+foto.slice(-40);
+  if(lsGet('sube:eqperfil')===clave) return;
+  try{await eqApi('POST','/api/miembro-perfil',{nombre,foto});lsSet('sube:eqperfil',clave);}catch(err){}
 }
 // nombre del compañero de dupla (vacío si trabaja solo): el jefe ve a la dupla como una sola unidad
 const eqCompanero=()=>{try{const d=dupla();return (d&&d.companero&&d.companero.nombre)||'';}catch(e){return '';}};

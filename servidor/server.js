@@ -198,6 +198,12 @@ const rutas={
     run('UPDATE miembros SET dupla=? WHERE id=?',txt(b.con,80)||null,m.id);
     avisar(m.equipo_id,'miembro');return [200,{ok:true}];
   },
+  'POST /api/miembro-perfil':async(req,b)=>{ // nombre y foto actuales del perfil
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const nombre=txt(b.nombre,60).trim();
+    run('UPDATE miembros SET nombre=COALESCE(NULLIF(?,\'\'),nombre),foto=? WHERE id=?',nombre,txt(b.foto,60000),m.id);
+    avisar(m.equipo_id,'miembro');return [200,{ok:true}];
+  },
   'POST /api/posicion':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
     if(b.off){run('DELETE FROM posiciones WHERE miembro_id=?',m.id);avisar(m.equipo_id,'posicion');return [200,{ok:true}];}
@@ -216,7 +222,7 @@ const rutas={
       const v=todos('SELECT * FROM visitas WHERE miembro_id=? AND fecha=?',m.id,f);
       const pos=ult('SELECT lat,lng,prec,ts FROM posiciones WHERE miembro_id=? AND ts>?',m.id,Date.now()-15*60000)||null;
       const traza=todos('SELECT lat,lng,ts FROM trazas WHERE miembro_id=? AND fecha=? ORDER BY id LIMIT 1500',m.id,f).map(x=>[x.lat,x.lng,x.ts]);
-      return {id:m.id,nombre:m.nombre,dupla:m.dupla||null,visto:m.visto,pos,traza,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
+      return {id:m.id,nombre:m.nombre,foto:m.foto||'',dupla:m.dupla||null,visto:m.visto,pos,traza,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
     });
     const visitas=todos('SELECT v.*,m.nombre AS miembro FROM visitas v JOIN miembros m ON m.id=v.miembro_id WHERE v.equipo_id=? AND v.fecha=? ORDER BY v.ts DESC LIMIT 500',e.id,f);
     return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas}];

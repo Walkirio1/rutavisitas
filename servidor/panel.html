@@ -59,6 +59,7 @@ async function cargar(){
   pintar();
 }
 function hora(ts){return ts?new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'';}
+const av=x=>x.foto?`<img src="${esc(x.foto)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid ${colDe(x.id)};flex:none">`:`<span style="width:44px;height:44px;border-radius:50%;background:${colDe(x.id)};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">${esc((x.nombre||'?').slice(0,1).toUpperCase())}</span>`;
 function pintar(){
   const m=D.miembros,as=m.reduce((a,x)=>a+x.asignados,0),ok=m.reduce((a,x)=>a+x.hechos,0),ce=m.reduce((a,x)=>a+x.cerrados,0),pe=m.reduce((a,x)=>a+x.pendientes,0);
   const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
@@ -66,7 +67,7 @@ function pintar(){
   <main>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
   <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
-  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
+  ${m.length?m.map(x=>`<div class="mb">${av(x)}<div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
     <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
     <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
