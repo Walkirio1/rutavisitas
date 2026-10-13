@@ -16,8 +16,8 @@ function renderPendientes(){
   box.innerHTML=`<div class="pend-bar">
     <div>⚠️ <strong>${n}</strong> visita${n>1?'s':''} guardada${n>1?'s':''} en la app pero <strong>sin enviar a Drive</strong>. No se perdió nada.</div>
     <div class="pb-btns">
-      <button class="sm sma" onclick="reintentarPendientes()">☁️ Reintentar</button>
-      <button class="sm smh" onclick="guardarEnCelular()">📂 Guardar en el celular</button>
+      <button class="sm sma" onclick="reintentarPendientes()">Reintentar</button>
+      <button class="sm smh" onclick="guardarEnCelular()">Guardar en el celular</button>
     </div>
   </div>`;
 }
@@ -36,9 +36,9 @@ function mostrarDlgEnvio(msg,botones){
 }
 function avisarNoEnviado(id){
   const p=puntos.find(x=>x.id===id);
-  mostrarDlgEnvio(`⚠️ La visita de «${(p&&(p.nombre||p.dir))||id}» se guardó en la app, pero NO se envió a Drive. No se perdió nada: podés reintentar o guardarla en el celular.`,[
-    {txt:'☁️ Reintentar ahora',cls:'ba',fn:()=>reintentarPendientes()},
-    {txt:'📂 Guardar en el celular',cls:'bd',fn:()=>guardarEnCelular([id])},
+  mostrarDlgEnvio(`La visita de «${(p&&(p.nombre||p.dir))||id}» se guardó en la app, pero NO se envió a Drive. No se perdió nada: podés reintentar o guardarla en el celular.`,[
+    {txt:'Reintentar ahora',cls:'ba',fn:()=>reintentarPendientes()},
+    {txt:'Guardar en el celular',cls:'bd',fn:()=>guardarEnCelular([id])},
     {txt:'Más tarde',cls:'bd'}
   ]);
 }
@@ -128,7 +128,7 @@ async function guardarEnCelular(ids){
       if(e&&e.name==='AbortError') return; // el usuario cerró la hoja
       // el navegador pide un toque nuevo para compartir: se ofrece un botón
       mostrarDlgEnvio(files.length+' archivo'+(files.length>1?'s':'')+' listo'+(files.length>1?'s':'')+'. Tocá para guardarlos en el celular.',[
-        {txt:'📂 Guardar en el celular',cls:'ba',fn:compartirListos},
+        {txt:'Guardar en el celular',cls:'ba',fn:compartirListos},
         {txt:'⬇️ Descargar',cls:'bd',fn:()=>descargarArchivos(files)},
         {txt:'Cancelar',cls:'bd'}
       ]);

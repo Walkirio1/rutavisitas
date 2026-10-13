@@ -88,7 +88,7 @@ setTimeout(()=>{
   const forzar=new URLSearchParams(location.search).get('instalar')==='1'; // abrir la app con ?instalar=1 muestra siempre el aviso
   const cerrado=lsGet('sube:instdismiss2'); // clave nueva: ignora los cierres viejos
   if(ya||(!forzar&&cerrado&&Date.now()-cerrado<864e5)) return;
-  document.getElementById('instBar').classList.add('show');
+  const ib=document.getElementById('instBar');if(ib) ib.classList.add('show');
 },2500);
 
 // de 16-app-instalacion.js

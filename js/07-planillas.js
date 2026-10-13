@@ -24,9 +24,9 @@ function renderPlanillas(){
     </div>`;
   const hayDef=plDefId&&planillas.some(x=>x.id===plDefId),modo=modoPlanilla();
   plList.innerHTML=
-    fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">✏️ Editar</button>')+
+    fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">Editar</button>')+
     fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
-    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · 🧩 '+pl.campos.length+' campos':(pl.firma?' · ✍️ con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">✨ Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">🧩 Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">✍️ Firma</button>${planillas.some(o=>o.id!==pl.id&&o.campos&&o.campos.length)?`<button class="sm smh" onclick="cpAbrir('${pl.id}')">📋 Copiar</button>`:''}<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
+    planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · '+pl.campos.length+' campos':(pl.firma?' · con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">Firma</button>${planillas.some(o=>o.id!==pl.id&&o.campos&&o.campos.length)?`<button class="sm smh" onclick="cpAbrir('${pl.id}')">Copiar</button>`:''}<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
 let nuevaPdfB64=null;
@@ -131,7 +131,7 @@ function openPl(id){
   const bg=document.getElementById('btnGuardarVisita');
   const bs=document.getElementById('btnSoloGuardar');
   if(bs) bs.style.display=drv.connected?'':'none'; // sin Drive, el botón principal ya solo guarda
-  if(bg) bg.innerHTML=drv.connected?(v.done?'☁️ Reenviar':'☁️ Enviar visita'):'💾 Guardar visita';
+  if(bg) bg.innerHTML=drv.connected?(v.done?'Reenviar':'Enviar visita'):'Guardar visita';
 
   const bd=document.getElementById('btnDesmarcar');
   if(bd) bd.style.display=v.done?'':'none'; // solo si ya estaba marcada como hecha
@@ -232,7 +232,7 @@ async function guardarVisita(soloGuardar,confirmado){
   if(soloGuardar){
     // solo guardada en la app: no se envía ni queda pendiente
     if(modoLocal) mostrarDlgEnvio('Visita guardada en la app. ¿Querés guardar también el PDF y la foto en el celular?',[
-      {txt:'📂 Guardar en el celular',cls:'ba',fn:()=>guardarEnCelular([idv])},
+      {txt:'Guardar en el celular',cls:'ba',fn:()=>guardarEnCelular([idv])},
       {txt:'Más tarde',cls:'bd'}
     ]);
   }else if(punto){

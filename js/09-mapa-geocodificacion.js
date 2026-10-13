@@ -107,8 +107,8 @@ function renderMapa(noFit){
   const pt=(c)=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:4px;vertical-align:-1px"></span>`;
   const ley=document.getElementById('mapaLeyenda');
   if(ley) ley.innerHTML=`<span>${pt('#94a3b8')}Sin elegir ${nSin}</span><span>${pt('#3b82f6')}Voy ${nRuta}</span><span>${pt('#10b981')}Visitado ${nVisit}</span><span>${pt('#ef4444')}Cerrado / no visitado ${nCerr}</span>
-    <button class="sm ${modoInicio||inicioId?'sma':'smh'}" style="margin-left:auto" onclick="toggleModoInicio()">🚩 ${modoInicio?'Tocá el punto…':(inicioId&&puntos.find(x=>x.id===inicioId)?'Arranco: '+escapeHtml((puntos.find(x=>x.id===inicioId).nombre||'').slice(0,18)):'Dónde arranco')}</button>
-    <button class="sm ${modoMarcar?'sma':'smh'}" onclick="toggleModoMapa()">${modoMarcar?'🔵 Tocar = marcar':'ℹ️ Tocar = ver info'}</button>`;
+    <button class="sm ${modoInicio||inicioId?'sma':'smh'}" style="margin-left:auto" onclick="toggleModoInicio()">${modoInicio?'Tocá el punto…':(inicioId&&puntos.find(x=>x.id===inicioId)?'Arranco: '+escapeHtml((puntos.find(x=>x.id===inicioId).nombre||'').slice(0,18)):'Dónde arranco')}</button>
+    <button class="sm ${modoMarcar?'sma':'smh'}" onclick="toggleModoMapa()">${modoMarcar?'Tocar = marcar':'Tocar = ver info'}</button>`;
 
   // lista de puntos sin geocodificar (el cartel se puede tocar para ver cuáles son)
   const pendList=document.getElementById('geoPendList');
@@ -117,7 +117,7 @@ function renderMapa(noFit){
       const i=puntos.indexOf(p);
       return `<div style="padding:8px 0;border-top:1px solid rgba(212,165,116,.2)">
         <div style="font-weight:700;color:var(--text)">${escapeHtml(p.nombre||'(sin nombre)')} <span style="color:var(--text-mute);font-weight:500">· ID ${escapeHtml(p.id)}</span></div>
-        <div style="color:var(--text-soft);margin:2px 0">📍 ${escapeHtml(p.dir)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
+        <div style="color:var(--text-soft);margin:2px 0">${escapeHtml(p.dir)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
         <div style="color:var(--text-mute);margin-bottom:6px">Motivo: ${escapeHtml(p.geoErr||'pendiente de geocodificar')}${p.geoProbadas&&p.geoProbadas.length?'<br>Probé: '+escapeHtml(p.geoProbadas.join(' · ')):''}</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
           <input type="text" value="${escapeHtml(manualQ[i]!==undefined?manualQ[i]:(p.dir||''))}" placeholder="Corregí la dirección o escribí el nombre del lugar"
@@ -125,7 +125,7 @@ function renderMapa(noFit){
           <button class="sm sma" onclick="buscarManual(${i})">🔎 Buscar</button>
         </div>
         ${htmlResultadosManual(i)}
-        <button class="sm smh" onclick="ubicarManual(${i})">📍 Ubicar tocando el mapa</button>
+        <button class="sm smh" onclick="ubicarManual(${i})">Ubicar tocando el mapa</button>
       </div>`;
     }).join('');
     pendList.innerHTML=`<div class="geo-pend">
@@ -154,10 +154,10 @@ function renderMapa(noFit){
     const gmUrl = urlNavegar(p.lat,p.lng);
     const popup = `
       <div class="popup-title">${escapeHtml(p.nombre)}</div>
-      <div class="popup-dir">📍 ${escapeHtml(p.dir)}</div>
+      <div class="popup-dir">${escapeHtml(p.dir)}</div>
       <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
       <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con ${NAV_APPS[appNav()].nombre}</a>
-      <button class="popup-btn" style="margin-top:5px;background:${esInicio?'#f97316':''};color:${esInicio?'#fff':''}" onclick="fijarInicio('${p.id}')">🚩 ${esInicio?'Arrancás acá (quitar)':'Arrancar desde acá'}</button>
+      <button class="popup-btn" style="margin-top:5px;background:${esInicio?'#f97316':''};color:${esInicio?'#fff':''}" onclick="fijarInicio('${p.id}')">${esInicio?'Arrancás acá (quitar)':'Arrancar desde acá'}</button>
       <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Agregar a ruta'}</button>
     `;
     if(modoInicio){

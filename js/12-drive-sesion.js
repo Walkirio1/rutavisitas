@@ -223,11 +223,11 @@ function renderDriveTab(){
   const info=document.getElementById('drvConnInfo');
   if(info){
     if(drv.connected){
-      info.innerHTML=`✅ Conectado como <strong style="color:#10b981">${drv.user||'tu cuenta'}</strong>`;
+      info.innerHTML=`Conectado como <strong style="color:#10b981">${drv.user||'tu cuenta'}</strong>`;
       document.getElementById('btnConnect').style.display='none';
       document.getElementById('btnDisconnect').style.display='block';
     }else{
-      info.innerHTML='🔴 No conectado. Tocá <strong>Entrar con Google</strong> y elegí tu cuenta.';
+      info.innerHTML='No conectado. Tocá <strong>Entrar con Google</strong> y elegí tu cuenta.';
       document.getElementById('btnConnect').style.display='block';
       document.getElementById('btnDisconnect').style.display='none';
     }
