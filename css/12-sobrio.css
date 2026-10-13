@@ -310,3 +310,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none!imp
 .perfil .pinf{font-size:13px!important;color:var(--text-soft)!important;margin:6px 0 14px!important}
 .perfil .gbtn2{background:var(--bg-1)!important;color:var(--text)!important;border:1px solid var(--line-2)!important}
 .perfil .gbtn2 svg{width:20px!important;height:20px!important}
+
+/* íconos del perfil */
+.pf-ic{width:38px!important;height:38px!important;padding:9px;border-radius:10px;background:rgba(var(--acc),.1);color:rgb(var(--acc));flex:none;vertical-align:0!important}
+:root[data-theme="dark"] .pf-ic{background:rgba(var(--acc),.2);color:#bcd0ff}
+.perfil .btn svg.ico,.perfil .sm svg.ico{width:18px!important;height:18px!important;vertical-align:-4px;margin-right:2px}
+.perfil .btn.bd,.perfil .btn.gbtn2{display:flex;align-items:center;justify-content:center;gap:10px}
+#perfilEq .sm{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px!important;font-size:14px!important}
+#perfilEq .popc-f{margin:0}
+#eqInv{font-size:14.5px!important;text-align:left!important;padding:12px 14px!important}
