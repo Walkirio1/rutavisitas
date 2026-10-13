@@ -55,9 +55,21 @@ function openFromCfg(n){
 // ── RENDER PUNTOS
 // (filtroGeoP ya declarado arriba)
 
+// búsqueda tolerante: sin tildes ni mayúsculas, varias palabras (todas deben estar) y una letra de error en palabras largas ("Corrientez" encuentra "Corrientes")
+const _bn=t=>String(t==null?'':t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function _dist1(a,b){ // ¿difieren en como mucho una letra (cambiada, sobrante o faltante)?
+  if(a===b) return true;if(Math.abs(a.length-b.length)>1) return false;
+  let i=0;while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  if(a.length===b.length) return a.slice(i+1)===b.slice(i+1);
+  return a.length>b.length?a.slice(i+1)===b.slice(i):b.slice(i+1)===a.slice(i);
+}
+function coincideBusqueda(p,q){
+  const texto=_bn(p.nombre+' '+p.dir+' '+(p.localidad||'')+' '+p.id),pals=texto.split(/[^a-z0-9]+/).filter(Boolean);
+  return _bn(q).split(/\s+/).filter(Boolean).every(w=>texto.includes(w)||(w.length>=5&&pals.some(x=>x.length>=4&&_dist1(w,x.slice(0,w.length+1))||_dist1(w,x))));
+}
 function renderP(){
-  const q=(document.getElementById('qin')||{value:''}).value.toLowerCase();
-  let list = q ? puntos.filter(p=>p.nombre.toLowerCase().includes(q)||p.dir.toLowerCase().includes(q)||p.id.includes(q)) : puntos;
+  const q=(document.getElementById('qin')||{value:''}).value;
+  let list = q.trim() ? puntos.filter(p=>coincideBusqueda(p,q)) : puntos;
   if(filtroGeoP) list = list.filter(p=>p.geoErr || (!p.lat && !p.geoErr)); // sin ubicación
   document.getElementById('cntBadge').textContent=list.length;
   document.getElementById('btnLimpiar').style.display=puntos.length?'':'none';
