@@ -29,6 +29,7 @@ async function eqUnirse(codigo,api){
   lsSet(SK_EQ,{api,token:r.token,equipo:r.equipo,codigo,nombre:r.nombre});
   showToast('Te uniste a «'+r.equipo+'» ✓');renderPerfilEquipo();
   eqRevisarRuta(true);
+  if(!eqPosOn()) setTimeout(()=>confirm2('📍 ¿Querés que tu jefe vea dónde estás y tu recorrido del día? Solo se comparte mientras tenés la app abierta, y lo podés apagar en tu Perfil.',()=>{eqPosCambio(true);renderPerfilEquipo();}),2500);
 }
 async function eqUnirseDesdeCampo(){
   const {codigo,api}=eqLeerInvitacion(document.getElementById('eqInv').value);

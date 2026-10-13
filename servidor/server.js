@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS equipos(id INTEGER PRIMARY KEY,nombre TEXT NOT NULL,c
 CREATE TABLE IF NOT EXISTS miembros(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,nombre TEXT NOT NULL,token TEXT UNIQUE NOT NULL,creado INTEGER,visto INTEGER);
 CREATE TABLE IF NOT EXISTS asignaciones(id INTEGER PRIMARY KEY,miembro_id INTEGER NOT NULL,fecha TEXT NOT NULL,puntos TEXT NOT NULL,creado INTEGER,UNIQUE(miembro_id,fecha));
 CREATE TABLE IF NOT EXISTS posiciones(miembro_id INTEGER PRIMARY KEY,lat REAL,lng REAL,prec INTEGER,ts INTEGER);
+CREATE TABLE IF NOT EXISTS trazas(id INTEGER PRIMARY KEY,miembro_id INTEGER NOT NULL,fecha TEXT NOT NULL,lat REAL,lng REAL,ts INTEGER);
+CREATE INDEX IF NOT EXISTS trazas_i ON trazas(miembro_id,fecha);
 CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,miembro_id INTEGER NOT NULL,punto_id TEXT NOT NULL,nombre TEXT,localidad TEXT,estado TEXT,ts INTEGER,fecha TEXT,lat REAL,lng REAL,dist INTEGER,dur INTEGER,irr INTEGER,UNIQUE(miembro_id,punto_id,fecha));
 `);
 for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
@@ -201,6 +203,9 @@ const rutas={
     if(b.off){run('DELETE FROM posiciones WHERE miembro_id=?',m.id);avisar(m.equipo_id,'posicion');return [200,{ok:true}];}
     if(!Number.isFinite(+b.lat)||!Number.isFinite(+b.lng)) return [400,{error:'Falta la posición'}];
     run('INSERT INTO posiciones(miembro_id,lat,lng,prec,ts) VALUES(?,?,?,?,?) ON CONFLICT(miembro_id) DO UPDATE SET lat=excluded.lat,lng=excluded.lng,prec=excluded.prec,ts=excluded.ts',m.id,+b.lat,+b.lng,Math.round(+b.prec||0),Date.now());
+    const f=hoy(),u=ult('SELECT lat,lng FROM trazas WHERE miembro_id=? AND fecha=? ORDER BY id DESC LIMIT 1',m.id,f);
+    const mov=!u||Math.hypot((+b.lat-u.lat)*111000,(+b.lng-u.lng)*111000*Math.cos(+b.lat*Math.PI/180))>25; // solo si se movió más de 25 m
+    if(mov) run('INSERT INTO trazas(miembro_id,fecha,lat,lng,ts) VALUES(?,?,?,?,?)',m.id,f,+b.lat,+b.lng,Date.now());
     avisar(m.equipo_id,'posicion');return [200,{ok:true}];
   },
   'GET /api/panel':async(req,b,url)=>{
@@ -210,7 +215,8 @@ const rutas={
       const a=ult('SELECT puntos FROM asignaciones WHERE miembro_id=? AND fecha=?',m.id,f),pts=a?JSON.parse(a.puntos):[];
       const v=todos('SELECT * FROM visitas WHERE miembro_id=? AND fecha=?',m.id,f);
       const pos=ult('SELECT lat,lng,prec,ts FROM posiciones WHERE miembro_id=? AND ts>?',m.id,Date.now()-15*60000)||null;
-      return {id:m.id,nombre:m.nombre,dupla:m.dupla||null,visto:m.visto,pos,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
+      const traza=todos('SELECT lat,lng,ts FROM trazas WHERE miembro_id=? AND fecha=? ORDER BY id LIMIT 1500',m.id,f).map(x=>[x.lat,x.lng,x.ts]);
+      return {id:m.id,nombre:m.nombre,dupla:m.dupla||null,visto:m.visto,pos,traza,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
     });
     const visitas=todos('SELECT v.*,m.nombre AS miembro FROM visitas v JOIN miembros m ON m.id=v.miembro_id WHERE v.equipo_id=? AND v.fecha=? ORDER BY v.ts DESC LIMIT 500',e.id,f);
     return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas}];
