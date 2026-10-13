@@ -67,10 +67,10 @@ function renderV(){
         <div class="vnum ${v.done?'vd':'vp'}">${i}</div>
         <div class="vb">
           <div class="va">${p.nombre}${!p.lat?' <span class="geo-tag err" style="vertical-align:middle"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin mapa</span>':''}</div>
-          <div class="vid2">${p.dir} · ID: ${p.id}</div>
+          <div class="vid2">${IC("pin")} ${p.dir} · ID: ${p.id}</div>
           ${p.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute)">${escapeHtml(p.obs)}</div>`:''}
-          ${pl&&!v.noVisitado?`<div style="font-size:11px;color:#10b981;margin-top:4px">📄 ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
-          ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:2px">📝 ${escapeHtml(pl.obs)}</div>`:''}
+          ${pl&&!v.noVisitado?`<div style="font-size:11px;color:#10b981;margin-top:4px">${IC("file")} ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
+          ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:2px">${IC("edit")} ${escapeHtml(pl.obs)}</div>`:''}
         </div>
         ${v.done
           ?`<button class="vst ${estadoVisita(p.id)==='ok'?'vsd':(estadoVisita(p.id)==='no'?'vsn':'vsr')} vbtn" onclick="openPl('${p.id}')" aria-label="Abrir la planilla para modificarla">${estadoVisita(p.id)==='ok'?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha ›':(estadoVisita(p.id)==='cerrado'?'✕ Cerrado ›':'✕ No visitada ›')}</button>`
@@ -79,7 +79,7 @@ function renderV(){
       ${!v.done?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
         <button class="sm smb" onclick="openPl('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-list"/></svg> Planilla</button>
         <button class="sm smh" onclick="markDone('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar hecha</button>
-        <button class="sm smh" onclick="marcarNoVisitado('${p.id}')">No se visitó</button>
+        <button class="sm smh" onclick="marcarNoVisitado('${p.id}')">${IC("ban")} No se visitó</button>
       </div>`:`<div style="font-size:11px;color:${v.noVisitado?'var(--text-mute)':'#10b981'};margin-top:6px">${v.noVisitado?'No se visitó':'<svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · '+(pl?pl.fecha+' '+pl.hora:'')}${v.envio&&v.envio.estado==='pendiente'?' · <span style="color:#f59e0b">☁️ Sin enviar'+(v.envio.local?' (copia en el celular)':'')+'</span>':''}</div>`}
     </div>`;
   }).join('');
@@ -128,9 +128,9 @@ function renderH(){
           <span>${v.done?'✅':'⏳'}</span>
           <div style="flex:1">
             <div style="font-size:11px;font-weight:700">${p.nombre}</div>
-            <div style="font-size:10px;color:var(--text-mute)">${p.dir} · ID: ${p.id}</div>
+            <div style="font-size:10px;color:var(--text-mute)">${IC("pin")} ${p.dir} · ID: ${p.id}</div>
             ${irregs.length?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">⚠️ ${irregs.join(', ')}</div>`:''}
-            ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:1px">📝 ${escapeHtml(pl.obs)}</div>`:''}
+            ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:1px">${IC("edit")} ${escapeHtml(pl.obs)}</div>`:''}
           </div>
         </div>
       </div>`;

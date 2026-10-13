@@ -11,6 +11,8 @@ function ahora(){return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',mi
 
 // ── STORAGE (localStorage con prefijo)
 const SK_ORDEN='sube:orden';
+// ícono de línea de la app (los símbolos están en index.html)
+const IC=(n,st)=>'<svg class="ico" aria-hidden="true" style="vertical-align:-3px;'+(st||'')+'"><use href="#i-'+n+'"/></svg>';
 let ordenRuta=(function(){try{return JSON.parse(localStorage.getItem('sube:orden'))||[];}catch(e){return [];}})();
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',

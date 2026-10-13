@@ -88,6 +88,12 @@
 <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
 <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4m0 0h12l-2.5 4L17 12H5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.6 7.1L3 21l1.9-5.4A8 8 0 1121 12z"/></symbol>
+<symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+<symbol id="i-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a1.5 1.5 0 013 0v5m0 0V4a1.5 1.5 0 013 0v6m0 0V6a1.5 1.5 0 013 0v8a7 7 0 01-7 7h-1a6 6 0 01-5-2.7L4 14a1.6 1.6 0 012.6-1.8L9 15"/></symbol>
 </defs></svg>
 <div class="app">
 
@@ -191,7 +197,7 @@
       </button>
       <div style="text-align:center;font-size:11px;margin-top:14px"><a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--text-mute)">Privacidad</a> · <a href="terminos.html" target="_blank" rel="noopener" style="color:var(--text-mute)">Términos</a></div>
       <div id="appVersion" style="text-align:center;font-size:10px;color:var(--text-mute);margin-top:16px"></div>
-      <div style="text-align:center;margin-top:6px"><button class="sm smh" onclick="actualizarAhora()">Buscar actualización</button></div>
+      <div style="text-align:center;margin-top:6px"><button class="sm smh" onclick="actualizarAhora()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-refresh"/></svg> Buscar actualización</button></div>
     </div>
   </aside>
 
@@ -279,7 +285,7 @@
   <div class="cnt pnl" id="t3">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
       <span class="stit" style="margin:0">Historial de jornadas</span>
-      <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">Borrar todo</button>
+      <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-trash"/></svg> Borrar todo</button>
     </div>
     <div id="hReporte"></div>
     <div id="hlist"></div>
@@ -311,7 +317,7 @@
         </div>
       </div>
       <input type="text" id="nuevaPlNombre" placeholder="Nombre (ej: Planilla Rosario Norte)" style="margin-bottom:9px"/>
-      <button class="btn ba" onclick="guardarNuevaPlanilla()">Guardar planilla</button>
+      <button class="btn ba" onclick="guardarNuevaPlanilla()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-save"/></svg> Guardar planilla</button>
     </div>
     <!-- Lista -->
     <div id="plList"></div>
@@ -376,7 +382,7 @@
     <div class="card" id="resCard"></div>
     <button class="btn bd" onclick="exportarExcel()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-file"/></svg> Descargar Excel actualizado</button>
     <button class="btn ba" onclick="compartirInforme()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-upload"/></svg> Compartir informe con PDFs y fotos</button>
-    <button class="btn bw" style="margin-top:6px" onclick="sendWA()">Enviar solo el resumen por WhatsApp</button>
+    <button class="btn bw" style="margin-top:6px" onclick="sendWA()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-chat"/></svg> Enviar solo el resumen por WhatsApp</button>
     <button class="btn bd" style="margin-top:6px" onclick="sendEmail()"><svg class="ico" style="vertical-align:-2px"><use href="#i-mail"/></svg> Enviar por email</button>
   </div>
 
@@ -429,8 +435,8 @@
       </div>
     </div>
     <div class="plbr">
-      <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">Guardar visita</button>
-      <button class="plbt plsv" id="btnSoloGuardar" onclick="guardarVisita(true)">Solo guardar</button>
+      <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-save"/></svg> Guardar visita</button>
+      <button class="plbt plsv" id="btnSoloGuardar" onclick="guardarVisita(true)"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-save"/></svg> Solo guardar</button>
       <button class="plbt plcl" onclick="closeOv()"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg> Cancelar</button>
       <button class="plbt pldes" id="btnDesmarcar" style="display:none" onclick="confirmarDesmarcar()">↩ Desmarcar: no la hice</button>
     </div>
@@ -549,7 +555,7 @@ setTimeout(go,2500);})();</script>
 <div class="dlg" id="plEditDlg">
   <div class="dlgw" style="max-width:380px;max-height:92vh;overflow-y:auto">
     <div style="font-weight:800;font-size:15px;margin-bottom:8px">Planilla general</div>
-    <div class="pled-aviso" id="plEdAviso" style="display:none">Ahora estás usando otra planilla, y estos campos (incluida la firma) solo aparecen con la planilla general. Al guardar te ofrezco usarla.</div>
+    <div class="pled-aviso" id="plEdAviso" style="display:none"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-alert"/></svg> Ahora estás usando otra planilla, y estos campos (incluida la firma) solo aparecen con la planilla general. Al guardar te ofrezco usarla.</div>
     <label class="pllb">Título del PDF</label>
     <input class="pli" id="plEdTitulo" type="text">
     <label class="pllb" style="margin-top:10px">Sección 1 · nombre</label>
@@ -576,8 +582,8 @@ setTimeout(go,2500);})();</script>
       <option value="no">Sin foto</option>
     </select>
     <div style="display:grid;gap:8px;margin-top:14px">
-      <button class="btn bd" onclick="plEdVista()">Vista previa</button>
-      <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
+      <button class="btn bd" onclick="plEdVista()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-eye"/></svg> Vista previa</button>
+      <button class="btn ba" onclick="plEdGuardar()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-save"/></svg> Guardar planilla</button>
       <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
       <button class="btn bd" onclick="plEdCerrar()">Cancelar</button>
     </div>
@@ -619,10 +625,10 @@ setTimeout(go,2500);})();</script>
   <div class="ds-tools" id="dsTools"></div>
   <div class="pf-nav"><button class="sm smh" onclick="dsHoja(-1)">◀</button><span id="dsHoja">Hoja 1</span><button class="sm smh" onclick="dsHoja(1)">▶</button>
     <span style="flex:1"></span><button class="sm smh" onclick="dsZoom(.8)">−</button><span id="dsZoomT">100%</span><button class="sm smh" onclick="dsZoom(1.25)">+ Zoom</button></div>
-  <div class="ds-hint" id="dsHint">Pellizcá con dos dedos para acercar</div>
+  <div class="ds-hint" id="dsHint"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-hand"/></svg> Pellizcá con dos dedos para acercar</div>
   <div class="pf-scroll" id="dsScroll"><div class="pf-wrap" id="dsWrap"><canvas id="dsCv"></canvas><div class="ds-capa" id="dsMarcas"></div></div></div>
   <div class="ds-acc" id="dsAcc" style="display:none"><span id="dsAccTxt"></span>
-    <div><button class="sm smh" id="dsAccTodos" style="display:none" onclick="dsTodos()">Editar todos</button><button class="sm sma" id="dsAccEd" onclick="dsAccEditar()">Editar</button><button class="sm smr" onclick="dsAccBorrar()">🗑️</button><button class="sm smh" onclick="dsAccListo()">Listo</button></div></div>
+    <div><button class="sm smh" id="dsAccTodos" style="display:none" onclick="dsTodos()">Editar todos</button><button class="sm sma" id="dsAccEd" onclick="dsAccEditar()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-edit"/></svg> Editar</button><button class="sm smr" onclick="dsAccBorrar()">🗑️</button><button class="sm smh" onclick="dsAccListo()">Listo</button></div></div>
   <div class="firma-bot" style="grid-template-columns:auto 1fr 1.4fr;align-items:center">
     <span id="dsCuenta" style="font-size:12px;font-weight:700;color:#0d2a78">0 campos</span>
     <button class="btn bd" onclick="cerrarDisenador()">Cancelar</button>
@@ -642,11 +648,11 @@ setTimeout(go,2500);})();</script>
       <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoLista" onchange="dsEdModoSuma()"> Los campos que yo elijo</label>
       <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoZona" onchange="dsEdModoSuma()"> Todos los números que marque dentro de una zona (una tira entera)</label>
       <div id="dsEdSuma"></div>
-      <div id="dsEdZonaBox" style="display:none;margin-top:6px"><div class="pled-nota" id="dsEdZonaEst"></div><button class="sm sma" style="margin-top:6px" onclick="dsMarcarZona()">Marcar la zona en la hoja</button></div></div>
+      <div id="dsEdZonaBox" style="display:none;margin-top:6px"><div class="pled-nota" id="dsEdZonaEst"></div><button class="sm sma" style="margin-top:6px" onclick="dsMarcarZona()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-target"/></svg> Marcar la zona en la hoja</button></div></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="sm smh" style="flex:1" onclick="dsEdTamano(.85)">− Más chico</button><button class="sm smh" style="flex:1" onclick="dsEdTamano(1.18)">+ Más grande</button></div>
     <div style="display:grid;gap:8px;margin-top:12px">
       <button class="btn ba" onclick="dsEdGuardar()">Listo</button>
-      <button class="btn bd" onclick="dsEdBorrar()">Borrar este campo</button>
+      <button class="btn bd" onclick="dsEdBorrar()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-trash"/></svg> Borrar este campo</button>
       <button class="btn bd" onclick="dsEdCancelar()">Cancelar</button>
     </div>
   </div>
