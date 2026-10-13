@@ -332,3 +332,35 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none!imp
 /* perfil: el fondo como el de las otras pestañas, para que las tarjetas resalten */
 .dlgw.perfil,.perfil{background:var(--bg-deep)!important}
 .perfil .pnom-in,.perfil .pemp input,.perfil input[type=text]{background:var(--bg-1)!important}
+
+/* engranaje clásico en la barra */
+.tabs .tab:nth-child(4){--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'/></svg>")}
+
+/* ═══ Dupla ═══ */
+#dpDlg .dlgw,#instGuiaDlg .dlgw{background:var(--bg-deep)!important}
+#dpDlg .dlgw>div:first-child{font-weight:600!important;font-size:19px!important;color:var(--text);text-align:left!important}
+.dp-cod{background:var(--bg-1)!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:12px 14px!important;box-shadow:var(--card-sh)}
+.dp-cod small{font-size:11px!important;font-weight:600!important;letter-spacing:.08em;color:var(--text-mute)!important}
+.dp-cod b{font-weight:600!important;color:var(--text)!important;font-variant-numeric:tabular-nums}
+.dp-comp{background:var(--bg-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--card-sh)}
+.dp-comp b{font-weight:600;color:var(--text)}
+.dp-comp small{color:var(--text-mute)!important}
+.dp-av{background:var(--bg-3)!important;color:var(--text)!important;border:1px solid var(--line-2);font-weight:600!important}
+.dp-esp{font-weight:600!important}
+.dp-t{font-size:11px!important;font-weight:600!important;letter-spacing:.08em!important;color:var(--text-mute)!important;margin:14px 2px 8px!important;text-align:left!important}
+.dp-roles button{display:flex!important;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--line-2)!important;background:var(--bg-1)!important;border-radius:12px!important;padding:14px 8px!important;font-weight:600!important;color:var(--text-soft)!important;box-shadow:none!important}
+.dp-roles button svg.ico{width:24px!important;height:24px!important;margin-bottom:2px;color:var(--text-mute)}
+.dp-roles button small{font-weight:400!important;color:var(--text-mute)!important}
+.dp-roles button.on{border:2px solid rgb(var(--acc))!important;background:rgba(var(--acc),.08)!important;color:var(--text)!important}
+.dp-roles button.on svg.ico{color:rgb(var(--acc))}
+:root[data-theme="dark"] .dp-roles button.on{background:rgba(var(--acc),.18)!important}
+.dup-btn,:root[data-theme] .dup-btn{border:1px solid var(--line-2)!important;background:var(--bg-3)!important;color:var(--text)!important;box-shadow:none!important;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.dup-btn svg.ico{width:20px;height:20px}
+.dup-btn.esp{border-style:dashed!important}
+#dpDlg input#dpCod{background:var(--bg-1)!important;border:1px solid var(--line-2)!important;border-radius:9px!important;padding:11px!important}
+
+/* carteles de confirmación e instalación */
+#instGuiaDlg .dlgw div,#instGuiaDlg .dlgw b{color:var(--text)!important}
+#instGuiaDlg img{filter:none!important}
+#envioMsg,#dlgMsg{white-space:pre-line}
+#envioDlg .btn,#dlg .btn{width:100%}

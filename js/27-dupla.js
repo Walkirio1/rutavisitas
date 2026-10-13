@@ -82,10 +82,10 @@ function dpPintarDlg(){
   if(!d){box.innerHTML='<div class="dp-t">Creando tu dupla…</div>';return;}
   const c=d.companero,av=c&&c.foto?`<img src="${c.foto}" alt="">`:escapeHtml((c&&c.nombre||'?').slice(0,1).toUpperCase());
   box.innerHTML=`
-    <div class="dp-cod"><small>Tu código</small><b>${escapeHtml(d.codigo)}</b><button class="sm sma" onclick="dpCompartir()">📤 Mandar</button></div>
-    <div class="dp-comp">${c?`<span class="dp-av">${av}</span><div><b>${escapeHtml(c.nombre)}</b><small>${c.rol==='navegante'?'🚗 Navegante':'🚶 Verificador'}</small></div>`:'<div class="dp-esp">⏳ Esperando a tu compañero…<small>Que escriba este código en su app, en Perfil → Trabajar en dupla.</small></div>'}</div>
+    <div class="dp-cod"><small>Tu código</small><b>${escapeHtml(d.codigo)}</b><button class="sm sma" onclick="dpCompartir()"><svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg> Mandar</button></div>
+    <div class="dp-comp">${c?`<span class="dp-av">${av}</span><div><b>${escapeHtml(c.nombre)}</b><small>${c.rol==='navegante'?'Navegante':'Verificador'}</small></div>`:'<div class="dp-esp">Esperando a tu compañero…<small>Que escriba este código en su app, en Perfil → Trabajar en dupla.</small></div>'}</div>
     <div class="dp-t">Mi rol</div>
-    <div class="dp-roles"><button class="${d.rol==='navegante'?'on':''}" onclick="dpCambiarRol('navegante')">🚗 Navegante<small>Mapa y ruta</small></button><button class="${d.rol==='verificador'?'on':''}" onclick="dpCambiarRol('verificador')">🚶 Verificador<small>Baja y completa</small></button></div>
+    <div class="dp-roles"><button class="${d.rol==='navegante'?'on':''}" onclick="dpCambiarRol('navegante')"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg>Navegante<small>Mapa y ruta</small></button><button class="${d.rol==='verificador'?'on':''}" onclick="dpCambiarRol('verificador')"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Verificador<small>Baja y completa</small></button></div>
     <div class="dp-t" style="margin-top:12px">¿Tu compañero ya tiene un código?</div>
     <div style="display:flex;gap:6px"><input id="dpCod" maxlength="6" autocapitalize="characters" placeholder="ABC123" style="flex:1;min-width:0;text-align:center;letter-spacing:.15em;font-weight:800;text-transform:uppercase"><button class="sm sma" onclick="dpUnirse()">Conectar</button></div>
     <button class="btn bd" style="margin-top:12px" onclick="dpSalir()">Salir de la dupla</button>`;
@@ -97,7 +97,7 @@ function dpPintarCabecera(){
   if(!d){b.style.display='none';return;}
   b.style.display='';const c=d.companero;
   b.classList.toggle('esp',!c);
-  b.innerHTML=c&&c.foto?`<img src="${c.foto}" alt="">`:`<span>${c?escapeHtml((c.nombre||'?').slice(0,1).toUpperCase()):'🤝'}</span>`;
+  b.innerHTML=c&&c.foto?`<img src="${c.foto}" alt="">`:`<span>${c?escapeHtml((c.nombre||'?').slice(0,1).toUpperCase()):'<svg class="ico" aria-hidden="true"><use href="#i-pair"/></svg>'}</span>`;
 }
 
 // ── Sincronización
@@ -143,7 +143,7 @@ function dpAplicar(est){
   if(d.rol==='verificador'&&est.actual&&String(est.actual.ts)!==String(lsGet(SK_DPVISTO))){
     lsSet(SK_DPVISTO,String(est.actual.ts));
     const p=puntos.find(x=>String(x.id)===String(est.actual.id));
-    if(p&&!(visits[p.id]&&visits[p.id].done)) mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'📝 Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
+    if(p&&!(visits[p.id]&&visits[p.id].done)) mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
   }
 }
 // el navegante sube sus cambios de ruta (puntos, marcados y orden)
