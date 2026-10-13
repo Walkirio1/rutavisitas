@@ -19,6 +19,7 @@ function showTab(n){
   // Mostrar barra "Volver a Configuración" sólo en paneles del menú config (3-6)
   const bar=document.getElementById('backCfgBar');
   if(bar) bar.classList.toggle('show', n>=3);
+  document.body.classList.toggle('sin-inst',n===2||n>=3); // el cartel de instalar no tapa el mapa ni Ajustes
   if(n===1){renderV();updStats();}
   if(n===2){initMapa();renderMapa();}
   if(n===5){renderDriveTab();}
@@ -32,12 +33,14 @@ function ponerPastilla(pos){
   document.querySelector('.tabs').style.setProperty('--i',pos);
 }
 function openCfg(){
+  document.body.classList.add('sin-inst');
   ponerPastilla(3);
   document.getElementById('cfgOverlay').classList.add('show');
   document.getElementById('cfgPanel').classList.add('show');
 }
 function closeCfg(){
   ponerPastilla(_tabPos);
+  document.body.classList.toggle('sin-inst',_tabPos>=2);
   document.getElementById('cfgOverlay').classList.remove('show');
   document.getElementById('cfgPanel').classList.remove('show');
 }
@@ -192,13 +195,16 @@ function importXL(input){
         return;
       }
       try{lsSet('sube:excel',{name:file.name,aoa:XLSX.utils.sheet_to_json(ws,{header:1,defval:''}),ts:Date.now()});}catch(e){}
+      const antes=puntos.length,repetidos=nuevos.filter(n=>puntos.some(p=>p.id===n.id)).length;
       // mantener lat/lng de puntos existentes si coincide ID
       puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos.map(n=>{
         const ex=puntos.find(p=>p.id===n.id);
         return ex&&ex.lat?{...n,lat:ex.lat,lng:ex.lng}:n;
       })];
       lsSet(SK.puntos,puntos);
-      renderP();showToast(nuevos.length+' puntos importados ✓');
+      renderP();
+      const nv=nuevos.length-repetidos;
+      showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' ✓'+(antes&&nv>0?' · se sumaron a los '+antes+' que ya tenías (para empezar de cero, usá Limpiar)':(repetidos?' · '+repetidos+' ya estaban y se actualizaron':'')));
       // arrancar geocodificación automática
       setTimeout(()=>geocodificarTodos(true),400);
       // autosave

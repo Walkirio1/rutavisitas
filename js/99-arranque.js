@@ -123,3 +123,26 @@ dpIniciar();
 setTimeout(contadorPing,4000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(contadorPing,3000);});
 
+
+// Dos pestañas abiertas a la vez: la que estaba de fondo recarga los datos al volver, así no pisa lo que cargó la otra
+let _datosCambiaron=false;
+window.addEventListener('storage',e=>{
+  if(![SK.puntos,SK.visits,SK.sel,SK.planillas].includes(e.key)) return;
+  if(document.hidden) _datosCambiaron=true;
+  else showToast('Esto se cambió desde otra ventana de LogiMap. Dejá abierta una sola para no perder datos.',true);
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&_datosCambiaron){_datosCambiaron=false;location.reload();}});
+
+// Nombre para lectores de pantalla en los botones que solo tienen un ícono
+function etiquetarBotones(){
+  document.querySelectorAll('button:not([aria-label])').forEach(b=>{
+    const t=b.textContent.trim();
+    if(/[A-Za-zÁ-ú]{2}/.test(t)) return; // ya tiene texto
+    const uso=b.querySelector('use'),ic=uso?(uso.getAttribute('href')||'').replace('#i-',''):'';
+    const mapa={'✕':'Cerrar','×':'Cerrar','+':'Agregar','−':'Quitar','-':'Quitar','🗑️':'Borrar','✏️':'Editar'};
+    const nom=b.title||mapa[t]||(ic?ic.replace(/-/g,' '):'')||(t?t:'Botón');
+    b.setAttribute('aria-label',nom);
+  });
+}
+etiquetarBotones();
+{let _tmEt=null;new MutationObserver(()=>{clearTimeout(_tmEt);_tmEt=setTimeout(etiquetarBotones,400);}).observe(document.body,{childList:true,subtree:true});}

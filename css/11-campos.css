@@ -204,3 +204,9 @@ body:has(.inst-bar.show) .cnt{padding-bottom:170px}
 /* Vista previa de la planilla */
 #plVistaBox .pv-hoja{width:100%;height:auto;border:1px solid var(--line-2);border-radius:6px;box-shadow:0 6px 18px -8px rgba(0,0,0,.35);background:#fff;margin-bottom:8px;display:block}
 #plVistaBox .pv-carga{padding:40px 10px;color:var(--text-mute);font-size:13px}
+
+/* Avisos verdes: no tapan los toques; se ven pero lo de abajo se puede usar */
+.toast{pointer-events:none}
+/* Cartel de instalar: no aparece sobre el mapa, en Ajustes ni con el celular apaisado */
+body.sin-inst .inst-bar{display:none!important}
+@media (max-height:520px){.inst-bar{display:none!important}}
