@@ -114,7 +114,7 @@ async function exportarExcel(){
 function borrarDia(){
   confirm2('¿Borrar todos los puntos y visitas del día actual?',function(){
     puntos=[];sel=new Set();visits={};
-    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');ordenRuta=[];lsDel(SK_ORDEN);
+    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');ordenRuta=[];lsDel(SK_ORDEN);inicioId=null;lsDel('sube:inicio');
     renderP();updStats();showToast('Día actual borrado ✓');
   });
 }
