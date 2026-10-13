@@ -117,10 +117,12 @@ async function rutaCompleta(){
   if(!faltan.length){showToast(sel.size?'¡Ruta completa! No quedan puntos por visitar ✓':'Marcá puntos en azul en el mapa primero',true);return;}
   showToast('Optimizando la ruta...');
   const yo=await ubicacionActual();
-  const start=yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng};
-  let todo=optimizarOrden(start,faltan),est=estimarRuta(start,todo),calles=false;
-  const sv=await optimizarPorCalles(start,faltan);
-  if(sv){todo=sv.orden;est={km:sv.km,min:Math.round(sv.min+todo.length*8)};calles=true;}
+  const ini=inicioId?faltan.find(p=>p.id===inicioId):null; // si elegiste dónde arrancar, la ruta empieza ahí
+  const start=ini?{lat:ini.lat,lng:ini.lng}:(yo?{lat:yo.lat,lng:yo.lng}:{lat:faltan[0].lat,lng:faltan[0].lng});
+  const resto=ini?faltan.filter(p=>p!==ini):faltan;
+  let todo=(ini?[ini]:[]).concat(optimizarOrden(start,resto)),est=estimarRuta(start,todo),calles=false;
+  const sv=resto.length?await optimizarPorCalles(start,resto):null;
+  if(sv){todo=(ini?[ini]:[]).concat(sv.orden);est={km:sv.km,min:Math.round(sv.min+todo.length*8)};calles=true;}
   // el orden queda guardado: la lista de Visitas se muestra en este orden
   const hechos=puntos.filter(p=>sel.has(p.id)&&!faltan.includes(p)).map(p=>p.id);
   ordenRuta=[...hechos,...todo.map(p=>p.id)];lsSet(SK_ORDEN,ordenRuta);renderV();
@@ -136,6 +138,24 @@ async function rutaCompleta(){
   ]);
 }
 
+// Punto de partida: la ruta arranca en el punto elegido (sin elegir, arranca desde mi ubicación)
+function toggleModoInicio(){
+  modoInicio=!modoInicio;
+  showToast(modoInicio?'🚩 Tocá el punto donde vas a arrancar':(inicioId?'Arrancás en el punto elegido':'Arrancás desde tu ubicación'));
+  renderMapa(true);
+}
+function fijarInicio(id){
+  const p=puntos.find(x=>x.id===id);if(!p) return;
+  modoInicio=false;
+  if(inicioId===id){inicioId=null;lsDel('sube:inicio');showToast('Ya no hay punto de partida: arrancás desde tu ubicación');}
+  else{
+    inicioId=id;lsSet('sube:inicio',id);
+    if(!sel.has(id)&&!estadoVisita(id)){sel.add(id);lsSet(SK.sel,[...sel]);renderP();updStats();}
+    showToast('🚩 Arrancás en: '+(p.nombre||p.dir));triggerAutosave();
+  }
+  if(mapa&&mapa.closePopup) mapa.closePopup();
+  renderMapa(true);
+}
 function toggleModoMapa(){
   modoMarcar=!modoMarcar;
   showToast(modoMarcar?'Tocá un punto para marcarlo en azul':'Tocá un punto para ver su información');

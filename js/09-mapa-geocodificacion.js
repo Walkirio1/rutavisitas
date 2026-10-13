@@ -30,6 +30,13 @@ const ICON_SEL = () => makeIcon('#3b82f6');   // azul: voy a visitarlo
 const ICON_DEF = () => makeIcon('#94a3b8');   // gris: no en ruta
 const ICON_DONE = () => makeIcon('#10b981');  // verde: visitado
 const ICON_CERRADO = () => makeIcon('#ef4444'); // rojo: cerrado o no se visitó
+// punto de partida: pin naranja con una banderita
+let inicioId = lsGet('sube:inicio') || null;   // id del punto donde arranco (vacío = desde mi ubicación)
+let modoInicio = false;                          // true: el próximo pin que se toca es el de partida
+const ICON_INICIO = () => L.divIcon({
+  html:`<div class="pin-marker" style="position:relative">${makeIcon('#f97316').options.html.replace('<div class="pin-marker">','').replace(/<\/div>$/,'')}<span style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1">🚩</span></div>`,
+  className:'',iconSize:[34,48],iconAnchor:[17,48],popupAnchor:[0,-50]
+});
 
 // Estado de una visita: 'ok' (visitado), 'cerrado' (comercio cerrado / domicilio inexistente),
 // 'no' (marcado como no visitado) o null (sin visitar)
@@ -100,7 +107,8 @@ function renderMapa(noFit){
   const pt=(c)=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:4px;vertical-align:-1px"></span>`;
   const ley=document.getElementById('mapaLeyenda');
   if(ley) ley.innerHTML=`<span>${pt('#94a3b8')}Sin elegir ${nSin}</span><span>${pt('#3b82f6')}Voy ${nRuta}</span><span>${pt('#10b981')}Visitado ${nVisit}</span><span>${pt('#ef4444')}Cerrado / no visitado ${nCerr}</span>
-    <button class="sm ${modoMarcar?'sma':'smh'}" style="margin-left:auto" onclick="toggleModoMapa()">${modoMarcar?'🔵 Tocar = marcar':'ℹ️ Tocar = ver info'}</button>`;
+    <button class="sm ${modoInicio||inicioId?'sma':'smh'}" style="margin-left:auto" onclick="toggleModoInicio()">🚩 ${modoInicio?'Tocá el punto…':(inicioId&&puntos.find(x=>x.id===inicioId)?'Arranco: '+escapeHtml((puntos.find(x=>x.id===inicioId).nombre||'').slice(0,18)):'Dónde arranco')}</button>
+    <button class="sm ${modoMarcar?'sma':'smh'}" onclick="toggleModoMapa()">${modoMarcar?'🔵 Tocar = marcar':'ℹ️ Tocar = ver info'}</button>`;
 
   // lista de puntos sin geocodificar (el cartel se puede tocar para ver cuáles son)
   const pendList=document.getElementById('geoPendList');
@@ -137,9 +145,10 @@ function renderMapa(noFit){
   conGeo.forEach((p,i)=>{
     const enRuta = sel.has(p.id);
     const est = estadoVisita(p.id);
-    const icon = est==='ok'?ICON_DONE():(est?ICON_CERRADO():(enRuta?ICON_SEL():ICON_DEF()));
+    const esInicio = inicioId===p.id && !est;
+    const icon = est==='ok'?ICON_DONE():(est?ICON_CERRADO():(esInicio?ICON_INICIO():(enRuta?ICON_SEL():ICON_DEF())));
     // los colores (voy / visitado / cerrado) quedan por encima de los grises
-    const prio = (est||enRuta)?1:0;
+    const prio = (est||enRuta||esInicio)?1:0;
     const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:prio*1000}).addTo(markersLayer);
     marker._puntoId=p.id;marker._prio=prio;
     const gmUrl = urlNavegar(p.lat,p.lng);
@@ -148,9 +157,12 @@ function renderMapa(noFit){
       <div class="popup-dir">📍 ${escapeHtml(p.dir)}</div>
       <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
       <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con ${NAV_APPS[appNav()].nombre}</a>
+      <button class="popup-btn" style="margin-top:5px;background:${esInicio?'#f97316':''};color:${esInicio?'#fff':''}" onclick="fijarInicio('${p.id}')">🚩 ${esInicio?'Arrancás acá (quitar)':'Arrancar desde acá'}</button>
       <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Agregar a ruta'}</button>
     `;
-    if(modoMarcar){
+    if(modoInicio){
+      marker.on('click',()=>fijarInicio(p.id));
+    }else if(modoMarcar){
       marker.on('click',()=>marcarDesdeMapa(p.id));
     }else{
       marker.bindPopup(popup);
