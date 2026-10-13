@@ -29,3 +29,13 @@
 - Actualizar el servidor: `cd ~/rutavisitas && git pull && cd servidor && docker compose --profile calles up -d --build`
 - Actualizar la app en el celular: Ajustes → 🔄 Buscar actualización.
 - Clave de estadísticas: `cat /datos/verific/clave-estadisticas.txt`
+
+## Estado a octubre 2026 (versión 91)
+- App del celular rediseñada: estilo sobrio con relieve suave, IBM Plex Sans (en `fonts/`), íconos de línea (sprite en `index.html` + máscaras en CSS). Todo el estilo nuevo está en `css/12-sobrio.css`, cargado al final y pisando `css/01`–`11` con `!important` (~400 reglas): **deuda técnica**, conviene unificar las hojas más adelante.
+- Guía de 5 pasos (`js/29-tutorial.js`), punto de partida en la ruta, buscador tolerante, conteos unificados (hechas / cerradas / no visitadas / pendientes).
+- Drive y envíos: carpeta del día con archivos «Dirección - Comercio.pdf» y «Dirección - Comercio (foto).jpg», sin subcarpeta por visita.
+- Equipo y dupla juntos en el perfil (Beta). Panel del jefe: Excel del día, historial por fecha, mapa con color por persona, recorrido y posición.
+- Panel del jefe (servidor/panel.html) **todavía con el estilo viejo**; hay maquetas del estilo nuevo en el lienzo de diseño (https://claude.ai/artifact/WHKhtuifAx4Q5112W3Qbwm).
+- Pruebas para Grok: `pruebas/RONDA-4-GROK.md` y `pruebas/RONDA-5-GROK.md`.
+- Sin probar en celular real: cámara, firma, Google/Drive de punta a punta, hoja de compartir, dos celulares con equipo y dupla, instalación del ícono.
+- El ícono de la app (pin con brillo) sigue con el estilo anterior.
