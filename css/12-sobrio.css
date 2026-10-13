@@ -184,3 +184,62 @@ input:focus,select:focus,textarea:focus{border-color:rgb(var(--acc))!important;b
 .plh{padding-right:64px!important}
 .plck,.plck span,.plr,.plr span,.plrn,.plcampo .pllb,.plsuma,.pl-item{color:var(--text)!important}
 .plsub{margin-right:56px!important;max-width:150px}
+
+/* ═══ Contraste y estados (ronda de ajustes) ═══ */
+:root,:root[data-theme="light"]{--bg-deep:#e6eaf1;--line:#d5dbe6;--line-2:#bcc5d4;--bg-3:#eef1f6;--card-sh:0 1px 2px rgba(15,23,42,.07),0 2px 8px -4px rgba(15,23,42,.10)}
+:root[data-theme="dark"]{--bg-deep:#070d19;--bg-1:#131c2e;--bg-2:#131c2e;--line:#27334d;--line-2:#3a4968;--bg-3:#1c2840;--card-sh:0 1px 0 rgba(255,255,255,.03) inset}
+.app{background:var(--bg-deep)}
+.card,.pi,.vi,.sc,.cfg-item,:root[data-theme] .card,:root[data-theme] .pi,:root[data-theme] .vi{box-shadow:var(--card-sh)!important}
+.hdr{box-shadow:0 1px 0 var(--line)!important}
+.tabs{box-shadow:0 -1px 0 var(--line)!important}
+
+/* íconos siempre con tamaño propio */
+svg.ico{width:16px;height:16px;flex:none;vertical-align:-3px}
+.cfg-ic svg.ico{width:22px;height:22px}
+
+/* barra de abajo: la sección activa se ve a simple vista */
+.tab{margin:6px 3px 2px!important;border-radius:12px!important;padding:8px 2px 6px!important}
+.tab.on,:root[data-theme] .tab.on{background:rgba(var(--acc),.12)!important;color:rgb(var(--acc))!important}
+:root[data-theme="dark"] .tab.on{background:rgba(var(--acc),.2)!important;color:#bcd0ff!important}
+.tab.on::before{display:none!important}
+.tab.on .ti::before{background:rgb(var(--acc))!important}
+:root[data-theme="dark"] .tab.on .ti::before{background:#bcd0ff!important}
+.tab:not(.on){color:var(--text-mute)!important;font-weight:500!important}
+
+/* puntos: "en ruta" vs "sin elegir" */
+.pi{position:relative;padding-left:16px!important}
+.pi.sel,:root[data-theme] .pi.sel{background:#eaf0ff!important;border-color:rgb(var(--acc))!important;box-shadow:inset 5px 0 0 rgb(var(--acc)),var(--card-sh)!important}
+.pi.sel .pnum{background:rgb(var(--acc))!important;border-color:rgb(var(--acc))!important;color:#fff!important}
+.pi:not(.sel) .pno,.pi:not(.sel) .pd{color:var(--text-soft)!important}
+.pi:not(.sel) .pnum{background:var(--bg-3)!important;color:var(--text-mute)!important}
+.pi:not(.sel) button.sm{border-style:dashed!important;color:var(--text-soft)!important}
+.pi.sel button.sm{background:rgb(var(--acc))!important;color:#fff!important}
+
+/* visitas: hecha (verde), cerrada (rojo), pendiente (ámbar) */
+:root[data-theme] .vi{position:relative;padding-left:18px!important;box-shadow:inset 5px 0 0 #f79009,var(--card-sh)!important}
+:root[data-theme] .vi:has(.vsd),:root[data-theme] .vi.dn{background:rgba(18,183,106,.09)!important;border-color:rgba(18,183,106,.45)!important;box-shadow:inset 5px 0 0 #12b76a,var(--card-sh)!important}
+:root[data-theme] .vi:has(.vsr){background:rgba(240,68,56,.08)!important;border-color:rgba(240,68,56,.45)!important;box-shadow:inset 5px 0 0 #f04438,var(--card-sh)!important}
+.vi:has(.vsd) .vnum{background:#12b76a!important;border-color:#12b76a!important;color:#fff!important}
+.vi:has(.vsr) .vnum{background:#f04438!important;border-color:#f04438!important;color:#fff!important}
+.vst{padding:4px 10px!important;border-radius:999px!important;font-weight:600!important}
+.vsp,:root[data-theme] .vsp{background:rgba(247,144,9,.16)!important;color:#93370d!important}
+.vsd,:root[data-theme] .vsd{background:rgba(18,183,106,.16)!important;color:#05603a!important}
+.vsr,:root[data-theme] .vsr{background:rgba(240,68,56,.14)!important;color:#912018!important}
+:root[data-theme="dark"] .vsp{color:#fdb022!important}:root[data-theme="dark"] .vsd{color:#6ce9a6!important}:root[data-theme="dark"] .vsr{color:#fda29b!important}
+
+/* estado del punto en la lista (en mapa / sin ubicar) y leyenda del mapa */
+.geo-tag{font-weight:600!important}
+.geo-tag.ok{color:#05603a!important}.geo-tag.err{color:#93370d!important}.geo-tag.pen{color:var(--text-soft)!important}
+:root[data-theme="dark"] .geo-tag.ok{color:#6ce9a6!important}:root[data-theme="dark"] .geo-tag.err{color:#fdb022!important}
+#mapaLeyenda span span{width:12px!important;height:12px!important}
+.sc{box-shadow:var(--card-sh)!important}
+:root[data-theme="dark"] .pi.sel{background:rgba(var(--acc),.16)!important}
+:root[data-theme="dark"] .pi.sel button.sm{background:#3b6df0!important;border-color:#3b6df0!important;color:#fff!important}
+:root[data-theme="dark"] .smr{color:#fda29b!important;border-color:rgba(253,162,155,.5)!important}
+:root[data-theme="dark"] .tab:not(.on){color:#c6d0e4!important}
+:root[data-theme="dark"] .pi.sel .pnum{background:#3b6df0!important;border-color:#3b6df0!important}
+.tab .ti,.tab:not(.on) .ti{opacity:1!important;color:inherit!important;filter:none!important}
+:root[data-theme] .tab .ti::before{background:currentColor!important;background-image:none!important;box-shadow:none!important}
+:root[data-theme] .tab.on .ti::before{background:rgb(var(--acc))!important}
+:root[data-theme="dark"] .tab.on .ti::before{background:#bcd0ff!important}
+.leaflet-bar a,.leaflet-bar a:hover{background:#fff!important;color:#0b1220!important;border-bottom:1px solid #d0d5dd!important}
