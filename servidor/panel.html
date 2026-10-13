@@ -39,7 +39,7 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let APP='https://walkirio1.github.io/rutavisitas/';
 fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{}); // si el servidor también sirve la app, la invitación apunta ahí
-let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null;
+let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null,FECHA='';
 const h=location.hash.match(/t=([a-f0-9]+)/);if(h){T=h[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);}
 async function api(m,p,b){
   const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(T?{Authorization:'Bearer '+T}:{})},body:b?JSON.stringify(b):undefined});
@@ -55,22 +55,41 @@ async function crear(){try{const r=await api('POST','/api/equipo/crear',{nombre:
   alert('Guardá este enlace de acceso (es tu llave):\n\n'+location.origin+'/#t='+T);cargar();}catch(e){alert(e.message);}}
 async function cargar(){
   if(!T) return entrada();
-  try{D=await api('GET','/api/panel');}catch(e){localStorage.removeItem('vf_admin');T='';return entrada();}
+  try{D=await api('GET','/api/panel'+(FECHA?'?fecha='+FECHA:''));}catch(e){localStorage.removeItem('vf_admin');T='';return entrada();}
   pintar();
 }
 function hora(ts){return ts?new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'';}
 const av=x=>x.foto?`<img src="${esc(x.foto)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid ${colDe(x.id)};flex:none">`:`<span style="width:44px;height:44px;border-radius:50%;background:${colDe(x.id)};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">${esc((x.nombre||'?').slice(0,1).toUpperCase())}</span>`;
+
+const hoyAR=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10);
+const esHoy=()=>!FECHA||FECHA===hoyAR();
+function irFecha(f){FECHA=(!f||f===hoyAR())?'':f;cargar();}
+function bajarExcel(){
+  if(!window.XLSX) return alert('No pude cargar el generador de Excel (sin internet).');
+  const m=D.miembros;
+  const resumen=[['Verificador','En dupla con','Asignados','Hechos','Cerrados','Pendientes','Avance %']].concat(m.map(x=>[x.nombre,x.dupla||'',x.asignados,x.hechos,x.cerrados,x.pendientes,x.asignados?Math.round((x.hechos+x.cerrados)/x.asignados*100):0]));
+  const vis=[['Fecha','Verificador','En dupla con','ID punto','Local','Localidad','Estado','Hora','Distancia al local (m)','Irregularidades']].concat(D.visitas.slice().reverse().map(v=>[D.fecha,v.miembro,v.dupla_con||'',v.punto_id,v.nombre||'',v.localidad||'',v.estado==='ok'?'Hecha':'Cerrada',hora(v.ts),v.dist==null?'':v.dist,v.irr?'Sí':'No']));
+  const pend=[['Verificador','ID punto','Local','Dirección','Localidad']];
+  m.forEach(x=>x.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===x.id)) pend.push([x.nombre,p.id,p.nombre||'',p.dir||'',p.localidad||'']);}));
+  const wb=XLSX.utils.book_new();
+  [['Resumen',resumen],['Visitas',vis],['Pendientes',pend]].forEach(([n,a])=>{const ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=a[0].map(()=>({wch:22}));XLSX.utils.book_append_sheet(wb,ws,n);});
+  XLSX.writeFile(wb,'LogiMap-'+(D.equipo||'equipo').replace(/[^\w-]+/g,'_')+'-'+D.fecha+'.xlsx');
+}
 function pintar(){
   const m=D.miembros,as=m.reduce((a,x)=>a+x.asignados,0),ok=m.reduce((a,x)=>a+x.hechos,0),ce=m.reduce((a,x)=>a+x.cerrados,0),pe=m.reduce((a,x)=>a+x.pendientes,0);
   const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
   $('#app').innerHTML=`<header><h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1><span class="cod">${D.codigo}</span><button class="s" onclick="copiar('${inv}')">🔗 Copiar invitación</button></header>
   <main>
+  <div class="card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:120px">${FECHA&&FECHA!==hoyAR()?'📅 Viendo un día anterior':'📅 Hoy'}</b>
+    <input type="date" value="${esc(D.fecha)}" max="${hoyAR()}" onchange="irFecha(this.value)" style="width:auto">
+    ${FECHA&&FECHA!==hoyAR()?`<button class="s" onclick="irFecha('')">Volver a hoy</button>`:''}
+    <button onclick="bajarExcel()">⬇️ Descargar Excel del día</button></div>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
-  <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
+  <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1&&esHoy()?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
   ${m.length?m.map(x=>`<div class="mb">${av(x)}<div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
     <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
-    <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
+    ${esHoy()?`<button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button>`:''}<button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
     `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
   <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2>
   <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px;align-items:center">${m.map(x=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colDe(x.id)};margin-right:4px"></i>${esc(x.nombre)} (pendientes)</span>`).join('')}<span>⭕ posición actual · ┈ recorrido de hoy</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px"></i>hecha</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></i>cerrada</span></div>
