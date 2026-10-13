@@ -65,13 +65,13 @@ function pintar(){
   <main>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
   <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
-  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
+  ${m.length?m.map(x=>`<div class="mb"><div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':''}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
     <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
     <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
     `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
   <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2><div id="mapa"></div></div>
-  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
+  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
   </main>`;
   setTimeout(dibujarMapa,50);
 }

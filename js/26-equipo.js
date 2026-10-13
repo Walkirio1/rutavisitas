@@ -75,13 +75,29 @@ async function eqRevisarRuta(forzar){
     confirm2('📥 '+r.nombre+', tu jefe te asignó '+r.puntos.length+' punto'+(r.puntos.length>1?'s':'')+' para hoy. ¿Traerlos a tu ruta?',()=>eqTraerRuta(),()=>lsSet(SK_EQVISTO,clave));
   }catch(err){}
 }
+// nombre del compañero de dupla (vacío si trabaja solo): el jefe ve a la dupla como una sola unidad
+const eqCompanero=()=>{try{const d=dupla();return (d&&d.companero&&d.companero.nombre)||'';}catch(e){return '';}};
+async function eqDuplaAvisar(){
+  const e=equipo();if(!e||!navigator.onLine) return;
+  const con=eqCompanero(),clave=e.token+'|'+con;
+  if(lsGet('sube:eqdupla')===clave) return;
+  try{await eqApi('POST','/api/miembro-dupla',{con});lsSet('sube:eqdupla',clave);}catch(err){}
+}
+// el navegante informa al jefe lo que hizo el verificador (el celular del verificador puede no estar en el equipo)
+function eqReportarRemota(id,v){
+  const e=equipo();if(!e) return;
+  const p=puntos.find(x=>String(x.id)===String(id))||{};
+  const item={punto_id:String(id),nombre:p.nombre||(v&&v.nombre)||'',localidad:p.localidad||'',estado:v&&v.estado==='cerrado'?'cerrado':'ok',ts:(v&&v.ts)||Date.now(),lat:p.lat||null,lng:p.lng||null,dist:null,dur:null,irr:!!(v&&v.irr),dupla_con:eqCompanero()};
+  const cola=(lsGet(SK_EQCOLA)||[]).filter(x=>x.punto_id!==item.punto_id);cola.push(item);lsSet(SK_EQCOLA,cola);
+  eqVaciarCola();
+}
 // cada visita hecha se informa al panel del jefe (si no hay señal, queda en cola)
 function eqReportarVisita(id){
   const e=equipo();if(!e) return;
   const v=visits[id],pl=v&&v.planilla;if(!pl) return;
   const p=puntos.find(x=>String(x.id)===String(id))||{};
   const g=pl.gps;
-  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:pl.cierra?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl.dist!=null?pl.dist:null,dur:pl.durMin||null,irr:irregsDe(pl).length>0};
+  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:pl.cierra?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl.dist!=null?pl.dist:null,dur:pl.durMin||null,irr:irregsDe(pl).length>0,dupla_con:eqCompanero()};
   const cola=(lsGet(SK_EQCOLA)||[]).filter(x=>x.punto_id!==item.punto_id);cola.push(item);lsSet(SK_EQCOLA,cola);
   eqVaciarCola();
 }

@@ -52,7 +52,7 @@ function dpSalir(){
     const d=dupla();
     // primero se sale acá, sin esperar al servidor
     if(_dpEs){_dpEs.close();_dpEs=null;}clearInterval(_dpPush);_dpPush=null;
-    lsDel(SK_DUPLA);lsDel(SK_DPVISTO);dpPintarDlg();dpPintarCabecera();if(typeof renderPerfilEquipo==='function')renderPerfilEquipo();
+    lsDel(SK_DUPLA);lsDel(SK_DPVISTO);eqDuplaAvisar();dpPintarDlg();dpPintarCabecera();if(typeof renderPerfilEquipo==='function')renderPerfilEquipo();
     showToast('Saliste de la dupla');
     if(d) eqApi('POST','/api/dupla/salir',{},{api:d.api,token:d.token}).catch(()=>{}); // avisar al servidor, si se puede
   });
@@ -112,7 +112,7 @@ async function dpPull(forzar){
   const d=dupla();if(!d||!navigator.onLine) return;
   try{
     const r=await dpApi('GET','/api/dupla');
-    d.rol=r.yo.rol||d.rol;d.companero=r.companero;
+    d.rol=r.yo.rol||d.rol;d.companero=r.companero;eqDuplaAvisar();
     const nueva=forzar||r.version>(d.version||0);
     lsSet(SK_DUPLA,d);dpPintarCabecera();if(document.getElementById('dpDlg').classList.contains('show')) dpPintarDlg();
     if(nueva){d.version=r.version;lsSet(SK_DUPLA,d);dpAplicar(r.estado);}
@@ -132,7 +132,7 @@ function dpAplicar(est){
   // el navegante ve en su mapa lo que va completando el verificador
   if(d.rol==='navegante'&&est.visitas){
     Object.entries(est.visitas).forEach(([id,v])=>{
-      if(!visits[id]||!visits[id].done){const f=new Date(v.ts);visits[id]={done:true,remoto:true,planilla:{fecha:f.toLocaleDateString('es-AR'),hora:f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),cierra:v.estado==='cerrado',por:v.por||'',irr:!!v.irr}};cambio=true;}
+      if(!visits[id]||!visits[id].done){const f=new Date(v.ts);visits[id]={done:true,remoto:true,planilla:{fecha:f.toLocaleDateString('es-AR'),hora:f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),cierra:v.estado==='cerrado',por:v.por||'',irr:!!v.irr}};cambio=true;eqReportarRemota(id,v);}
       else if(visits[id].remoto&&visits[id].planilla&&visits[id].planilla.cierra!==(v.estado==='cerrado')){visits[id].planilla.cierra=v.estado==='cerrado';cambio=true;}
     });
     Object.keys(visits).forEach(id=>{if(visits[id]&&visits[id].remoto&&!est.visitas[id]){delete visits[id];cambio=true;}});
