@@ -44,9 +44,20 @@ function eqSalir(){
 function renderPerfilEquipo(){
   const box=document.getElementById('perfilEq');if(!box) return;
   const e=equipo(),d=typeof dupla==='function'?dupla():null;
-  if(e) box.innerHTML=`<div class="popc-t">Equipo</div><div class="peq-n">${escapeHtml(e.equipo)}</div><div style="display:grid;gap:6px"><label class="popc-f"><span>Compartir mi posición con el equipo<small>Tu jefe te ve en el mapa mientras tenés la app abierta</small></span><input type="checkbox" id="eqPos" onchange="eqPosCambio(this.checked)"${eqPosOn()?' checked':''}><i class="popc-sw"></i></label><button class="sm sma" onclick="eqTraerRuta()">Traer mi ruta de hoy</button><button class="sm smh" onclick="eqSalir()">Salir del equipo</button></div>`;
-  else if(d) box.innerHTML=`<div class="popc-t">Dupla</div><button class="sm sma" style="width:100%" onclick="dpAbrir()">Mi dupla${d.companero?' con '+escapeHtml(d.companero.nombre):' (esperando compañero)'}</button>`;
-  else box.innerHTML=`<div class="popc-t">Trabajo en grupo · Beta</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="sm smh" onclick="eqMostrarInvitacion()">Unirme al equipo</button><button class="sm sma" onclick="dpAbrir()">Trabajar en dupla</button></div><div id="eqInvBox" style="display:none;margin-top:8px"><input type="text" id="eqInv" placeholder="Pegá la invitación" autocomplete="off" style="width:100%;font-size:13px;text-align:center;border-radius:12px;padding:9px 10px;border:1px solid rgba(120,150,200,.4)"><button class="sm sma" style="margin-top:6px;width:100%" onclick="eqUnirseDesdeCampo()">Unirme</button></div>`;
+  const ic=n=>`<svg class="ico pf-ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+  const bt=(n,t)=>`<svg class="ico" aria-hidden="true"><use href="#i-${n}"/></svg> ${t}`;
+  let h='<div class="popc-t">Trabajo en grupo · Beta</div><div style="display:grid;gap:8px">';
+  // EQUIPO (el jefe ve tu trabajo)
+  if(e) h+=`<div class="popc-f" style="cursor:default">${ic('users')}<span>Equipo: ${escapeHtml(e.equipo)}<small>Tu jefe ve tus visitas y te puede asignar rutas</small></span></div>
+    <label class="popc-f">${ic('pin')}<span>Compartir mi posición con el equipo<small>Tu jefe te ve en el mapa mientras tenés la app abierta</small></span><input type="checkbox" id="eqPos" onchange="eqPosCambio(this.checked)"${eqPosOn()?' checked':''}><i class="popc-sw"></i></label>
+    <button class="sm sma" onclick="eqTraerRuta()">${bt('download','Traer mi ruta de hoy')}</button>`;
+  else h+=`<button class="sm smh" onclick="eqMostrarInvitacion()">${bt('users','Unirme al equipo')}</button>
+    <div id="eqInvBox" style="display:none"><input type="text" id="eqInv" placeholder="Pegá la invitación" autocomplete="off" style="width:100%"><button class="sm sma" style="margin-top:6px;width:100%" onclick="eqUnirseDesdeCampo()">Unirme</button></div>`;
+  // DUPLA (se puede tener junto con el equipo)
+  h+=d?`<button class="sm sma" onclick="dpAbrir()">${bt('pair','Mi dupla'+(d.companero?' con '+escapeHtml(d.companero.nombre):' (esperando compañero)'))}</button>`
+      :`<button class="sm smh" onclick="dpAbrir()">${bt('pair','Trabajar en dupla')}</button>`;
+  if(e) h+=`<button class="sm smh" onclick="eqSalir()">${bt('logout','Salir del equipo')}</button>`;
+  box.innerHTML=h+'</div>';
 }
 function eqMostrarInvitacion(){
   const b=document.getElementById('eqInvBox');b.style.display=b.style.display==='none'?'':'none';
