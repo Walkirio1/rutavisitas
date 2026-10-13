@@ -78,17 +78,18 @@ function b64ABlob(b64,tipo){
 }
 let _archivosListos=null;
 async function prepararArchivos(ids){
-  const files=[];const pdf=await pdfParaVisita();
+  const files=[];const usados=new Set();const pdf=await pdfParaVisita();
   for(const id of ids){
     const punto=puntos.find(p=>p.id===id),v=visits[id];
     if(!punto||!v||!v.planilla) continue;
     if(v.planilla.tieneFoto&&!v.planilla.foto){const f=await fotoGet(id);if(f)v.planilla.foto=f;}
-    const base=safeName(`${(v.planilla.fecha||hoy()).replace(/\//g,'-')}_${id}_${punto.nombre||'punto'}`);
-    if(v.planilla.foto&&fotoModo()==='aparte') files.push(new File([b64ABlob(v.planilla.foto,'image/jpeg')],base+'_foto.jpg',{type:'image/jpeg'}));
+    let base=nombreVisita(punto);
+    if(usados.has(base.toLowerCase())) base+=' ('+id+')'; usados.add(base.toLowerCase()); // sin repetir nombres dentro del mismo envío
+    if(v.planilla.foto&&fotoModo()==='aparte') files.push(new File([b64ABlob(v.planilla.foto,'image/jpeg')],base+' (foto).jpg',{type:'image/jpeg'}));
     if(pdf.b64){
       let b=pdf.b64;
       try{b=await rellenarPlanillaPDF(pdf.b64,punto,v);}catch(e){console.warn('pdf en blanco:',e);}
-      files.push(new File([b64ABlob(b,'application/pdf')],base+'_planilla.pdf',{type:'application/pdf'}));
+      files.push(new File([b64ABlob(b,'application/pdf')],base+'.pdf',{type:'application/pdf'}));
     }
   }
   return files;
