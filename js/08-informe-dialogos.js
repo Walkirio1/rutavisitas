@@ -40,7 +40,7 @@ function renderRes(){
 function buildMsg(){
   const enRuta=puntos.filter(p=>sel.has(p.id)||(visits[p.id]&&visits[p.id].done));
   const est=p=>estadoVisita(p.id);
-  const hechas=enRuta.filter(p=>est(p)==='ok'),cerradas=enRuta.filter(p=>est(p)==='cerrado'),pend=enRuta.filter(p=>!est(p));
+  const hechas=enRuta.filter(p=>est(p)==='ok'),cerradas=enRuta.filter(p=>est(p)==='cerrado'),novis=enRuta.filter(p=>est(p)==='no'),pend=enRuta.filter(p=>!est(p));
   const irr=hechas.filter(p=>irregsDe((visits[p.id]||{}).planilla).length).length;
   const now=new Date(),total=enRuta.length,hechos=hechas.length+cerradas.length;
   const nombre=n=>(n||'').trim()||'Sin nombre';
@@ -53,10 +53,11 @@ function buildMsg(){
     +'\n━━━━━━━━━━━━━━'
     +'\n✅ *'+hechos+' de '+total+'* verificados'+(total?' ('+Math.round(hechos/total*100)+'%)':'')
     +(pend.length?'\n⏳ Pendientes: '+pend.length:'')
+    +(novis.length?'\n🚫 No visitados: '+novis.length:'')
     +(cerradas.length?'\n🔴 Cerrados / no atendidos: '+cerradas.length:'')
     +(irr?'\n⚠️ Con irregularidades: '+irr:'')
     +'\n━━━━━━━━━━━━━━'
-    +bloque('✅ HECHAS',hechas)+bloque('🔴 CERRADOS',cerradas)+bloque('⏳ PENDIENTES',pend)
+    +bloque('✅ HECHAS',hechas)+bloque('🔴 CERRADOS',cerradas)+bloque('🚫 NO VISITADOS',novis)+bloque('⏳ PENDIENTES',pend)
     +'\n\n_Enviado desde LogiMap_';
 }
 // Resumen + PDF rellenado de cada visita + fotos, todo junto en la hoja de compartir (WhatsApp, mail, Drive…). No necesita Google.

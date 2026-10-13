@@ -71,8 +71,8 @@ let _repPer='hoy';
 function repFecha(s){const m=String(s||'').match(/(\d+)\/(\d+)\/(\d+)/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
 function repRegistros(){
   const out=[];
-  Object.entries(visits).forEach(([id,v])=>{if(v&&v.done) out.push({id,p:puntos.find(x=>x.id===id)||{},pl:v.planilla||{fecha:v.fecha||hoy()}});}); // también las marcadas hechas sin abrir la planilla
-  historial.forEach(h=>Object.entries(h.visits||{}).forEach(([id,v])=>{if(v&&v.done) out.push({id,p:(h.puntos||[]).find(x=>x.id===id)||{},pl:v.planilla||{fecha:v.fecha||h.fecha}});}));
+  Object.entries(visits).forEach(([id,v])=>{if(v&&v.done&&!v.noVisitado) out.push({id,p:puntos.find(x=>x.id===id)||{},pl:v.planilla||{fecha:v.fecha||hoy()}});}); // también las marcadas hechas sin abrir la planilla
+  historial.forEach(h=>Object.entries(h.visits||{}).forEach(([id,v])=>{if(v&&v.done&&!v.noVisitado) out.push({id,p:(h.puntos||[]).find(x=>x.id===id)||{},pl:v.planilla||{fecha:v.fecha||h.fecha}});}));
   return out;
 }
 function repDatos(per){

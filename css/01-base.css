@@ -1,5 +1,4 @@
 /* Base: variables, tipografía, componentes originales */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap');
 
 :root{
   --bg-deep:#0a0d12; --bg-1:#10141b; --bg-2:#161b24; --bg-3:#1c222d; --bg-elev:#1f2632;
