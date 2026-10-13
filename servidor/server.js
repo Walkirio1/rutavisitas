@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS asignaciones(id INTEGER PRIMARY KEY,miembro_id INTEGE
 CREATE TABLE IF NOT EXISTS posiciones(miembro_id INTEGER PRIMARY KEY,lat REAL,lng REAL,prec INTEGER,ts INTEGER);
 CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,miembro_id INTEGER NOT NULL,punto_id TEXT NOT NULL,nombre TEXT,localidad TEXT,estado TEXT,ts INTEGER,fecha TEXT,lat REAL,lng REAL,dist INTEGER,dur INTEGER,irr INTEGER,UNIQUE(miembro_id,punto_id,fecha));
 `);
-for(const m of ["ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
+for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
 db.exec('CREATE TABLE IF NOT EXISTS jornadas(equipo_id INTEGER PRIMARY KEY,json TEXT NOT NULL,version INTEGER NOT NULL,ts INTEGER)');
 db.exec('CREATE TABLE IF NOT EXISTS usos(id TEXT PRIMARY KEY,primero INTEGER,ultimo INTEGER,dia TEXT,dias INTEGER DEFAULT 1,version TEXT,app INTEGER DEFAULT 0,pdf INTEGER DEFAULT 0,equipo INTEGER DEFAULT 0,dupla INTEGER DEFAULT 0,google INTEGER DEFAULT 0)');
 const hoy=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); // fecha de Argentina (UTC-3)
@@ -176,11 +176,25 @@ const rutas={
   },
   'POST /api/visita':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
-    const f=hoy(),n=x=>Number.isFinite(+x)&&x!==''&&x!=null?+x:null;
-    run(`INSERT INTO visitas(equipo_id,miembro_id,punto_id,nombre,localidad,estado,ts,fecha,lat,lng,dist,dur,irr) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(miembro_id,punto_id,fecha) DO UPDATE SET estado=excluded.estado,ts=excluded.ts,lat=excluded.lat,lng=excluded.lng,dist=excluded.dist,dur=excluded.dur,irr=excluded.irr`,
-      m.equipo_id,m.id,txt(b.punto_id,60),txt(b.nombre),txt(b.localidad,80),b.estado==='cerrado'?'cerrado':'ok',n(b.ts)||Date.now(),f,n(b.lat),n(b.lng),n(b.dist),n(b.dur),b.irr?1:0);
+    const f=hoy(),n=x=>Number.isFinite(+x)&&x!==''&&x!=null?+x:null,pid=txt(b.punto_id,60),con=txt(b.dupla_con,80)||null;
+    // si quien informa trabaja en dupla, la visita cuenta para quien tiene el punto asignado (puede informarla cualquiera de los dos celulares, se guarda una sola vez)
+    let dueno=m.id;
+    if(con){
+      const as=todos('SELECT m2.id,a.puntos FROM miembros m2 JOIN asignaciones a ON a.miembro_id=m2.id WHERE m2.equipo_id=? AND a.fecha=?',m.equipo_id,f);
+      const d=as.find(x=>{try{return JSON.parse(x.puntos).some(p=>String(p.id)===pid);}catch(e){return false;}});
+      if(d) dueno=d.id;
+      run('UPDATE miembros SET dupla=? WHERE id=?',con,m.id);
+    }
+    run(`INSERT INTO visitas(equipo_id,miembro_id,punto_id,nombre,localidad,estado,ts,fecha,lat,lng,dist,dur,irr,dupla_con) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(miembro_id,punto_id,fecha) DO UPDATE SET estado=excluded.estado,ts=excluded.ts,lat=excluded.lat,lng=excluded.lng,dist=excluded.dist,dur=excluded.dur,irr=excluded.irr,dupla_con=excluded.dupla_con`,
+      m.equipo_id,dueno,pid,txt(b.nombre),txt(b.localidad,80),b.estado==='cerrado'?'cerrado':'ok',n(b.ts)||Date.now(),f,n(b.lat),n(b.lng),n(b.dist),n(b.dur),b.irr?1:0,con);
     avisar(m.equipo_id,'visita');return [200,{ok:true}];
+  },
+  // el celular avisa con quién está en dupla (vacío = ya no está en dupla)
+  'POST /api/miembro-dupla':async(req,b)=>{
+    const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    run('UPDATE miembros SET dupla=? WHERE id=?',txt(b.con,80)||null,m.id);
+    avisar(m.equipo_id,'miembro');return [200,{ok:true}];
   },
   'POST /api/posicion':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
@@ -196,7 +210,7 @@ const rutas={
       const a=ult('SELECT puntos FROM asignaciones WHERE miembro_id=? AND fecha=?',m.id,f),pts=a?JSON.parse(a.puntos):[];
       const v=todos('SELECT * FROM visitas WHERE miembro_id=? AND fecha=?',m.id,f);
       const pos=ult('SELECT lat,lng,prec,ts FROM posiciones WHERE miembro_id=? AND ts>?',m.id,Date.now()-15*60000)||null;
-      return {id:m.id,nombre:m.nombre,visto:m.visto,pos,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
+      return {id:m.id,nombre:m.nombre,dupla:m.dupla||null,visto:m.visto,pos,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
     });
     const visitas=todos('SELECT v.*,m.nombre AS miembro FROM visitas v JOIN miembros m ON m.id=v.miembro_id WHERE v.equipo_id=? AND v.fecha=? ORDER BY v.ts DESC LIMIT 500',e.id,f);
     return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas}];
