@@ -271,7 +271,7 @@ async function detectarYRevisar(id){
     let campos=await camposDeFormulario(bytes,pdf),origen='formulario';
     if(!campos.length){campos=await detectarCampos(pdf);origen='hoja';}
     _rev={id,campos:campos.map(c=>({...c,on:true})),origen};
-    if(!campos.length){mostrarDlgEnvio('No pude encontrar casillas ni datos en esta planilla (puede ser una imagen escaneada). Podés marcarlos vos sobre la hoja.',[{txt:'🧩 Marcar sobre la hoja',cls:'ba',fn:()=>abrirDisenador(id)},{txt:'Cancelar',cls:'bd'}]);return;}
+    if(!campos.length){mostrarDlgEnvio('No pude encontrar casillas ni datos en esta planilla (puede ser una imagen escaneada). Podés marcarlos vos sobre la hoja.',[{txt:'Marcar sobre la hoja',cls:'ba',fn:()=>abrirDisenador(id)},{txt:'Cancelar',cls:'bd'}]);return;}
     pintarRevision();document.getElementById('revDlg').classList.add('show');
   }catch(e){console.error('detectar:',e);showToast(e.message||'No se pudo leer la planilla',true);}
 }

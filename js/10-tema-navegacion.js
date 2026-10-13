@@ -62,10 +62,10 @@ async function siguientePunto(){
     cand.sort((x,y)=>distKm(yo.lat,yo.lng,x.lat,x.lng)-distKm(yo.lat,yo.lng,y.lat,y.lng));
     p=cand[0];
     const km=distKm(yo.lat,yo.lng,p.lat,p.lng);
-    msg=`➡️ ${p.nombre||p.dir}\n📍 ${p.dir}${p.localidad?' · '+p.localidad:''}\n🚗 a ${km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km'} (en línea recta) · quedan ${faltan.length}`;
+    msg=`${p.nombre||p.dir}\n${p.dir}${p.localidad?' · '+p.localidad:''}\nA ${km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km'} (en línea recta) · quedan ${faltan.length}`;
   }else{
     p=cand[0];
-    msg=`➡️ ${p.nombre||p.dir}\n📍 ${p.dir}${p.localidad?' · '+p.localidad:''}\nNo pude ver tu ubicación: te muestro el primero de tu ruta. Quedan ${faltan.length}.`;
+    msg=`${p.nombre||p.dir}\n${p.dir}${p.localidad?' · '+p.localidad:''}\nNo pude ver tu ubicación: te muestro el primero de tu ruta. Quedan ${faltan.length}.`;
   }
   if(mapa) mapa.setView([p.lat,p.lng],16);
   mostrarDlgEnvio(msg,[
@@ -132,7 +132,7 @@ async function rutaCompleta(){
   const sinUbi=puntos.filter(p=>!p.lat&&sel.has(p.id)&&!estadoVisita(p.id));
   const aviso=sinUbi.length?`\n\n⚠️ ${sinUbi.length===1?'1 punto sin ubicación quedó afuera':sinUbi.length+' puntos sin ubicación quedaron afuera'}: ${sinUbi.slice(0,4).map(p=>p.nombre||p.dir).join(', ')}${sinUbi.length>4?'…':''}. ${sinUbi.length===1?'Ubicalo':'Ubicalos'} en el mapa y volvé a tocar Ruta completa.`:'';
   const lista=todo.slice(0,15).map((p,i)=>`${i+1}. ${p.nombre||p.dir}`).join('\n')+(todo.length>15?`\n… y ${todo.length-15} más`:'');
-  mostrarDlgEnvio(`${calles?'🛣️ Ruta por calles reales':'🗺️ Ruta en línea recta'}: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${calles?'':'\n\nℹ️ El orden es por distancia en línea recta (no pude consultar las calles reales), así que puede dar alguna vuelta.'}${aviso}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
+  mostrarDlgEnvio(`${calles?'Ruta por calles reales':'Ruta en línea recta'}: ${todo.length} parada${todo.length>1?'s':''}\n≈ ${est.km.toFixed(1)} km · ≈ ${fmtMin(est.min)} (manejo + 8 min por visita)\n\n${lista}${calles?'':'\n\nℹ️ El orden es por distancia en línea recta (no pude consultar las calles reales), así que puede dar alguna vuelta.'}${aviso}${todo.length>orden.length?`\n\nGoogle Maps lleva ${orden.length} paradas por vez; cuando termines tocá "Ruta completa" de nuevo.`:''}`,[
     {txt:'🧭 Abrir en Google Maps',cls:'ba',fn:()=>{window.open(url,'_blank');}},
     {txt:'Cerrar',cls:'bd'}
   ]);
@@ -141,7 +141,7 @@ async function rutaCompleta(){
 // Punto de partida: la ruta arranca en el punto elegido (sin elegir, arranca desde mi ubicación)
 function toggleModoInicio(){
   modoInicio=!modoInicio;
-  showToast(modoInicio?'🚩 Tocá el punto donde vas a arrancar':(inicioId?'Arrancás en el punto elegido':'Arrancás desde tu ubicación'));
+  showToast(modoInicio?'Tocá el punto donde vas a arrancar':(inicioId?'Arrancás en el punto elegido':'Arrancás desde tu ubicación'));
   renderMapa(true);
 }
 function fijarInicio(id){
@@ -151,7 +151,7 @@ function fijarInicio(id){
   else{
     inicioId=id;lsSet('sube:inicio',id);
     if(!sel.has(id)&&!estadoVisita(id)){sel.add(id);lsSet(SK.sel,[...sel]);renderP();updStats();}
-    showToast('🚩 Arrancás en: '+(p.nombre||p.dir));triggerAutosave();
+    showToast('Arrancás en: '+(p.nombre||p.dir));triggerAutosave();
   }
   if(mapa&&mapa.closePopup) mapa.closePopup();
   renderMapa(true);
@@ -175,7 +175,7 @@ function marcarDesdeMapa(id){
   lsSet(SK.sel,[...sel]);
   renderP();updStats();
   renderMapa(true);
-  showToast((agregando?'🔵 Voy: ':'Quitado: ')+(p.nombre||p.dir)+' · '+sel.size+' en ruta');
+  showToast((agregando?'Voy: ':'Quitado: ')+(p.nombre||p.dir)+' · '+sel.size+' en ruta');
   triggerAutosave();
 }
 

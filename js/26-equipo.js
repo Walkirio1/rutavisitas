@@ -30,7 +30,7 @@ async function eqUnirse(codigo,api){
   lsSet(SK_EQ,{api,token:r.token,equipo:r.equipo,codigo,nombre:r.nombre});
   showToast('Te uniste a «'+r.equipo+'» ✓');renderPerfilEquipo();
   eqRevisarRuta(true);
-  if(!eqPosOn()) setTimeout(()=>confirm2('📍 ¿Querés que tu jefe vea dónde estás y tu recorrido del día? Solo se comparte mientras tenés la app abierta, y lo podés apagar en tu Perfil.',()=>{eqPosCambio(true);renderPerfilEquipo();}),2500);
+  if(!eqPosOn()) setTimeout(()=>confirm2('¿Querés que tu jefe vea dónde estás y tu recorrido del día? Solo se comparte mientras tenés la app abierta, y lo podés apagar en tu Perfil.',()=>{eqPosCambio(true);renderPerfilEquipo();}),2500);
 }
 async function eqUnirseDesdeCampo(){
   const {codigo,api}=eqLeerInvitacion(document.getElementById('eqInv').value);
@@ -44,7 +44,7 @@ function eqSalir(){
 function renderPerfilEquipo(){
   const box=document.getElementById('perfilEq');if(!box) return;
   const e=equipo(),d=typeof dupla==='function'?dupla():null;
-  if(e) box.innerHTML=`<div class="popc-t">Equipo</div><div class="peq-n">👥 ${escapeHtml(e.equipo)}</div><div style="display:grid;gap:6px"><label class="popc-f"><span>📍 Compartir mi posición con el equipo<small>Tu jefe te ve en el mapa mientras tenés la app abierta</small></span><input type="checkbox" id="eqPos" onchange="eqPosCambio(this.checked)"${eqPosOn()?' checked':''}><i class="popc-sw"></i></label><button class="sm sma" onclick="eqTraerRuta()">📥 Traer mi ruta de hoy</button><button class="sm smh" onclick="eqSalir()">Salir del equipo</button></div>`;
+  if(e) box.innerHTML=`<div class="popc-t">Equipo</div><div class="peq-n">${escapeHtml(e.equipo)}</div><div style="display:grid;gap:6px"><label class="popc-f"><span>📍 Compartir mi posición con el equipo<small>Tu jefe te ve en el mapa mientras tenés la app abierta</small></span><input type="checkbox" id="eqPos" onchange="eqPosCambio(this.checked)"${eqPosOn()?' checked':''}><i class="popc-sw"></i></label><button class="sm sma" onclick="eqTraerRuta()">📥 Traer mi ruta de hoy</button><button class="sm smh" onclick="eqSalir()">Salir del equipo</button></div>`;
   else if(d) box.innerHTML=`<div class="popc-t">Dupla</div><button class="sm sma" style="width:100%" onclick="dpAbrir()">🤝 Mi dupla${d.companero?' con '+escapeHtml(d.companero.nombre):' (esperando compañero)'}</button>`;
   else box.innerHTML=`<div class="popc-t">Trabajo en grupo · Beta</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="sm smh" onclick="eqMostrarInvitacion()">👥 Unirme al equipo</button><button class="sm sma" onclick="dpAbrir()">🤝 Trabajar en dupla</button></div><div id="eqInvBox" style="display:none;margin-top:8px"><input type="text" id="eqInv" placeholder="Pegá la invitación" autocomplete="off" style="width:100%;font-size:13px;text-align:center;border-radius:12px;padding:9px 10px;border:1px solid rgba(120,150,200,.4)"><button class="sm sma" style="margin-top:6px;width:100%" onclick="eqUnirseDesdeCampo()">Unirme</button></div>`;
 }

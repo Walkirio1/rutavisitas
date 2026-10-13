@@ -21,11 +21,11 @@ function distM(a,b,c,d){
 const fmtDist=m=>m<1000?m+' m':(m/1000).toFixed(1).replace('.',',')+' km';
 // qué tan cerca del local se registró la visita
 function ubiEstado(gps,punto){
-  if(!gps) return {clase:'no',txt:'📍 Sin ubicación registrada'};
-  if(!punto||!punto.lat||!punto.lng) return {clase:'ok',txt:'📍 Ubicación registrada'};
+  if(!gps) return {clase:'no',txt:'Sin ubicación registrada'};
+  if(!punto||!punto.lat||!punto.lng) return {clase:'ok',txt:'Ubicación registrada'};
   const d=distM(gps.lat,gps.lng,punto.lat,punto.lng);
   if(d<=150) return {clase:'ok',txt:'✅ En el local · a '+fmtDist(d),d};
-  if(d<=500) return {clase:'cerca',txt:'📍 Cerca del local · a '+fmtDist(d),d};
+  if(d<=500) return {clase:'cerca',txt:'Cerca del local · a '+fmtDist(d),d};
   return {clase:'lejos',txt:'⚠️ Lejos del local · a '+fmtDist(d),d};
 }
 
@@ -35,7 +35,7 @@ function ubiAlAbrir(punto,pl){
   const b=document.getElementById('plUbi');if(!b) return;
   if(!ubiOn()){b.className='plubi';b.textContent='';return;}
   if(pl&&pl.gps){const e=ubiEstado(pl.gps,punto);b.className='plubi '+e.clase;b.textContent=e.txt;return;}
-  b.className='plubi';b.textContent='📍 Buscando tu ubicación…';
+  b.className='plubi';b.textContent='Buscando tu ubicación…';
   ubiPos().then(g=>{if(curId!==(punto&&punto.id)) return;const e=ubiEstado(g,punto);b.className='plubi '+e.clase;b.textContent=e.txt;});
 }
 // datos que se guardan con la visita
@@ -56,7 +56,7 @@ async function sellarFoto(dataUrl,punto){
     const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
     const x=c.getContext('2d');x.drawImage(img,0,0);
     const f=Math.max(12,Math.round(c.width/42)),l1=hoy()+' '+ahora()+(punto&&punto.nombre?' · '+punto.nombre:''),
-      l2=g?'📍 '+g.lat+', '+g.lng+(g.prec?' (±'+g.prec+' m)':''):'';
+      l2=g?''+g.lat+', '+g.lng+(g.prec?' (±'+g.prec+' m)':''):'';
     const h=l2?f*2.9:f*1.9;
     x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,c.height-h,c.width,h);
     x.fillStyle='#fff';x.font='600 '+f+'px system-ui,sans-serif';x.textBaseline='top';

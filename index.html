@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="css/09-plantilla.css">
 <link rel="stylesheet" href="css/10-mapa.css">
 <link rel="stylesheet" href="css/11-campos.css">
+<link rel="stylesheet" href="css/12-sobrio.css">
 </head>
 <body>
 <div class="gate show" id="gate"><i class="gb" style="--s:70px;left:12%;top:58%;--d:7s;--dl:-0s;--c:96,165,250"></i><i class="gb" style="--s:46px;left:78%;top:20%;--d:8s;--dl:-1s;--c:52,211,153"></i><i class="gb" style="--s:110px;left:70%;top:64%;--d:10s;--dl:-2s;--c:96,165,250"></i><i class="gb" style="--s:34px;left:22%;top:30%;--d:6.5s;--dl:-0.5s;--c:52,211,153"></i><i class="gb" style="--s:58px;left:86%;top:46%;--d:9s;--dl:-3s;--c:96,165,250"></i><i class="gb" style="--s:26px;left:48%;top:12%;--d:7.5s;--dl:-1.5s;--c:96,165,250"></i><i class="gb" style="--s:84px;left:4%;top:80%;--d:11s;--dl:-2.5s;--c:52,211,153"></i><i class="gb" style="--s:38px;left:60%;top:86%;--d:8.5s;--dl:-0.8s;--c:96,165,250"></i>
@@ -183,7 +184,7 @@
       </button>
       <div style="text-align:center;font-size:11px;margin-top:14px"><a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--text-mute)">Privacidad</a> · <a href="terminos.html" target="_blank" rel="noopener" style="color:var(--text-mute)">Términos</a></div>
       <div id="appVersion" style="text-align:center;font-size:10px;color:var(--text-mute);margin-top:16px"></div>
-      <div style="text-align:center;margin-top:6px"><button class="sm smh" onclick="actualizarAhora()">🔄 Buscar actualización</button></div>
+      <div style="text-align:center;margin-top:6px"><button class="sm smh" onclick="actualizarAhora()">Buscar actualización</button></div>
     </div>
   </aside>
 
@@ -197,15 +198,15 @@
     <span class="stit">Importar Excel</span>
     <label class="uz">
       <input type="file" accept=".xlsx,.xls" onchange="importXL(this)"/>
-      <div style="font-size:22px;margin-bottom:4px">📊</div>
+      <div style="margin-bottom:6px"><svg class="ico" style="vertical-align:-3px;width:26px;height:26px;color:rgb(var(--acc))"><use href="#i-file"/></svg></div>
       <div style="font-size:12px;color:var(--text-mute)">Subir Excel con los puntos del día</div>
     </label>
     <label class="uz" style="margin-top:8px">
       <input type="file" accept="image/*" onchange="ocrArchivo(this)"/>
-      <div style="font-size:22px;margin-bottom:4px">📷</div>
+      <div style="margin-bottom:6px"><svg class="ico" style="width:26px;height:26px;color:rgb(var(--acc))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
       <div style="font-size:12px;color:var(--text-mute)">O sacale foto a una lista de direcciones</div>
     </label>
-    <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()">✍️ Escribir o pegar una lista</button>
+    <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-edit"/></svg> Escribir o pegar una lista</button>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span class="stit" style="margin:0">Lista de puntos</span>
       <div style="display:flex;gap:6px;align-items:center">
@@ -214,8 +215,8 @@
       </div>
     </div>
     <div id="bulkActions" style="display:none;gap:6px;margin-bottom:9px;flex-wrap:wrap">
-      <button class="sm sma" id="btnAddAll" onclick="agregarTodosARuta()">➕ Cargar todas a la ruta</button>
-      <button class="sm smr" id="btnRemoveAll" onclick="quitarTodosDeRuta()" style="display:none">➖ Quitar todas de la ruta</button>
+      <button class="sm sma" id="btnAddAll" onclick="agregarTodosARuta()">Cargar todas a la ruta</button>
+      <button class="sm smr" id="btnRemoveAll" onclick="quitarTodosDeRuta()" style="display:none">Quitar todas de la ruta</button>
     </div>
     <div class="sb" id="sbWrap" style="display:none">
       <span class="si"><svg class="ico" style="vertical-align:-2px"><use href="#i-search"/></svg></span>
@@ -236,9 +237,9 @@
     </div>
     <div id="vPendientes"></div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="sm sma" onclick="siguientePunto()">➡️ Siguiente punto</button>
-      <button class="sm smh" onclick="rutaCompleta()">🗺️ Ruta completa</button>
-      <button class="sm smb" onclick="exportarExcel()">📊 Excel actualizado</button>
+      <button class="sm sma" onclick="siguientePunto()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-nav"/></svg> Siguiente punto</button>
+      <button class="sm smh" onclick="rutaCompleta()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-map"/></svg> Ruta completa</button>
+      <button class="sm smb" onclick="exportarExcel()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-file"/></svg> Excel actualizado</button>
     </div>
     <div class="flt-info" id="fltInfoV" style="display:none"></div>
     <div id="vlist"></div>
@@ -252,7 +253,7 @@
       <button class="sm sma" onclick="geocodificarTodos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-refresh"/></svg> Geocodificar pendientes</button>
       <button class="sm smh" onclick="centrarEnMiUbicacion()"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg> Mi ubicación</button>
       <button class="sm smh" onclick="centrarEnPuntos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg> Ver todos</button>
-      <button class="sm sma" onclick="siguientePunto()">➡️ Siguiente punto</button>
+      <button class="sm sma" onclick="siguientePunto()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-nav"/></svg> Siguiente punto</button>
     </div>
 
     <div id="mapaLeyenda" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text-soft)"></div>
@@ -271,7 +272,7 @@
   <div class="cnt pnl" id="t3">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
       <span class="stit" style="margin:0">Historial de jornadas</span>
-      <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">🗑️ Borrar todo</button>
+      <button class="sm smr" id="btnBorrarHist" style="display:none" onclick="borrarHistorial()">Borrar todo</button>
     </div>
     <div id="hReporte"></div>
     <div id="hlist"></div>
@@ -303,7 +304,7 @@
         </div>
       </div>
       <input type="text" id="nuevaPlNombre" placeholder="Nombre (ej: Planilla Rosario Norte)" style="margin-bottom:9px"/>
-      <button class="btn ba" onclick="guardarNuevaPlanilla()">💾 Guardar planilla</button>
+      <button class="btn ba" onclick="guardarNuevaPlanilla()">Guardar planilla</button>
     </div>
     <!-- Lista -->
     <div id="plList"></div>
@@ -366,9 +367,9 @@
     </div>
     <span class="stit">Resumen del día</span>
     <div class="card" id="resCard"></div>
-    <button class="btn bd" onclick="exportarExcel()">📊 Descargar Excel actualizado</button>
-    <button class="btn ba" onclick="compartirInforme()">📎 Compartir informe con PDFs y fotos</button>
-    <button class="btn bw" style="margin-top:6px" onclick="sendWA()">💬 Enviar solo el resumen por WhatsApp</button>
+    <button class="btn bd" onclick="exportarExcel()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-file"/></svg> Descargar Excel actualizado</button>
+    <button class="btn ba" onclick="compartirInforme()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-upload"/></svg> Compartir informe con PDFs y fotos</button>
+    <button class="btn bw" style="margin-top:6px" onclick="sendWA()">Enviar solo el resumen por WhatsApp</button>
     <button class="btn bd" style="margin-top:6px" onclick="sendEmail()"><svg class="ico" style="vertical-align:-2px"><use href="#i-mail"/></svg> Enviar por email</button>
   </div>
 
@@ -412,17 +413,17 @@
       <div class="plsec">Foto de la visita</div>
       <label class="foto-btn" id="fotoBtnLbl">
         <input type="file" accept="image/*" capture="environment" onchange="loadFoto(this)"/>
-        <div style="font-size:22px;margin-bottom:4px">📷</div>
+        <div style="margin-bottom:6px"><svg class="ico" style="width:26px;height:26px;color:rgb(var(--acc))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
         <div style="font-size:12px;color:#64748b">Tocar para <strong style="color:#1d6fa4">sacar foto</strong></div>
       </label>
       <img id="fotoPrev" class="foto-prev"/>
       <div id="fotoOk" style="display:none;font-size:11px;color:#059669;font-weight:600;margin-top:5px;text-align:center"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Foto cargada</div>
-      <button id="fotoQuit" style="display:none;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:7px;width:100%;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;margin-top:6px" onclick="quitarFoto()">🗑️ Quitar foto</button>
+      <button id="fotoQuit" style="display:none;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:7px;width:100%;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;margin-top:6px" onclick="quitarFoto()">Quitar foto</button>
       </div>
     </div>
     <div class="plbr">
-      <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">💾 Guardar visita</button>
-      <button class="plbt plsv" id="btnSoloGuardar" onclick="guardarVisita(true)">💾 Solo guardar</button>
+      <button class="plbt plgo" id="btnGuardarVisita" onclick="guardarVisita()">Guardar visita</button>
+      <button class="plbt plsv" id="btnSoloGuardar" onclick="guardarVisita(true)">Solo guardar</button>
       <button class="plbt plcl" onclick="closeOv()"><svg class="ico" style="vertical-align:-2px"><use href="#i-close"/></svg> Cancelar</button>
       <button class="plbt pldes" id="btnDesmarcar" style="display:none" onclick="confirmarDesmarcar()">↩ Desmarcar: no la hice</button>
     </div>
@@ -501,12 +502,12 @@ setTimeout(go,2500);})();</script>
     <div class="pemp">
       <input type="email" id="perfilEmpresa" placeholder="Correo de la empresa (opcional)" autocomplete="off" inputmode="email" onchange="perfilGuardarEmpresa(this.value)">
       <div class="pemp-t">Al cerrar el día, esa dirección recibe de tu Drive el aviso con la carpeta de la jornada (planillas, fotos y Excel).</div>
-      <button class="sm smh" id="perfilEnviarEmp" style="display:none" onclick="compartirDiaConEmpresa(true)">📨 Enviar copia de hoy ahora</button>
+      <button class="sm smh" id="perfilEnviarEmp" style="display:none" onclick="compartirDiaConEmpresa(true)">Enviar copia de hoy ahora</button>
     </div>
     <div class="popc">
       <div class="popc-t">Prueba de visita (opcional)</div>
-      <label class="popc-f"><span>📍 Registrar ubicación y hora<small>Muestra si estás en el local y lo guarda con la visita</small></span><input type="checkbox" id="optUbi" onchange="optUbiCambio(this.checked)"><i class="popc-sw"></i></label>
-      <label class="popc-f"><span>📷 Sello en las fotos<small>Fecha, hora y lugar escritos en cada foto</small></span><input type="checkbox" id="optSello" onchange="optSelloCambio(this.checked)"><i class="popc-sw"></i></label>
+      <label class="popc-f"><span>Registrar ubicación y hora<small>Muestra si estás en el local y lo guarda con la visita</small></span><input type="checkbox" id="optUbi" onchange="optUbiCambio(this.checked)"><i class="popc-sw"></i></label>
+      <label class="popc-f"><span>Sello en las fotos<small>Fecha, hora y lugar escritos en cada foto</small></span><input type="checkbox" id="optSello" onchange="optSelloCambio(this.checked)"><i class="popc-sw"></i></label>
     </div>
     <div class="popc">
       <div class="popc-t">Plan</div>
@@ -515,7 +516,7 @@ setTimeout(go,2500);})();</script>
     </div>
     <div class="popc">
       <div class="popc-t">Privacidad</div>
-      <label class="popc-f"><span>📊 Contar mi uso de forma anónima<small>Solo suma "una instalación más". No manda visitas, fotos, direcciones ni datos tuyos</small></span><input type="checkbox" id="optContar" onchange="optContarCambio(this.checked)"><i class="popc-sw"></i></label>
+      <label class="popc-f"><span>Contar mi uso de forma anónima<small>Solo suma "una instalación más". No manda visitas, fotos, direcciones ni datos tuyos</small></span><input type="checkbox" id="optContar" onchange="optContarCambio(this.checked)"><i class="popc-sw"></i></label>
     </div>
     <div class="popc" id="perfilEq"></div>
     <div class="pstats" id="perfilStats"></div>
@@ -523,8 +524,8 @@ setTimeout(go,2500);})();</script>
     <div style="display:grid;gap:8px">
       <button class="btn gbtn2" id="perfilReco" onclick="closePerfil();connectDrive()"></button>
       <button class="btn bd" id="perfilSinCon" onclick="perfilSeguirSinConexion()">Desconectar Google y seguir sin conexión</button>
-      <button class="btn bd" onclick="perfilIr(4)">📄 Planilla de mi empresa</button>
-      <button class="btn bd" onclick="perfilIr(5)">☁️ Drive y carpeta</button>
+      <button class="btn bd" onclick="perfilIr(4)">Planilla de mi empresa</button>
+      <button class="btn bd" onclick="perfilIr(5)">Drive y carpeta</button>
       <button class="btn bd" onclick="perfilSalir()">Cerrar sesión</button>
       <button class="btn bd" onclick="closePerfil()">Cerrar</button>
     </div>
@@ -541,7 +542,7 @@ setTimeout(go,2500);})();</script>
 <div class="dlg" id="plEditDlg">
   <div class="dlgw" style="max-width:380px;max-height:92vh;overflow-y:auto">
     <div style="font-weight:800;font-size:15px;margin-bottom:8px">Planilla general</div>
-    <div class="pled-aviso" id="plEdAviso" style="display:none">⚠️ Ahora estás usando otra planilla, y estos campos (incluida la firma) solo aparecen con la planilla general. Al guardar te ofrezco usarla.</div>
+    <div class="pled-aviso" id="plEdAviso" style="display:none">Ahora estás usando otra planilla, y estos campos (incluida la firma) solo aparecen con la planilla general. Al guardar te ofrezco usarla.</div>
     <label class="pllb">Título del PDF</label>
     <input class="pli" id="plEdTitulo" type="text">
     <label class="pllb" style="margin-top:10px">Sección 1 · nombre</label>
@@ -568,7 +569,7 @@ setTimeout(go,2500);})();</script>
       <option value="no">Sin foto</option>
     </select>
     <div style="display:grid;gap:8px;margin-top:14px">
-      <button class="btn bd" onclick="plEdVista()">👁 Vista previa</button>
+      <button class="btn bd" onclick="plEdVista()">Vista previa</button>
       <button class="btn ba" onclick="plEdGuardar()">Guardar planilla</button>
       <button class="btn bd" onclick="plEdRestablecer()">Restablecer la original</button>
       <button class="btn bd" onclick="plEdCerrar()">Cancelar</button>
@@ -611,10 +612,10 @@ setTimeout(go,2500);})();</script>
   <div class="ds-tools" id="dsTools"></div>
   <div class="pf-nav"><button class="sm smh" onclick="dsHoja(-1)">◀</button><span id="dsHoja">Hoja 1</span><button class="sm smh" onclick="dsHoja(1)">▶</button>
     <span style="flex:1"></span><button class="sm smh" onclick="dsZoom(.8)">−</button><span id="dsZoomT">100%</span><button class="sm smh" onclick="dsZoom(1.25)">+ Zoom</button></div>
-  <div class="ds-hint" id="dsHint">🤏 Pellizcá con dos dedos para acercar</div>
+  <div class="ds-hint" id="dsHint">Pellizcá con dos dedos para acercar</div>
   <div class="pf-scroll" id="dsScroll"><div class="pf-wrap" id="dsWrap"><canvas id="dsCv"></canvas><div class="ds-capa" id="dsMarcas"></div></div></div>
   <div class="ds-acc" id="dsAcc" style="display:none"><span id="dsAccTxt"></span>
-    <div><button class="sm smh" id="dsAccTodos" style="display:none" onclick="dsTodos()">👥 Editar todos</button><button class="sm sma" id="dsAccEd" onclick="dsAccEditar()">✏️ Editar</button><button class="sm smr" onclick="dsAccBorrar()">🗑️</button><button class="sm smh" onclick="dsAccListo()">✔ Listo</button></div></div>
+    <div><button class="sm smh" id="dsAccTodos" style="display:none" onclick="dsTodos()">Editar todos</button><button class="sm sma" id="dsAccEd" onclick="dsAccEditar()">Editar</button><button class="sm smr" onclick="dsAccBorrar()">🗑️</button><button class="sm smh" onclick="dsAccListo()">Listo</button></div></div>
   <div class="firma-bot" style="grid-template-columns:auto 1fr 1.4fr;align-items:center">
     <span id="dsCuenta" style="font-size:12px;font-weight:700;color:#0d2a78">0 campos</span>
     <button class="btn bd" onclick="cerrarDisenador()">Cancelar</button>
@@ -634,11 +635,11 @@ setTimeout(go,2500);})();</script>
       <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoLista" onchange="dsEdModoSuma()"> Los campos que yo elijo</label>
       <label class="ds-chk"><input type="radio" name="dsModoSuma" id="dsEdModoZona" onchange="dsEdModoSuma()"> Todos los números que marque dentro de una zona (una tira entera)</label>
       <div id="dsEdSuma"></div>
-      <div id="dsEdZonaBox" style="display:none;margin-top:6px"><div class="pled-nota" id="dsEdZonaEst"></div><button class="sm sma" style="margin-top:6px" onclick="dsMarcarZona()">📐 Marcar la zona en la hoja</button></div></div>
+      <div id="dsEdZonaBox" style="display:none;margin-top:6px"><div class="pled-nota" id="dsEdZonaEst"></div><button class="sm sma" style="margin-top:6px" onclick="dsMarcarZona()">Marcar la zona en la hoja</button></div></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="sm smh" style="flex:1" onclick="dsEdTamano(.85)">− Más chico</button><button class="sm smh" style="flex:1" onclick="dsEdTamano(1.18)">+ Más grande</button></div>
     <div style="display:grid;gap:8px;margin-top:12px">
       <button class="btn ba" onclick="dsEdGuardar()">Listo</button>
-      <button class="btn bd" onclick="dsEdBorrar()">🗑️ Borrar este campo</button>
+      <button class="btn bd" onclick="dsEdBorrar()">Borrar este campo</button>
       <button class="btn bd" onclick="dsEdCancelar()">Cancelar</button>
     </div>
   </div>
@@ -653,7 +654,7 @@ setTimeout(go,2500);})();</script>
 </div>
 <div class="dlg alto" id="dpDlg" onclick="if(event.target===this)dpCerrar()">
   <div class="dlgw" style="max-width:380px">
-    <div style="font-weight:800;font-size:17px;margin-bottom:10px;text-align:center">🤝 Trabajar en dupla</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:10px;text-align:center">Trabajar en dupla</div>
     <div id="dpBox"></div>
     <button class="btn bd" style="margin-top:10px" onclick="dpCerrar()">Cerrar</button>
   </div>

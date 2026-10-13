@@ -143,7 +143,7 @@ function dpAplicar(est){
   if(d.rol==='verificador'&&est.actual&&String(est.actual.ts)!==String(lsGet(SK_DPVISTO))){
     lsSet(SK_DPVISTO,String(est.actual.ts));
     const p=puntos.find(x=>String(x.id)===String(est.actual.id));
-    if(p&&!(visits[p.id]&&visits[p.id].done)) mostrarDlgEnvio('📍 Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'📝 Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
+    if(p&&!(visits[p.id]&&visits[p.id].done)) mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'📝 Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
   }
 }
 // el navegante sube sus cambios de ruta (puntos, marcados y orden)

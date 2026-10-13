@@ -16,7 +16,7 @@ async function cargarPdfJs(){
 // Después de guardar una planilla nueva: ¿es igual a la oficial o se marcan sus campos?
 function preguntarComoUsar(id){
   mostrarDlgEnvio('Planilla guardada ✓\n\nLa app busca sola las casillas, los datos y los totales de tu planilla, y vos solo revisás la lista.',[
-    {txt:'✨ Detectar los campos automáticamente',cls:'ba',fn:()=>detectarYRevisar(id)},
+    {txt:'Detectar los campos automáticamente',cls:'ba',fn:()=>detectarYRevisar(id)},
     {txt:'Es igual a la oficial SUBE (solo firma, si lleva)',cls:'bd',fn:()=>preguntarFirmaPlanilla(id)},
     {txt:'Más tarde',cls:'bd'}
   ]);
@@ -25,7 +25,7 @@ function preguntarComoUsar(id){
 // Después de guardar una planilla nueva
 function preguntarFirmaPlanilla(id){
   mostrarDlgEnvio('¿Esta planilla lleva firma?\n\nSi la llevás, al completar cada visita se firma con el dedo y la firma se imprime en el lugar que elijas.',[
-    {txt:'✍️ Sí, elegir dónde va la firma',cls:'ba',fn:()=>abrirPosFirma(id)},
+    {txt:'Sí, elegir dónde va la firma',cls:'ba',fn:()=>abrirPosFirma(id)},
     {txt:'No, no lleva firma',cls:'bd'}
   ]);
 }
