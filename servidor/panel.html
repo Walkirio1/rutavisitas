@@ -71,16 +71,21 @@ function pintar(){
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
     <button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button><button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
     `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
-  <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2><div id="mapa"></div></div>
+  <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px;align-items:center">${m.map(x=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colDe(x.id)};margin-right:4px"></i>${esc(x.nombre)} (pendientes)</span>`).join('')}<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px"></i>hecha</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></i>cerrada</span></div>
+  ${m.some(x=>x.puntos.some(p=>p.lat==null))?`<button class="s" id="btnGeo" onclick="ubicarTodos()" style="margin-bottom:8px">📍 Ubicar en el mapa los puntos sin ubicación</button>`:''}
+  <div id="mapa"></div></div>
   <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
   </main>`;
   setTimeout(dibujarMapa,50);
 }
+const COLS=['#2563eb','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#ea580c','#65a30d','#0891b2'];
+const colDe=id=>COLS[Math.max(0,D.miembros.findIndex(m=>m.id===id))%COLS.length];
 function dibujarMapa(){
   const el=$('#mapa');if(!el||!window.L) return;
   mapa=L.map(el);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapa);
   const pts=[],add=(lat,lng,col,tx)=>{if(lat==null||lng==null) return;pts.push([lat,lng]);L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).bindPopup(tx).addTo(mapa);};
-  D.miembros.forEach(m=>m.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===m.id)) add(p.lat,p.lng,'#94a3b8',esc(p.nombre)+'<br>'+esc(m.nombre)+' · pendiente');}));
+  D.miembros.forEach(m=>m.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===m.id)) add(p.lat,p.lng,colDe(m.id),esc(p.nombre)+'<br>'+esc(m.nombre)+' · pendiente');}));
   D.visitas.forEach(v=>add(v.lat,v.lng,v.estado==='ok'?'#10b981':'#ef4444',esc(v.nombre)+'<br>'+esc(v.miembro)));
   D.miembros.forEach(m=>{if(m.pos){pts.push([m.pos.lat,m.pos.lng]);L.circleMarker([m.pos.lat,m.pos.lng],{radius:11,color:'#fff',weight:3,fillColor:'#2563eb',fillOpacity:1}).bindTooltip(esc(m.nombre),{permanent:true,direction:'top',offset:[0,-8]}).addTo(mapa);}});
   pts.length?mapa.fitBounds(pts,{padding:[30,30],maxZoom:15}):mapa.setView([-32.95,-60.65],11);
@@ -95,6 +100,31 @@ function dlgAsignar(id){
   <div id="vistaR" style="font-size:13px;color:var(--mut);margin-top:6px;min-height:18px"></div>
   <div style="display:flex;gap:8px;margin-top:10px"><button onclick="enviarRuta(${id})" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
   $('#dlg').classList.add('on');
+}
+
+const esperar=ms=>new Promise(r=>setTimeout(r,ms));
+async function geoPunto(p){
+  if(p.lat!=null&&p.lng!=null&&isFinite(p.lat)&&isFinite(p.lng)) return true;
+  for(const q of [p.dir+', '+p.localidad,p.dir]){
+    try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q='+encodeURIComponent(q+', Argentina'));const j=await r.json();
+      if(j[0]){p.lat=+j[0].lat;p.lng=+j[0].lon;return true;}}catch(e){}
+    await esperar(1100);
+  }
+  return false;
+}
+async function geoLista(pts,estado){
+  let n=0;for(let i=0;i<pts.length;i++){if(estado) estado(i+1,pts.length);if(!(pts[i].lat!=null&&isFinite(pts[i].lat))){await geoPunto(pts[i]);await esperar(1100);}if(pts[i].lat!=null) n++;}
+  return n;
+}
+async function ubicarTodos(){
+  const b=$('#btnGeo');let tot=0,ok=0;
+  for(const m of D.miembros){
+    if(!m.puntos.some(p=>p.lat==null)) continue;
+    const pts=m.puntos.map(p=>({...p}));
+    ok+=await geoLista(pts,(i,n)=>{if(b) b.textContent='📍 Ubicando '+m.nombre+': '+i+'/'+n+'…';});tot+=pts.length;
+    await api('POST','/api/asignar',{reparto:[{miembro_id:m.id,puntos:pts}]});
+  }
+  cargar();
 }
 function leerArchivo(inp){
   const f=inp.files[0];if(!f) return;
@@ -131,7 +161,13 @@ async function enviarRuta(id){
   const pts=leerFilas($('#pega').value);if(!pts.length) return alert('No encontré filas con dirección. Subí el Excel o pegá la lista con la columna Dirección.');
   const ms=D.miembros;
   const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:pts.slice(Math.floor(i*pts.length/ms.length),Math.floor((i+1)*pts.length/ms.length))}));
-  try{const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓\nA tu equipo le aparece un aviso al abrir la app (o en Perfil → Traer mi ruta de hoy).');cargar();}catch(e){alert(e.message);}
+  try{
+    const b=$('#dlgc button'),todos=reparto.flatMap(r=>r.puntos);
+    if(todos.some(p=>!(p.lat>-90))){ // ubicar en el mapa las direcciones sin coordenadas
+      const bt=document.querySelector('#dlgc button[onclick^=enviarRuta]');
+      await geoLista(todos,(i,n)=>{if(bt){bt.disabled=true;bt.textContent='📍 Ubicando '+i+'/'+n+'…';}});
+    }
+    const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓\nA tu equipo le aparece un aviso al abrir la app (o en Perfil → Traer mi ruta de hoy).');cargar();}catch(e){alert(e.message);}
 }
 let es=null,pend=null;
 function enVivo(){
