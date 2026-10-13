@@ -16,8 +16,8 @@ function renderPendientes(){
   box.innerHTML=`<div class="pend-bar">
     <div>⚠️ <strong>${n}</strong> visita${n>1?'s':''} guardada${n>1?'s':''} en la app pero <strong>sin enviar a Drive</strong>. No se perdió nada.</div>
     <div class="pb-btns">
-      <button class="sm sma" onclick="reintentarPendientes()">Reintentar</button>
-      <button class="sm smh" onclick="guardarEnCelular()">Guardar en el celular</button>
+      <button class="sm sma" onclick="reintentarPendientes()">${IC("refresh")} Reintentar</button>
+      <button class="sm smh" onclick="guardarEnCelular()">${IC("folder")} Guardar en el celular</button>
     </div>
   </div>`;
 }

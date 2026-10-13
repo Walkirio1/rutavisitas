@@ -364,3 +364,34 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none!imp
 #instGuiaDlg img{filter:none!important}
 #envioMsg,#dlgMsg{white-space:pre-line}
 #envioDlg .btn,#dlg .btn{width:100%}
+
+/* ═══ Íconos de línea en botones generados por la app (estilo de la app, sin emojis) ═══ */
+button[onclick^="editarPlantilla"],button[onclick^="detectarYRevisar"],button[onclick^="abrirDisenador"],button[onclick^="abrirPosFirma"],button[onclick^="cpAbrir"],button[onclick^="borrarPlanilla"]{display:inline-flex!important;align-items:center;gap:6px}
+button[onclick^="editarPlantilla"]::before,button[onclick^="detectarYRevisar"]::before,button[onclick^="abrirDisenador"]::before,button[onclick^="abrirPosFirma"]::before,button[onclick^="cpAbrir"]::before,button[onclick^="borrarPlanilla"]::before,.plubi::before{content:"";width:15px;height:15px;flex:none;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+button[onclick^="editarPlantilla"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h4L19 9l-4-4L4 16z'/><path d='M13 7l4 4'/></svg>")}
+button[onclick^="detectarYRevisar"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z'/><path d='M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z'/></svg>")}
+button[onclick^="abrirDisenador"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01'/></svg>")}
+button[onclick^="abrirPosFirma"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h4L19 9l-4-4L4 16z'/><path d='M13 7l4 4'/></svg>")}
+button[onclick^="cpAbrir"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='11' height='11' rx='2'/><path d='M5 15V6a2 2 0 012-2h9'/></svg>")}
+button[onclick^="borrarPlanilla"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6'/></svg>");font-size:0!important;gap:0}
+.plubi{display:flex;align-items:center;gap:8px;--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z'/><circle cx='12' cy='10' r='2.5'/></svg>")}
+
+/* ═══ Un poco de relieve (sin brillos): sombras suaves y degradados muy sutiles ═══ */
+:root,:root[data-theme="light"]{--card-sh:0 1px 2px rgba(15,23,42,.06),0 10px 22px -12px rgba(15,23,42,.24);--btn-sh:0 1px 2px rgba(15,23,42,.10)}
+:root[data-theme="dark"]{--card-sh:0 1px 0 rgba(255,255,255,.04) inset,0 10px 24px -12px rgba(0,0,0,.7);--btn-sh:0 1px 2px rgba(0,0,0,.5)}
+.hdr,:root[data-theme] .hdr{box-shadow:0 1px 0 var(--line),0 8px 18px -12px rgba(15,23,42,.30)!important}
+.tabs,:root[data-theme] .tabs{box-shadow:0 -1px 0 var(--line),0 -10px 22px -14px rgba(15,23,42,.30)!important}
+.sm,.btn,:root[data-theme] .sm,:root[data-theme] .btn{background:linear-gradient(180deg,var(--bg-1),var(--bg-3))!important;box-shadow:var(--btn-sh)!important}
+.sma,.smg,.ba,.bw,.bg,:root[data-theme] .sma,:root[data-theme] .smg,:root[data-theme] .ba,.pi.sel button.sm,.plgo{background:linear-gradient(180deg,var(--acc-1),var(--acc-2))!important;box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 6px 14px -6px rgba(var(--acc),.65)!important}
+:root[data-theme="dark"] .sma,:root[data-theme="dark"] .smg,:root[data-theme="dark"] .ba,:root[data-theme="dark"] .pi.sel button.sm,:root[data-theme="dark"] .plgo{background:linear-gradient(180deg,#4b7bf5,#3b6df0)!important}
+.br,:root[data-theme] .br{background:linear-gradient(180deg,#1a2438,#0b1220)!important;box-shadow:0 6px 14px -6px rgba(11,18,32,.6)!important}
+.pi.sel,:root[data-theme] .pi.sel{box-shadow:inset 5px 0 0 rgb(var(--acc)),0 10px 24px -12px rgba(var(--acc),.55)!important}
+:root[data-theme] .vi:has(.vsd){box-shadow:inset 5px 0 0 #12b76a,0 10px 24px -14px rgba(18,183,106,.5)!important}
+:root[data-theme] .vi:has(.vsr){box-shadow:inset 5px 0 0 #f04438,0 10px 24px -14px rgba(240,68,56,.45)!important}
+.sc.act{box-shadow:0 8px 20px -10px rgba(var(--acc),.5)!important}
+.pf-ic,.pf-ic{background:linear-gradient(180deg,rgba(var(--acc),.16),rgba(var(--acc),.08))!important}
+.popc-f,.dp-cod,.dp-comp,.cfg-item{box-shadow:var(--card-sh)!important}
+.tab.on::before{box-shadow:0 2px 8px rgba(var(--acc),.55)}
+.popc-sw{box-shadow:inset 0 1px 2px rgba(15,23,42,.25)}
+.popc-sw::after{box-shadow:0 1px 3px rgba(15,23,42,.35)!important}
+.dlgw,.cfg-panel{box-shadow:0 24px 60px -20px rgba(11,18,32,.55)!important}

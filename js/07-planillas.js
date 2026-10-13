@@ -131,7 +131,7 @@ function openPl(id){
   const bg=document.getElementById('btnGuardarVisita');
   const bs=document.getElementById('btnSoloGuardar');
   if(bs) bs.style.display=drv.connected?'':'none'; // sin Drive, el botón principal ya solo guarda
-  if(bg) bg.innerHTML=drv.connected?(v.done?'Reenviar':'Enviar visita'):'Guardar visita';
+  if(bg) bg.innerHTML=drv.connected?(v.done?IC('cloud')+' Reenviar':IC('cloud')+' Enviar visita'):IC('save')+' Guardar visita';
 
   const bd=document.getElementById('btnDesmarcar');
   if(bd) bd.style.display=v.done?'':'none'; // solo si ya estaba marcada como hecha

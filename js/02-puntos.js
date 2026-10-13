@@ -128,9 +128,9 @@ function renderP(){
       <div class="pnum">${i+1}</div>
       <div class="pb">
         <div class="pno">${p.nombre}</div>
-        <div class="pd">${p.dir}</div>
+        <div class="pd">${IC("pin")} ${p.dir}</div>
         <div class="pid">ID: ${p.id}</div>
-        ${p.obs?`<div class="pobs">${p.obs}</div>`:''}
+        ${p.obs?`<div class="pobs">${IC("info")} ${p.obs}</div>`:''}
         <span class="ptag ${p.tipo.includes('Venta')?'tv':'tr'}">${p.tipo}</span>
         ${geoBadge}
         ${geoErr?`<div style="font-size:10px;color:#f59e0b;margin-top:3px">${p.geoErr}</div>`:''}
