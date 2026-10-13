@@ -111,7 +111,7 @@ input:focus,select:focus,textarea:focus{border-color:rgb(var(--acc))!important;b
 .drop,.upl,.dz,[class*="dropzone"]{border:1px solid var(--line)!important;border-style:solid!important;border-radius:12px!important;background:var(--bg-1)!important;box-shadow:none!important}
 
 /* diálogos y ajustes */
-.dlgw,.cfg-panel,.perfil-panel,.popc{background:var(--bg-1)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:var(--shadow-deep)!important;border:1px solid var(--line)!important;border-radius:14px!important}
+.dlgw,.cfg-panel,.perfil-panel{background:var(--bg-1)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:var(--shadow-deep)!important;border:1px solid var(--line)!important;border-radius:14px!important}
 .dlg,.ov{background:var(--overlay)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .dlgw::before{display:none!important}
 .dlgw p{font-size:14.5px!important;line-height:1.55!important;color:var(--text)}
@@ -282,3 +282,31 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none!imp
   #mapaLeyenda{display:none!important}
   .sm{padding:6px 10px!important;font-size:12px!important}
 }
+
+/* ═══ Perfil ═══ */
+.perfil .pav.big,.pav.big{box-shadow:none!important;background:var(--bg-3)!important;color:var(--text)!important;border:1px solid var(--line-2);font-weight:600!important}
+.pav{background:var(--bg-3)!important;color:var(--text)!important;font-weight:600!important}
+.perfil .pedit-t{font-size:12px!important;color:var(--text-mute)!important}
+.perfil .pnom-in{font-family:inherit!important;font-weight:600!important;font-size:20px!important;border:1px solid var(--line)!important;background:var(--bg-1)!important;border-radius:10px!important;padding:8px 10px!important}
+.perfil .pmail{font-size:13px!important}
+.perfil .pest{display:inline-flex!important;align-items:center;gap:8px;background:none!important;padding:0!important;font-size:13.5px!important;font-weight:500!important;color:var(--text)!important;border-radius:0!important}
+.perfil .pest::before{content:"";width:9px;height:9px;border-radius:50%;background:#12b76a;flex:none}
+.perfil .pest.off::before{background:#f79009}
+.perfil .pest .gmark{display:inline-flex}.perfil .pest .gmark svg{width:18px;height:18px}.perfil .pest:has(.gmark)::before{display:none}
+.perfil .pemp input{font-family:inherit!important;font-size:14.5px!important;text-align:left!important;border:1px solid var(--line-2)!important;background:var(--bg-1)!important;border-radius:10px!important;padding:12px 14px!important}
+.perfil .pemp-t{font-size:12.5px!important}
+.popc,.perfil .popc{background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0 0 16px!important}
+.popc-t{text-align:left!important;font-size:11px!important;font-weight:600!important;letter-spacing:.08em!important;color:var(--text-mute)!important;margin:0 2px 8px!important}
+.popc-f{background:var(--bg-1)!important;border:1px solid var(--line)!important;border-radius:10px!important;padding:13px 14px!important;box-shadow:none!important}
+.popc-f span{font-weight:600!important;font-size:14px!important;color:var(--text)}
+.popc-f small{font-size:12.5px!important;color:var(--text-mute)!important;font-weight:400!important}
+.popc-sw{background:#bcc5d4!important;width:46px!important;height:28px!important;border-radius:14px!important}
+.popc-sw::after{top:3px!important;left:3px!important;width:22px!important;height:22px!important}
+.popc-f input:checked+.popc-sw{background:rgb(var(--acc))!important}
+.popc-f input:checked+.popc-sw::after{transform:translateX(18px)!important}
+.perfil .pstats div{background:var(--bg-1)!important;border:1px solid var(--line)!important;border-radius:10px!important}
+.perfil .pstats b{font-size:20px!important;font-weight:600}
+.perfil .pstats span{font-size:11px!important}
+.perfil .pinf{font-size:13px!important;color:var(--text-soft)!important;margin:6px 0 14px!important}
+.perfil .gbtn2{background:var(--bg-1)!important;color:var(--text)!important;border:1px solid var(--line-2)!important}
+.perfil .gbtn2 svg{width:20px!important;height:20px!important}
