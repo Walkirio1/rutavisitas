@@ -34,6 +34,7 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 <div id="app"></div>
 <div class="dlg" id="dlg"><div id="dlgc"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let APP='https://walkirio1.github.io/rutavisitas/';
@@ -88,27 +89,49 @@ function copiar(t){navigator.clipboard.writeText(t).then(()=>alert('Invitación 
 async function quitar(id,n){if(confirm('¿Sacar a '+n+' del equipo?')){await api('DELETE','/api/miembro/'+id);cargar();}}
 function dlgAsignar(id){
   $('#dlgc').innerHTML=`<h2>${id?'Asignar ruta':'Repartir ruta entre todos'}</h2>
-  <p style="color:var(--mut);font-size:13px;margin-top:0">Pegá las filas desde tu Excel: <b>ID, Nombre, Dirección, Localidad</b> (con o sin encabezado; si tenés lat y lng, mejor).</p>
-  <textarea id="pega" placeholder="1001	Kiosco Don Pepe	Córdoba 1500	Rosario"></textarea>
+  <p style="color:var(--mut);font-size:13px;margin-top:0">Subí tu <b>Excel</b> o pegá la lista. Columnas: <b>ID, Nombre, Dirección, Localidad</b>. Si no tenés ID, alcanza con la dirección.</p>
+  <label class="s" style="display:block;text-align:center;padding:12px;border-radius:12px;cursor:pointer;margin-bottom:8px;border:1px dashed var(--mut)">📂 Subir Excel o CSV<input type="file" id="arch" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="leerArchivo(this)"></label>
+  <textarea id="pega" placeholder="1001	Kiosco Don Pepe	Córdoba 1500	Rosario" oninput="vistaRuta()"></textarea>
+  <div id="vistaR" style="font-size:13px;color:var(--mut);margin-top:6px;min-height:18px"></div>
   <div style="display:flex;gap:8px;margin-top:10px"><button onclick="enviarRuta(${id})" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
   $('#dlg').classList.add('on');
+}
+function leerArchivo(inp){
+  const f=inp.files[0];if(!f) return;
+  if(!window.XLSX) return alert('No pude cargar el lector de Excel (sin internet). Pegá la lista en el cuadro.');
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]];
+    const filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    $('#pega').value=filas.filter(x=>x.some(c=>String(c).trim())).map(x=>x.map(c=>String(c).replace(/[\t\r\n]+/g,' ').trim()).join('\t')).join('\n');
+    vistaRuta();
+  }catch(e){alert('No pude leer ese archivo: '+e.message);}};
+  r.readAsArrayBuffer(f);
+}
+function vistaRuta(){
+  const t=($('#pega')||{}).value||'',total=t.split(/\r?\n/).filter(x=>x.trim()).length,ok=leerFilas(t).length;
+  $('#vistaR').innerHTML=!total?'':ok?`✅ <b>${ok}</b> puntos listos para asignar${total-ok>1?' · '+(total-ok)+' filas se ignoran (sin dirección)':''}`:'⚠️ No encuentro direcciones. Revisá las columnas.';
 }
 function leerFilas(t){
   const L=t.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.split(/\t|;/).map(c=>c.trim()));
   if(!L.length) return [];
-  let col={id:0,nombre:1,dir:2,localidad:3,tipo:4,lat:5,lng:6};
-  if(/id|direcc/i.test(L[0].join(' '))&&!/^\d/.test(L[0][0])){
-    const c=L.shift().map(x=>x.toLowerCase());const f=rx=>c.findIndex(x=>rx.test(x));
-    col={id:Math.max(0,f(/^(ubicaci[oó]n\s*id|id)$/)),nombre:f(/^(ubicaci[oó]n|nombre)$/),dir:f(/direcci/),localidad:f(/localidad/),tipo:f(/tipo/),lat:f(/^lat/),lng:f(/^(lng|lon)/)};
+  let col={id:0,nombre:1,dir:2,localidad:3,tipo:4,lat:5,lng:6},sinId=false;
+  const cab=L[0].map(x=>x.toLowerCase());
+  if(cab.some(x=>/direcc|domicilio|calle/.test(x))||(cab.some(x=>/^(id|ubicaci[oó]n id|c[oó]digo)$/.test(x))&&!/^\d/.test(L[0][0]))){
+    L.shift();const f=rx=>cab.findIndex(x=>rx.test(x));
+    col={id:f(/^(ubicaci[oó]n\s*id|id|c[oó]digo|n[°º]?)$/),nombre:f(/^(ubicaci[oó]n|nombre|local|comercio)$/),dir:f(/direcci|domicilio|calle/),localidad:f(/localidad|ciudad/),tipo:f(/tipo/),lat:f(/^lat/),lng:f(/^(lng|lon)/)};
+    sinId=col.id<0;
+  }else if(L[0].length<=2||!/^\w{1,12}$/.test(L[0][0])){ // lista simple sin encabezado: "dirección" o "nombre, dirección"
+    col=L[0].length===1?{id:-1,nombre:-1,dir:0,localidad:-1,tipo:-1,lat:-1,lng:-1}:{id:-1,nombre:0,dir:1,localidad:2,tipo:-1,lat:-1,lng:-1};sinId=true;
   }
   const g=(r,k)=>col[k]>=0?(r[col[k]]||''):'';
-  return L.map(r=>({id:g(r,'id'),nombre:g(r,'nombre'),dir:g(r,'dir'),localidad:g(r,'localidad'),tipo:g(r,'tipo'),lat:parseFloat(String(g(r,'lat')).replace(',','.')),lng:parseFloat(String(g(r,'lng')).replace(',','.'))})).filter(p=>p.id&&p.dir);
+  return L.map((r,i)=>({id:sinId||col.id<0?'P'+(i+1):g(r,'id'),nombre:g(r,'nombre'),dir:g(r,'dir'),localidad:g(r,'localidad'),tipo:g(r,'tipo'),lat:parseFloat(String(g(r,'lat')).replace(',','.')),lng:parseFloat(String(g(r,'lng')).replace(',','.'))})).filter(p=>p.id&&p.dir);
 }
 async function enviarRuta(id){
-  const pts=leerFilas($('#pega').value);if(!pts.length) return alert('No encontré filas con ID y dirección.');
+  const pts=leerFilas($('#pega').value);if(!pts.length) return alert('No encontré filas con dirección. Subí el Excel o pegá la lista con la columna Dirección.');
   const ms=D.miembros;
   const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:pts.slice(Math.floor(i*pts.length/ms.length),Math.floor((i+1)*pts.length/ms.length))}));
-  try{const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓');cargar();}catch(e){alert(e.message);}
+  try{const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓\nA tu equipo le aparece un aviso al abrir la app (o en Perfil → Traer mi ruta de hoy).');cargar();}catch(e){alert(e.message);}
 }
 let es=null,pend=null;
 function enVivo(){
