@@ -21,7 +21,11 @@ async function eqApi(metodo,ruta,cuerpo,eq){
 function eqLeerInvitacion(txt){
   txt=String(txt||'').trim();let codigo='',api='';
   try{const u=new URL(txt);codigo=u.searchParams.get('e')||'';api=u.searchParams.get('s')||'';}catch(e){codigo=txt.toUpperCase().replace(/[^A-Z0-9]/g,'');}
-  return {codigo,api};
+  return {codigo,api:servidorValido(api)};
+}
+// la invitación solo puede apuntar al servidor de Verific: con otro, nombre, foto, visitas y GPS irían a un tercero
+function servidorValido(api){
+  try{return api&&new URL(api).origin===new URL(SERVIDOR_URL).origin?SERVIDOR_URL:'';}catch(e){return '';}
 }
 async function eqUnirse(codigo,api){
   const nombre=(perfil&&perfil().nombre)||'';
@@ -34,7 +38,7 @@ async function eqUnirse(codigo,api){
 }
 async function eqUnirseDesdeCampo(){
   const {codigo,api}=eqLeerInvitacion(document.getElementById('eqInv').value);
-  if(!codigo||!api){showToast('Pegá el enlace de invitación que te mandó tu jefe',true);return;}
+  if(!codigo||!api){showToast('Pegá el enlace de invitación que te mandó tu jefe (de '+new URL(SERVIDOR_URL).host+')',true);return;}
   try{await eqUnirse(codigo,api);}catch(e){showToast(e.message,true);}
 }
 function eqSalir(){
@@ -140,9 +144,10 @@ async function eqVaciarCola(){
 }
 // invitación por enlace: ?e=CODIGO&s=https://servidor
 function eqInvitacionEnUrl(){
-  const q=new URLSearchParams(location.search),codigo=q.get('e'),api=q.get('s');
-  if(!codigo||!api) return;
+  const q=new URLSearchParams(location.search),codigo=q.get('e'),s=q.get('s'),api=servidorValido(s);
+  if(!codigo||!s) return;
   history.replaceState(null,'',location.pathname);
+  if(!api){showToast('Esa invitación apunta a un servidor que no es el de Verific: no la uso',true);return;}
   if(equipo()) return;
   const enApp=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
   if(enApp) return confirm2('👥 Te invitaron a un equipo. ¿Unirte? Tu jefe va a ver cuántas visitas hacés y vas a poder recibir tus rutas.',()=>eqUnirse(codigo.toUpperCase(),api).catch(e=>showToast(e.message,true)));

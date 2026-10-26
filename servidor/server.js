@@ -42,6 +42,8 @@ const CLAVE_STATS=(()=>{
   const k=crypto.randomBytes(9).toString('hex');fs.writeFileSync(f,k+'\n');console.log('Clave de estadísticas (guardada en '+f+'): '+k);return k;
 })();
 const txt=(v,n=200)=>String(v==null?'':v).slice(0,n);
+// foto de perfil: solo una imagen en data: base64 (lo que arma la app); cualquier otra cosa se descarta
+const foto=v=>{const s=txt(v,60000);return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s)?s:'';};
 
 // límite simple de pedidos por usuario (o por IP si no hay sesión), contra abusos
 const cuenta=new Map();setInterval(()=>cuenta.clear(),60000);
@@ -97,7 +99,7 @@ const rutas={
   // contador anónimo: la app avisa que está en uso (código al azar + versión + sí/no de 5 funciones). No recibe nada personal.
   'POST /api/ping':async(req,b)=>{
     const i=txt(b.i,40);if(!/^[a-f0-9]{12,40}$/.test(i)) return [400,{error:'Dato inválido'}];
-    const f=b.f||{},bit=x=>f[x]===true?1:0,d=hoy(),now=Date.now(),v=txt(b.v,40);
+    const f=b.f||{},bit=x=>f[x]===true?1:0,d=hoy(),now=Date.now(),v=/^[\w.+ -]{1,40}$/.test(txt(b.v,40))?txt(b.v,40):'otra';
     const u=ult('SELECT dia FROM usos WHERE id=?',i);
     if(!u) run('INSERT INTO usos(id,primero,ultimo,dia,dias,version,app,pdf,equipo,dupla,google) VALUES(?,?,?,?,1,?,?,?,?,?,?)',i,now,now,d,v,bit('app'),bit('pdf'),bit('equipo'),bit('dupla'),bit('google'));
     else run('UPDATE usos SET ultimo=?,dias=dias+?,dia=?,version=?,app=?,pdf=?,equipo=?,dupla=?,google=? WHERE id=?',now,u.dia===d?0:1,d,v,bit('app'),bit('pdf'),bit('equipo'),bit('dupla'),bit('google'),i);
@@ -123,9 +125,9 @@ const rutas={
     const e=ult('SELECT * FROM equipos WHERE codigo=?',txt(b.codigo,10).toUpperCase().trim());if(!e) return [404,{error:'Ese código no existe'}];
     const otros=todos('SELECT * FROM miembros WHERE equipo_id=?',e.id);
     if(e.tipo==='dupla'&&otros.length>=2) return [409,{error:'Esa dupla ya tiene dos personas'}];
-    const nombre=txt(b.nombre,60).trim()||'Sin nombre',foto=txt(b.foto,60000),token=tok();
+    const nombre=txt(b.nombre,60).trim()||'Sin nombre',fot=foto(b.foto),token=tok();
     const rol=e.tipo==='dupla'?(otros[0]&&otros[0].rol==='verificador'?'navegante':'verificador'):null;
-    const r=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',e.id,nombre,token,Date.now(),Date.now(),foto,rol);
+    const r=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',e.id,nombre,token,Date.now(),Date.now(),fot,rol);
     avisar(e.id,'miembro');
     const c=otros[0];
     return [200,{token,miembroId:Number(r.lastInsertRowid),nombre,equipo:e.nombre,tipo:e.tipo||'equipo',rol,companero:c?{nombre:c.nombre,foto:c.foto||'',rol:c.rol}:null}];
@@ -135,7 +137,7 @@ const rutas={
     const nombre=txt(b.nombre,60).trim()||'Sin nombre';let codigo=cod();while(ult('SELECT 1 FROM equipos WHERE codigo=?',codigo)) codigo=cod();
     const r=run('INSERT INTO equipos(nombre,codigo,admin_token,creado,tipo) VALUES(?,?,?,?,?)','Dupla de '+nombre,codigo,tok(),Date.now(),'dupla');
     const rol=b.rol==='verificador'?'verificador':'navegante',token=tok();
-    const m=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',Number(r.lastInsertRowid),nombre,token,Date.now(),Date.now(),txt(b.foto,60000),rol);
+    const m=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',Number(r.lastInsertRowid),nombre,token,Date.now(),Date.now(),foto(b.foto),rol);
     return [200,{token,miembroId:Number(m.lastInsertRowid),codigo,rol,equipo:'Dupla de '+nombre,tipo:'dupla'}];
   },
   'GET /api/dupla':async(req)=>{
@@ -166,6 +168,8 @@ const rutas={
   },
   'POST /api/dupla/salir':async(req)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    // solo una dupla se disuelve sola; en un equipo del jefe se sale desde el equipo y nunca se borra su llave
+    const e=ult('SELECT tipo FROM equipos WHERE id=?',m.equipo_id);if(!e||e.tipo!=='dupla') return [400,{error:'No estás en una dupla'}];
     run('DELETE FROM miembros WHERE id=?',m.id);avisar(m.equipo_id,'miembro');
     if(!ult('SELECT 1 FROM miembros WHERE equipo_id=?',m.equipo_id)){run('DELETE FROM jornadas WHERE equipo_id=?',m.equipo_id);run('DELETE FROM equipos WHERE id=?',m.equipo_id);}
     return [200,{ok:true}];
@@ -184,7 +188,9 @@ const rutas={
     if(con){
       const as=todos('SELECT m2.id,a.puntos FROM miembros m2 JOIN asignaciones a ON a.miembro_id=m2.id WHERE m2.equipo_id=? AND a.fecha=?',m.equipo_id,f);
       const d=as.find(x=>{try{return JSON.parse(x.puntos).some(p=>String(p.id)===pid);}catch(e){return false;}});
-      if(d) dueno=d.id;
+      // solo si los dos celulares declararon la dupla entre sí (cada uno avisa con quién está por
+      // /api/miembro-dupla); si no, la visita queda a nombre de quien la informa
+      if(d&&d.id!==m.id){const o=ult('SELECT nombre,dupla FROM miembros WHERE id=?',d.id);if(o&&o.nombre===con&&o.dupla===m.nombre) dueno=d.id;}
       run('UPDATE miembros SET dupla=? WHERE id=?',con,m.id);
     }
     run(`INSERT INTO visitas(equipo_id,miembro_id,punto_id,nombre,localidad,estado,ts,fecha,lat,lng,dist,dur,irr,dupla_con) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -201,7 +207,7 @@ const rutas={
   'POST /api/miembro-perfil':async(req,b)=>{ // nombre y foto actuales del perfil
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
     const nombre=txt(b.nombre,60).trim();
-    run('UPDATE miembros SET nombre=COALESCE(NULLIF(?,\'\'),nombre),foto=? WHERE id=?',nombre,txt(b.foto,60000),m.id);
+    run('UPDATE miembros SET nombre=COALESCE(NULLIF(?,\'\'),nombre),foto=? WHERE id=?',nombre,foto(b.foto),m.id);
     avisar(m.equipo_id,'miembro');return [200,{ok:true}];
   },
   'POST /api/posicion':async(req,b)=>{

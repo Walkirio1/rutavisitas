@@ -76,11 +76,14 @@ function dpAbrir(){
   if(!dupla()) dpCrear();else{dpPintarDlg();dpPull();}
 }
 function dpCerrar(){document.getElementById('dpDlg').classList.remove('show');}
+// la foto del compañero llega del servidor: solo se usa si es una imagen data: en base64 (lo que arma
+// dpMiniatura). Esos caracteres no pueden cerrar un atributo, así que ya validada es segura en HTML.
+const dpFotoOk=f=>typeof f==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(f);
 function dpPintarDlg(){
   const box=document.getElementById('dpBox');if(!box) return;
   const d=dupla();
   if(!d){box.innerHTML='<div class="dp-t">Creando tu dupla…</div>';return;}
-  const c=d.companero,av=c&&c.foto?`<img src="${c.foto}" alt="">`:escapeHtml((c&&c.nombre||'?').slice(0,1).toUpperCase());
+  const c=d.companero,av=c&&dpFotoOk(c.foto)?`<img src="${c.foto}" alt="">`:escapeHtml((c&&c.nombre||'?').slice(0,1).toUpperCase());
   box.innerHTML=`
     <div class="dp-cod"><small>Tu código</small><b>${escapeHtml(d.codigo)}</b><button class="sm sma" onclick="dpCompartir()"><svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg> Mandar</button></div>
     <div class="dp-comp">${c?`<span class="dp-av">${av}</span><div><b>${escapeHtml(c.nombre)}</b><small>${c.rol==='navegante'?'Navegante':'Verificador'}</small></div>`:'<div class="dp-esp">Esperando a tu compañero…<small>Que escriba este código en su app, en Perfil → Trabajar en dupla.</small></div>'}</div>
@@ -97,7 +100,10 @@ function dpPintarCabecera(){
   if(!d){b.style.display='none';return;}
   b.style.display='';const c=d.companero;
   b.classList.toggle('esp',!c);
-  b.innerHTML=c&&c.foto?`<img src="${c.foto}" alt="">`:`<span>${c?escapeHtml((c.nombre||'?').slice(0,1).toUpperCase()):'<svg class="ico" aria-hidden="true"><use href="#i-pair"/></svg>'}</span>`;
+  // la foto la carga el compañero: se asigna como propiedad, nunca dentro de HTML, y solo si es válida
+  if(c&&dpFotoOk(c.foto)){
+    const img=document.createElement('img');img.alt='';img.src=c.foto;b.replaceChildren(img);
+  }else b.innerHTML=`<span>${c?escapeHtml((c.nombre||'?').slice(0,1).toUpperCase()):'<svg class="ico" aria-hidden="true"><use href="#i-pair"/></svg>'}</span>`;
 }
 
 // ── Sincronización
