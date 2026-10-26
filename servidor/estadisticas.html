@@ -32,7 +32,10 @@ async function cargar(k){
   const dias=[];for(let i=29;i>=0;i--)dias.push(new Date(Date.now()-10800000-i*864e5).toISOString().slice(0,10));
   const m=Object.fromEntries(d.nuevosPorDia.map(x=>[x.d,x.n])),mx=Math.max(1,...dias.map(x=>m[x]||0));
   $('barra').innerHTML=dias.map(x=>'<i title="'+x+': '+(m[x]||0)+'" style="height:'+Math.round((m[x]||0)/mx*100)+'%"></i>').join('');
-  $('vers').innerHTML=d.versiones.map(v=>'<tr><td>'+(v.v||'?')+'</td><td><b>'+v.n+'</b></td></tr>').join('')||'<tr><td>Todavía no hay datos</td></tr>';
+  // la versión la manda cualquier instalación (POST /api/ping): se pinta como texto, nunca como HTML
+  const tb=$('vers');tb.replaceChildren();
+  for(const v of d.versiones){const tr=tb.insertRow(),a=tr.insertCell(),n=document.createElement('b');a.textContent=v.v||'?';n.textContent=v.n;tr.insertCell().append(n);}
+  if(!d.versiones.length) tb.insertRow().insertCell().textContent='Todavía no hay datos';
 }
 function entrar(){cargar($('k').value.trim()).catch(e=>$('e').textContent=e.message);}
 const g=localStorage.getItem('logimap:stk');if(g)cargar(g).catch(()=>{});
