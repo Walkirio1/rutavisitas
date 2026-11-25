@@ -157,6 +157,7 @@ function ocrArmarRuta(){
     else if(pt.length===2){nombre=pt[0];dir=pt[1];}
     return {id:usados.has(id)?id+'b':id,nombre:nombre||dir,dir,localidad:'Rosario',tipo:'',obs:'',lat:null,lng:null,geoErr:null};
   });
+  if(!puntos.length&&Object.keys(visits).length&&typeof limpiarVisitasHuerfanas==='function') limpiarVisitasHuerfanas();
   puntos=[...puntos,...nuevos];
   nuevos.forEach(n=>sel.add(n.id));
   lsSet(SK.puntos,puntos);lsSet(SK.sel,[...sel]);

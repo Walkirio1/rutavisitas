@@ -13,6 +13,7 @@ function triggerAutosave(){
 }
 
 const JORNADA_ARCH='jornada-actual.json';
+let _borrandoDriveP=null;
 // quita del Drive visible el archivo viejo (ahora el respaldo está oculto)
 async function borrarJornadaVisible(root){
   try{
@@ -23,6 +24,7 @@ async function borrarJornadaVisible(root){
 
 async function guardarJornadaActualEnDrive(){
   if(!drv.connected) return;
+  if(_borrandoDriveP) await _borrandoDriveP;
   const root = await driveGetRootFolderId();
   const jornada = {
     fecha: hoy(),
@@ -105,6 +107,12 @@ async function checkJornadaActual(){
   try{
     const j = await cargarJornadaDesdeDrive();
     if(!j) return;
+    if(!(j.puntos||[]).length && Object.keys(j.visits||{}).length===0) return;
+    const limpiadoTs = lsGet('sube:limpiadoTs') || 0;
+    if(j.timestamp && limpiadoTs && j.timestamp < limpiadoTs){
+      borrarJornadaActualDrive().catch(()=>{});
+      return;
+    }
     const localVacia = !puntos.length && Object.keys(visits).length===0;
     const driveMasNueva = !localVacia && j.timestamp && j.timestamp > 0 &&
       (puntos.length !== (j.puntos||[]).length || JSON.stringify([...sel].sort()) !== JSON.stringify((j.sel||[]).sort()));
@@ -132,10 +140,14 @@ async function cargarJornadaDesdeManual(){
 
 async function borrarJornadaActualDrive(){
   if(!drv.connected) return;
-  try{
-    await ensureToken();
-    const oc=await gapi.client.drive.files.list({q:`name='${JORNADA_ARCH}' and trashed=false`,spaces:'appDataFolder',fields:'files(id)',pageSize:5}).catch(()=>null);
-    for(const f of ((oc&&oc.result&&oc.result.files)||[])) await gapi.client.drive.files.delete({fileId:f.id});
-    await borrarJornadaVisible(await driveGetRootFolderId());
-  }catch(e){console.error('borrarJornadaActual:',e);}
+  const op=(async()=>{
+    try{
+      await ensureToken();
+      const oc=await gapi.client.drive.files.list({q:`name='${JORNADA_ARCH}' and trashed=false`,spaces:'appDataFolder',fields:'files(id)',pageSize:5}).catch(()=>null);
+      for(const f of ((oc&&oc.result&&oc.result.files)||[])) await gapi.client.drive.files.delete({fileId:f.id});
+      await borrarJornadaVisible(await driveGetRootFolderId());
+    }catch(e){console.error('borrarJornadaActual:',e);}
+  })();
+  _borrandoDriveP=op;
+  try{await op;}finally{if(_borrandoDriveP===op)_borrandoDriveP=null;}
 }

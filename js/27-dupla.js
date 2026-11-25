@@ -159,6 +159,19 @@ async function dpEmpujar(){
   if(clave===_dpUltimo||(!puntos.length&&!_dpUltimo)) return; // no se sube una ruta vacía
   try{await dpApi('POST','/api/dupla/estado',{puntos:puntos,sel:[...sel],orden:ordenRuta});_dpUltimo=clave;}catch(e){}
 }
+// reinicia las visitas compartidas de la dupla (y si es navegante, opcionalmente vacía la ruta en el servidor)
+async function dpReiniciar(conRuta){
+  const d=dupla();if(!d||!navigator.onLine) return;
+  const body={reiniciar:true};
+  if(conRuta&&d.rol==='navegante'){body.puntos=[];body.sel=[];body.orden=[];_dpUltimo='';}
+  try{await dpApi('POST','/api/dupla/estado',body);}catch(e){}
+}
+// quita de la dupla las visitas cerradas o huérfanas sin borrar las demás que sigan activas
+async function dpLimpiarVisitas(ids){
+  const d=dupla();if(!d||!navigator.onLine) return;
+  if(!Object.keys(visits).length){await dpReiniciar(false);return;}
+  for(const id of ids){try{await dpApi('POST','/api/dupla/estado',{quitarVisita:String(id)});}catch(e){}}
+}
 // el navegante avisa cuál es la siguiente parada
 async function dpAvisarParada(id){
   try{await dpApi('POST','/api/dupla/estado',{actual:id});showToast('Le avisé a tu compañero ✓');}catch(e){showToast('No pude avisarle: '+e.message,true);}

@@ -206,21 +206,55 @@ function importXL(input){
         showToast(!rows.length?'El Excel no tiene filas: no se importó nada':'No encontré las columnas «Ubicación ID» y «Dirección»'+(cols.length?' (el archivo tiene: '+cols.slice(0,4).join(', ')+')':''),true);
         return;
       }
-      try{lsSet('sube:excel',{name:file.name,aoa:XLSX.utils.sheet_to_json(ws,{header:1,defval:''}),ts:Date.now()});}catch(e){}
-      const antes=puntos.length,repetidos=nuevos.filter(n=>puntos.some(p=>p.id===n.id)).length;
-      // mantener lat/lng de puntos existentes si coincide ID
-      puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos.map(n=>{
-        const ex=puntos.find(p=>p.id===n.id);
-        return ex&&ex.lat?{...n,lat:ex.lat,lng:ex.lng}:n;
-      })];
-      lsSet(SK.puntos,puntos);
-      renderP();
-      const nv=nuevos.length-repetidos;
-      showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' ✓'+(antes&&nv>0?' · se sumaron a los '+antes+' que ya tenías (para empezar de cero, usá Limpiar)':(repetidos?' · '+repetidos+' ya estaban y se actualizaron':'')));
-      // arrancar geocodificación automática
-      setTimeout(()=>geocodificarTodos(true),400);
-      // autosave
-      triggerAutosave();
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const conGeoDe=(prev,n)=>{
+        const ex=prev.find(p=>p.id===n.id)||prev.find(p=>p.dir&&n.dir&&p.dir.toLowerCase()===n.dir.toLowerCase()&&(p.localidad||'').toLowerCase()===(n.localidad||'').toLowerCase());
+        return ex&&ex.lat&&ex.lng?{...n,lat:ex.lat,lng:ex.lng,geoUsada:ex.geoUsada||null}:n;
+      };
+      const aplicarImport=(modo)=>{
+        try{lsSet('sube:excel',{name:file.name,aoa,ts:Date.now()});}catch(e){}
+        const prev=puntos.slice();
+        if(modo==='reemplazar'){
+          const nuevosGeo=nuevos.map(n=>conGeoDe(prev,n));
+          if(typeof reiniciarEstadoLocal==='function') reiniciarEstadoLocal({conservarExcel:true});
+          puntos=nuevosGeo;
+          lsSet(SK.puntos,puntos);
+          renderP();renderV();updStats();
+          if(typeof renderMapa==='function'&&mapa) renderMapa();
+          showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' (lista nueva) ✓');
+        }else{
+          const antes=puntos.length,repetidos=nuevos.filter(n=>puntos.some(p=>p.id===n.id)).length;
+          // mantener lat/lng de puntos existentes si coincide ID o dirección
+          puntos=[...puntos.filter(p=>!nuevos.find(n=>n.id===p.id)),...nuevos.map(n=>conGeoDe(prev,n))];
+          if(typeof limpiarVisitasHuerfanas==='function') limpiarVisitasHuerfanas();
+          lsSet(SK.puntos,puntos);
+          renderP();renderV();updStats();
+          if(typeof renderMapa==='function'&&mapa) renderMapa(true);
+          const nv=nuevos.length-repetidos;
+          showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' ✓'+(antes&&nv>0?' · se sumaron a los '+antes+' que ya tenías':(repetidos?' · '+repetidos+' ya estaban y se actualizaron':'')));
+        }
+        // arrancar geocodificación automática
+        setTimeout(()=>geocodificarTodos(true),400);
+        // autosave
+        triggerAutosave();
+      };
+      if(puntos.length>0 && typeof mostrarDlgEnvio==='function'){
+        const nVis=Object.keys(visits).length;
+        mostrarDlgEnvio(
+          `Tenés ${puntos.length} punto${puntos.length===1?'':'s'} cargado${puntos.length===1?'':'s'}${nVis?` y ${nVis} visita${nVis===1?'':'s'} registrada${nVis===1?'':'s'}`:''}.\n\n¿Cómo querés cargar este Excel (${nuevos.length} punto${nuevos.length===1?'':'s'})?`,
+          [
+            {txt:'Empezar lista nueva (limpiar anteriores)',cls:'ba',fn:()=>aplicarImport('reemplazar')},
+            {txt:'Sumar a la lista actual',cls:'bd',fn:()=>aplicarImport('sumar')},
+            {txt:'Cancelar',cls:'bd'}
+          ]
+        );
+        return;
+      }
+      // si no había puntos cargados pero quedaron visitas huérfanas viejas, se limpian antes de cargar
+      if(!puntos.length && Object.keys(visits).length && typeof limpiarVisitasHuerfanas==='function'){
+        limpiarVisitasHuerfanas();
+      }
+      aplicarImport('sumar');
     }catch(err){showToast('Error al leer el Excel',true);}
   };
   reader.readAsArrayBuffer(file);

@@ -110,12 +110,51 @@ async function exportarExcel(){
   descargarArchivos([file]);
 }
 
+// ── LIMPIEZA DE VISITAS HUÉRFANAS Y REINICIO DE JORNADA
+function limpiarVisitasHuerfanas(){
+  const vivos=new Set(puntos.map(p=>String(p.id)));
+  const huerfanos=Object.keys(visits).filter(id=>!vivos.has(String(id)));
+  if(!huerfanos.length) return [];
+  huerfanos.forEach(id=>{
+    delete visits[id];
+    fotoDel(id);
+    fotosEnIDB.delete(String(id));
+  });
+  guardarVisits();
+  return huerfanos;
+}
+
+function reiniciarEstadoLocal(opts){
+  const conservarExcel=opts&&opts.conservarExcel;
+  if(typeof drv!=='undefined'&&drv.autosaveTimer){
+    clearTimeout(drv.autosaveTimer);
+    drv.autosaveTimer=null;
+    drv.autosavePending=false;
+  }
+  puntos=[];sel=new Set();visits={};
+  lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});
+  fotosClear();fotosEnIDB.clear();
+  if(!conservarExcel) lsDel('sube:excel');
+  ordenRuta=[];lsDel(SK_ORDEN);
+  inicioId=null;lsDel('sube:inicio');
+  if(typeof borradorBorrar==='function') borradorBorrar();
+  if(typeof _saltados!=='undefined') _saltados=new Set();
+  if(typeof manualQ!=='undefined') manualQ={};
+  if(typeof manualRes!=='undefined') manualRes={};
+  if(typeof ubicando!=='undefined') ubicando=null;
+  lsSet('sube:limpiadoTs',Date.now());
+  if(typeof drv!=='undefined'&&drv.connected) borrarJornadaActualDrive().catch(()=>{});
+  if(typeof dpReiniciar==='function') dpReiniciar(true);
+  renderP();renderV();updStats();
+  if(typeof renderMapa==='function'&&mapa) renderMapa(true);
+  if(typeof renderPerfilBtn==='function') renderPerfilBtn();
+}
+
 // ── BORRAR DÍA ACTUAL
 function borrarDia(){
   confirm2('¿Borrar todos los puntos y visitas del día actual?',function(){
-    puntos=[];sel=new Set();visits={};
-    lsSet(SK.puntos,[]);lsSet(SK.sel,[]);lsSet(SK.visits,{});fotosClear();lsDel('sube:excel');ordenRuta=[];lsDel(SK_ORDEN);inicioId=null;lsDel('sube:inicio');
-    renderP();updStats();showToast('Día actual borrado ✓');
+    reiniciarEstadoLocal();
+    showToast('Día actual borrado ✓');
   });
 }
 
@@ -146,12 +185,16 @@ function cerrarDia(){
     puntos=puntos.filter(p=>!ids.has(p.id));
     sel=new Set([...sel].filter(id=>!ids.has(id)));
     ids.forEach(id=>{delete visits[id];});
+    if(ordenRuta.length){ordenRuta=ordenRuta.filter(id=>!ids.has(id));lsSet(SK_ORDEN,ordenRuta);}
+    if(inicioId&&ids.has(inicioId)){inicioId=null;lsDel('sube:inicio');}
+    const huerfanos=limpiarVisitasHuerfanas();
     lsSet(SK.historial,historial);
     lsSet(SK.puntos,puntos);lsSet(SK.sel,[...sel]);guardarVisits();
     renderP();updStats();renderH();renderV();
     if(typeof renderMapa==='function'&&mapa) renderMapa(true);
     showToast('Día cerrado: '+hechos.length+(hechos.length===1?' visita guardada':' visitas guardadas')+' ✓');
     if(drv.connected) borrarJornadaActualDrive().catch(()=>{});
+    if(typeof dpLimpiarVisitas==='function') dpLimpiarVisitas([...ids,...huerfanos]);
     showTab(3);
   });
 }
