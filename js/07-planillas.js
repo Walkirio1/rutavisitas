@@ -253,6 +253,7 @@ async function guardarVisita(soloGuardar,confirmado){
 function closeOv(){
   document.getElementById('ov').classList.remove('show');
   document.body.style.overflow='';
+  if(typeof _updPendiente!=='undefined'&&_updPendiente) setTimeout(()=>mostrarCartelActualizacion(_updPendiente),250);
 }
 // Cerrar la planilla con ESC (en PC)
 /* (se ejecuta al final, en js/99-arranque.js) */

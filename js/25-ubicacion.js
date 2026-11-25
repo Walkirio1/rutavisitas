@@ -119,7 +119,7 @@ async function optUbiCambio(on){
 function optSelloCambio(on){lsSet('sube:sello',on);showToast(on?'Las fotos nuevas llevan fecha y hora':'Sello desactivado');}
 
 // ── Rubro / tipo de negocio del punto (también lo recupera del Excel ya guardado sin reimportar)
-const _RX_RUBRO=/^(rubro|actividad|subrubro|giro|tipo\s*(de\s*)?(negocio|comercio|local))$/i;
+const _RX_RUBRO=/^(rubro|actividad|subrubro|giro|categor[ií]a|ramo|clase|tipo\s*(de\s*)?(negocio|comercio|local|establecimiento))$/i;
 let _rubExcelTs=null,_rubExcelMap=null;
 function rubroDesdeExcel(id){
   if(id==null) return '';
@@ -155,25 +155,103 @@ function textoParada(p,titulo){
   return lineas.join('\n');
 }
 
-// ── Aviso automático al acercarse (≤100 m) a un punto de la ruta
-const PROX_M=100,PROX_SALIR_M=250,PROX_COOLDOWN_MS=5*60000;
+// ── Aviso automático al acercarse (≤160 m) a un punto de la ruta
+const PROX_M=160,PROX_SALIR_M=300,PROX_COOLDOWN_MS=5*60000;
 const proxOn=()=>lsGet('sube:prox')!==false; // activado por defecto
-let _proxWatch=null;
+let _proxWatch=null,_proxEstado='off',_proxCercano=null,_proxUltimoFixTs=0,_proxGuard=null,_proxReintento=null,_proxAudio=null;
 const _proxAvisados=new Map();
+
+function _proxDesbloquearAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC) return;
+    if(!_proxAudio) _proxAudio=new AC();
+    if(_proxAudio.state==='suspended') _proxAudio.resume().catch(()=>{});
+  }catch(e){}
+}
+if(typeof document!=='undefined'&&document.addEventListener){
+  ['pointerdown','click','touchstart'].forEach(ev=>document.addEventListener(ev,_proxDesbloquearAudio,{once:true,passive:true}));
+}
+function proxSonar(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC) return;
+    if(!_proxAudio) _proxAudio=new AC();
+    if(_proxAudio.state==='suspended') _proxAudio.resume().catch(()=>{});
+    const t0=_proxAudio.currentTime;
+    [[880,0,0.14],[1175,0.16,0.14]].forEach(([freq,off,dur])=>{
+      const osc=_proxAudio.createOscillator(),gain=_proxAudio.createGain();
+      osc.type='sine';osc.frequency.setValueAtTime(freq,t0+off);
+      gain.gain.setValueAtTime(0.001,t0+off);
+      gain.gain.exponentialRampToValueAtTime(0.22,t0+off+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,t0+off+dur);
+      osc.connect(gain);gain.connect(_proxAudio.destination);
+      osc.start(t0+off);osc.stop(t0+off+dur+0.02);
+    });
+  }catch(e){}
+}
 
 function proxMarcarVisto(id){_proxAvisados.set(String(id),{ts:Date.now(),lejos:false});}
 function proxFueAvisadoReciente(id){
   const st=_proxAvisados.get(String(id));
   return !!st&&(!st.lejos||(Date.now()-st.ts)<PROX_COOLDOWN_MS);
 }
+
+function renderProxBar(){
+  const bar=document.getElementById('proxBar');if(!bar) return;
+  const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
+  if(!proxOn()||!faltan.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  let bg='var(--bg-2)',bd='var(--line-2)',col='var(--text)',tx='';
+  if(_proxEstado==='denegado'){
+    bg='rgba(245,158,11,.14)';bd='rgba(245,158,11,.5)';col='#b45309';
+    tx='📡 Radar sin permiso GPS · Tocá acá para activar';
+  }else if(_proxEstado==='activo'&&_proxCercano){
+    const {p,d}=_proxCercano;
+    const acc=typeof dpEsNavegante==='function'&&dpEsNavegante()?'tocá para avisar':'tocá para abrir';
+    tx='📡 Próximo: '+(p.nombre||p.dir)+' · a '+fmtDist(d)+' · '+acc;
+    if(d<=PROX_M){bg='rgba(16,185,129,.15)';bd='rgba(16,185,129,.55)';col='#047857';}
+    else if(d<=350){bg='rgba(59,130,246,.12)';bd='rgba(59,130,246,.45)';col='#1d4ed8';}
+  }else{
+    tx='📡 Radar buscando GPS… (tocá para activar)';
+  }
+  bar.style.background=bg;bar.style.borderColor=bd;bar.style.color=col;
+  bar.textContent=tx;
+}
+
 function proxDetener(){
   if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
   _proxWatch=null;
+  if(_proxGuard){clearInterval(_proxGuard);_proxGuard=null;}
+  if(_proxReintento){clearTimeout(_proxReintento);_proxReintento=null;}
+  if(_proxEstado!=='denegado') _proxEstado='off';
+  _proxCercano=null;
+  renderProxBar();
 }
-function proxReiniciar(){_proxAvisados.clear();proxActualizar();}
+function proxReiniciar(){_proxAvisados.clear();_proxCercano=null;_proxUltimoFixTs=0;proxActualizar();renderProxBar();}
+
+function proxForzarPedido(){
+  _proxDesbloquearAudio();
+  if(!navigator.geolocation||!window.isSecureContext){showToast('Este navegador no permite ubicación',true);return;}
+  _proxEstado='buscando';renderProxBar();
+  navigator.geolocation.getCurrentPosition(
+    pos=>{proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);proxActualizar(true);},
+    err=>{
+      if(err&&err.code===1){_proxEstado='denegado';proxDetener();showToast('Activá el permiso de Ubicación para el radar automático',true);}
+      else{_proxEstado='error';renderProxBar();proxActualizar(true);}
+    },
+    {enableHighAccuracy:true,maximumAge:0,timeout:12000}
+  );
+}
+function proxBarClick(){
+  _proxDesbloquearAudio();
+  if(_proxEstado!=='activo'||!_proxCercano){proxForzarPedido();return;}
+  if(typeof dpEsNavegante==='function'&&dpEsNavegante()) dpAvisarParada(_proxCercano.p.id);
+  else openPl(_proxCercano.p.id);
+}
 
 function proxEvaluar(lat,lng,acc){
-  if(acc&&acc>150) return;
+  if(acc&&acc>250) return;
+  _proxUltimoFixTs=Date.now();
+  _proxEstado='activo';
   _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),ts:Date.now()};
   if(typeof _ultimaUbic!=='undefined') _ultimaUbic={lat,lng};
   const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
@@ -182,15 +260,19 @@ function proxEvaluar(lat,lng,acc){
     const p=faltan.find(x=>String(x.id)===id);
     if(p&&distM(lat,lng,p.lat,p.lng)>PROX_SALIR_M) st.lejos=true;
   }
-  let mejor=null;
+  let masCerca=null,mejor=null;
   for(const p of faltan){
-    if(proxFueAvisadoReciente(p.id)) continue;
     const d=distM(lat,lng,p.lat,p.lng);
-    if(d<=PROX_M&&(!mejor||d<mejor.d)) mejor={p,d};
+    if(!masCerca||d<masCerca.d) masCerca={p,d,acc};
+    if(!proxFueAvisadoReciente(p.id)&&d<=PROX_M&&(!mejor||d<mejor.d)) mejor={p,d};
   }
+  _proxCercano=masCerca;
+  renderProxBar();
   if(!mejor) return;
   if(typeof dpEsNavegante==='function'&&dpEsNavegante()){
     proxMarcarVisto(mejor.p.id);
+    proxSonar();
+    try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(e){}
     if(typeof dpAvisarParadaAuto==='function') dpAvisarParadaAuto(mejor.p.id,mejor.p.nombre||mejor.p.dir,mejor.d,rubroDePunto(mejor.p));
     return;
   }
@@ -200,27 +282,56 @@ function proxEvaluar(lat,lng,acc){
     return;
   }
   proxMarcarVisto(mejor.p.id);
-  try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
+  proxSonar();
+  try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(e){}
   mostrarDlgEnvio(
     textoParada(mejor.p,'📍 Estás llegando (a '+fmtDist(mejor.d)+')'),
     [{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(mejor.p.id)},{txt:'Después',cls:'bd'}]
   );
 }
 
-function proxActualizar(){
-  if(!proxOn()||document.hidden||!navigator.geolocation||!window.isSecureContext||!(typeof faltanVisitar==='function'&&faltanVisitar().length)){
+function proxActualizar(forzar){
+  if(!proxOn()||!navigator.geolocation||!window.isSecureContext||!(typeof faltanVisitar==='function'&&faltanVisitar().length)){
     proxDetener();return;
   }
-  if(_proxWatch!==null) return;
-  _proxWatch=navigator.geolocation.watchPosition(
-    pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
-    err=>{if(err&&err.code===1)proxDetener();},
-    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
-  );
+  if(forzar&&_proxWatch!==null){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}_proxWatch=null;}
+  if(_proxWatch===null){
+    if(_proxEstado==='off'||_proxEstado==='error'||forzar) _proxEstado='buscando';
+    renderProxBar();
+    _proxWatch=navigator.geolocation.watchPosition(
+      pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+      err=>{
+        if(err&&err.code===1){_proxEstado='denegado';proxDetener();return;}
+        if(err&&(err.code===2||err.code===3)){
+          if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
+          _proxWatch=null;_proxEstado='buscando';renderProxBar();
+          if(!_proxReintento) _proxReintento=setTimeout(()=>{_proxReintento=null;proxActualizar();},3000);
+        }
+      },
+      {enableHighAccuracy:true,maximumAge:2000,timeout:10000}
+    );
+  }else{
+    renderProxBar();
+  }
+  if(!_proxGuard){
+    _proxGuard=setInterval(()=>{
+      if(document.hidden||!proxOn()||_proxEstado==='denegado'||!(typeof faltanVisitar==='function'&&faltanVisitar().length)) return;
+      if(_proxWatch===null) proxActualizar();
+      if(Date.now()-_proxUltimoFixTs>7000&&navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(
+          pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+          ()=>{},
+          {enableHighAccuracy:false,maximumAge:4000,timeout:4000}
+        );
+      }
+    },5000);
+  }
 }
 
 function optProxCambio(on){
   lsSet('sube:prox',on);
-  proxActualizar();
-  showToast(on?'Aviso automático al llegar activado (100 m) ✓':'Aviso automático al llegar desactivado');
+  if(on&&_proxEstado==='denegado') _proxEstado='buscando';
+  proxActualizar(on);
+  renderProxBar();
+  showToast(on?'Aviso automático al llegar activado (160 m) ✓':'Aviso automático al llegar desactivado');
 }

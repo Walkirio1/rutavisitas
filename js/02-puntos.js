@@ -192,7 +192,7 @@ function importXL(input){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws);
       const colsExcel=Object.keys(rows[0]||{});
-      const kRubro=colsExcel.find(k=>/^(rubro|actividad|subrubro|giro|tipo\s*(de\s*)?(negocio|comercio|local))$/i.test(k.trim()));
+      const kRubro=colsExcel.find(k=>/^(rubro|actividad|subrubro|giro|categor[ií]a|ramo|clase|tipo\s*(de\s*)?(negocio|comercio|local|establecimiento))$/i.test(k.trim()));
       // se guarda el Excel tal cual vino (todas las filas y columnas) para devolverlo actualizado
       const nuevos=rows.map(r=>({
         id:String(r['Ubicación ID']||r['ID']||''),

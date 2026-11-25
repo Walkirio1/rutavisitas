@@ -1,6 +1,6 @@
 // Versión, ajuste de pantalla iPhone, instalar como app, modo sin señal
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-11-25 · 94';
+const APP_VERSION='2026-11-25 · 95';
 /* (se ejecuta al final, en js/99-arranque.js) */
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -57,6 +57,32 @@ async function actualizarAhora(){
     if(window.caches){const ks=await caches.keys();await Promise.all(ks.filter(k=>/^sube-v\d+/.test(k)).map(k=>caches.delete(k)));}
   }catch(e){console.warn('actualizar:',e);}
   setTimeout(()=>location.reload(),600);
+}
+
+// Aviso obligatorio cuando hay una versión más nueva publicada (espera si está llenando una planilla)
+let _updPendiente=null,_updChecking=false;
+const numVersion=v=>+(String(v||'').match(/(\d+)\s*$/)||[])[1]||0;
+function mostrarCartelActualizacion(ver){
+  const ov=document.getElementById('ov'),fm=document.getElementById('firmaDlg');
+  if((ov&&ov.classList.contains('show'))||(fm&&fm.classList.contains('show'))){_updPendiente=ver;return;}
+  _updPendiente=null;
+  const msg=document.getElementById('updMsg'),dlg=document.getElementById('updDlg');
+  if(msg) msg.textContent='Hay una versión nueva de LogiMap ('+ver+'). Actualizá ahora para seguir usando la app.\n\nTus puntos, visitas y fotos no se borran.';
+  if(dlg) dlg.classList.add('show');
+}
+async function revisarActualizacion(){
+  if(_updChecking||navigator.onLine===false) return;
+  _updChecking=true;
+  const ctl=typeof AbortController!=='undefined'?new AbortController():null;
+  const t=ctl?setTimeout(()=>ctl.abort(),8000):null;
+  try{
+    const r=await fetch('js/16-app-instalacion.js?t='+Date.now(),{cache:'no-store',...(ctl?{signal:ctl.signal}:{})});
+    if(!r.ok) return;
+    const txt=await r.text();
+    const m=txt.match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    if(m&&numVersion(m[1])>numVersion(APP_VERSION)) mostrarCartelActualizacion(m[1]);
+  }catch(e){}
+  finally{if(t)clearTimeout(t);_updChecking=false;}
 }
 
 // Guía para instalar a mano (iPhone y celulares sin el botón automático de instalar)

@@ -153,6 +153,7 @@ function dpAplicar(est){
     const yaAvisada=p&&typeof proxFueAvisadoReciente==='function'&&proxFueAvisadoReciente(p.id);
     if(p&&!(visits[p.id]&&visits[p.id].done)&&!yaAbierta&&!yaAvisada){
       if(typeof proxMarcarVisto==='function') proxMarcarVisto(p.id);
+      if(typeof proxSonar==='function') proxSonar();
       try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
       const txt=typeof textoParada==='function'?textoParada(p,'Próxima parada'):('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''));
       mostrarDlgEnvio(txt,[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
