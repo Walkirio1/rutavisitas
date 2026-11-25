@@ -269,7 +269,7 @@ function proxIniciarWatch(porToque){
   if(_proxEstado==='off'||_proxEstado==='error'||_proxEstado==='esperando'||porToque) _proxEstado='buscando';
   renderProxBar();
   _proxWatch=navigator.geolocation.watchPosition(
-    pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+    pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy,pos.coords.heading),
     err=>{
       if(err&&err.code===1){
         lsDel('sube:proxok');_proxEstado='denegado';proxDetener();
@@ -298,12 +298,13 @@ function proxBarClick(){
   else openPl(_proxCercano.p.id);
 }
 
-function proxEvaluar(lat,lng,acc){
+function proxEvaluar(lat,lng,acc,heading){
   _proxUltimoFixTs=Date.now();
   _proxEstado='activo';
   if(!lsGet('sube:proxok')) lsSet('sube:proxok',true);
-  _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),ts:Date.now()};
+  _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),heading:Number.isFinite(heading)?heading:(_ubi&&_ubi.heading!=null?_ubi.heading:null),ts:Date.now()};
   if(typeof _ultimaUbic!=='undefined') _ultimaUbic={lat,lng};
+  if(typeof actualizarAutoMapa==='function') actualizarAutoMapa(lat,lng,acc,heading);
   const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
   if(!faltan.length){proxDetener();return;}
   for(const [id,st] of _proxAvisados.entries()){
@@ -369,7 +370,7 @@ function proxActualizar(forzar){
       if(_proxWatch===null) proxActualizar();
       if(_proxEstado==='activo'&&Date.now()-_proxUltimoFixTs>10000&&navigator.geolocation){
         navigator.geolocation.getCurrentPosition(
-          pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+          pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy,pos.coords.heading),
           ()=>{},
           {enableHighAccuracy:false,maximumAge:4000,timeout:4000}
         );

@@ -218,14 +218,22 @@ function centrarEnMiUbicacion(){
   }
   showToast('Buscando tu ubicación...');
   const ok=pos=>{
-    if(typeof proxEvaluar==='function') proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
+    const la=pos.coords.latitude,lo=pos.coords.longitude,ac=pos.coords.accuracy,hd=pos.coords.heading;
+    if(typeof _seguirAuto!=='undefined') _seguirAuto=true;
+    if(typeof proxEvaluar==='function') proxEvaluar(la,lo,ac,hd);
     if(typeof proxActualizar==='function') proxActualizar(true);
-    const ll=[pos.coords.latitude,pos.coords.longitude];
-    miUbicLayer.clearLayers();
-    L.circle(ll,{radius:pos.coords.accuracy||30,color:'#3b82f6',weight:1,fillOpacity:.12}).addTo(miUbicLayer);
-    L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#ef4444',fillOpacity:1}).addTo(miUbicLayer).bindPopup('Tu ubicación');
-    mapa.setView(ll,15);
-    showToast('Centrado en tu ubicación ✓');
+    if(typeof actualizarAutoMapa==='function'){
+      actualizarAutoMapa(la,lo,ac,hd);
+      mapa.setView([la,lo],Math.max(mapa.getZoom()||15,16));
+      showToast('🚗 Siguiendo tu ubicación en tiempo real ✓');
+    }else{
+      const ll=[la,lo];
+      miUbicLayer.clearLayers();
+      L.circle(ll,{radius:ac||30,color:'#3b82f6',weight:1,fillOpacity:.12}).addTo(miUbicLayer);
+      L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#ef4444',fillOpacity:1}).addTo(miUbicLayer).bindPopup('Tu ubicación');
+      mapa.setView(ll,15);
+      showToast('Centrado en tu ubicación ✓');
+    }
   };
   const fail=err=>{
     const msg={

@@ -58,6 +58,7 @@ function initMapa(){
   }).addTo(mapa);
   markersLayer = L.layerGroup().addTo(mapa);
   mapa.on('zoomend',marcarTapados);
+  mapa.on('dragstart',()=>{_seguirAuto=false;});
   miUbicLayer = L.layerGroup().addTo(mapa);
   mapa.on('click',e=>{
     if(ubicando===null) return;
@@ -182,6 +183,52 @@ function renderMapa(noFit){
   }else if(bounds.length>1){
     mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
   }
+  if(typeof _ubi!=='undefined'&&_ubi&&Date.now()-_ubi.ts<5*60000){
+    actualizarAutoMapa(_ubi.lat,_ubi.lng,_ubi.prec,_ubi.heading);
+  }
+}
+
+// ── AUTITO GPS EN TIEMPO REAL
+let _autoMarker=null,_autoCirculo=null,_seguirAuto=false,_autoUltPos=null,_autoRumbo=0;
+function calcularRumbo(aLat,aLng,bLat,bLng){
+  const r=x=>x*Math.PI/180,dl=r(bLng-aLng),y=Math.sin(dl)*Math.cos(r(bLat)),
+    x=Math.cos(r(aLat))*Math.sin(r(bLat))-Math.sin(r(aLat))*Math.cos(r(bLat))*Math.cos(dl);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function iconoAuto(deg){
+  const d=Math.round(deg||0);
+  const html=`<div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:0;transform:rotate(${d}deg);pointer-events:none">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><polygon points="22,1 27,10 17,10" fill="#2563eb" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="width:30px;height:30px;border-radius:50%;background:#2563eb;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(37,99,235,.55);display:flex;align-items:center;justify-content:center">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v7a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7zm2.2-4L6.3 10h11.4L16.8 7H7.2zM7.5 14a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm9 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5z"/></svg>
+    </div>
+  </div>`;
+  return L.divIcon({html,className:'',iconSize:[44,44],iconAnchor:[22,22],popupAnchor:[0,-22]});
+}
+function actualizarAutoMapa(lat,lng,acc,heading){
+  if(!mapa||!miUbicLayer) return;
+  let nuevoRumbo=_autoRumbo;
+  if(Number.isFinite(heading)) nuevoRumbo=heading;
+  else if(_autoUltPos&&typeof distM==='function'&&distM(_autoUltPos.lat,_autoUltPos.lng,lat,lng)>8){
+    nuevoRumbo=calcularRumbo(_autoUltPos.lat,_autoUltPos.lng,lat,lng);
+  }
+  _autoUltPos={lat,lng};
+  const rad=Math.max(15,Math.min(acc||25,120));
+  if(_autoCirculo&&miUbicLayer.hasLayer(_autoCirculo)){
+    _autoCirculo.setLatLng([lat,lng]);_autoCirculo.setRadius(rad);
+  }else{
+    _autoCirculo=L.circle([lat,lng],{radius:rad,color:'#3b82f6',weight:1,fillOpacity:.12}).addTo(miUbicLayer);
+  }
+  if(_autoMarker&&miUbicLayer.hasLayer(_autoMarker)){
+    _autoMarker.setLatLng([lat,lng]);
+    if(Math.abs(nuevoRumbo-_autoRumbo)>10){_autoRumbo=nuevoRumbo;_autoMarker.setIcon(iconoAuto(_autoRumbo));}
+  }else{
+    _autoRumbo=nuevoRumbo;
+    _autoMarker=L.marker([lat,lng],{icon:iconoAuto(_autoRumbo),zIndexOffset:2000}).addTo(miUbicLayer).bindPopup('🚗 Tu posición en tiempo real');
+  }
+  if(_seguirAuto) mapa.panTo([lat,lng],{animate:true,duration:0.6});
 }
 
 // Resultados de la búsqueda manual de un punto

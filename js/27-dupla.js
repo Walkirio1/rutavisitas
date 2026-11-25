@@ -5,7 +5,7 @@ const SK_DUPLA='sube:dupla',SK_DPVISTO='sube:dpactual';
 const dupla=()=>lsGet(SK_DUPLA)||null;
 const dpBase=()=>lsGet('sube:srv')||SERVIDOR_URL;
 const dpEsNavegante=()=>{const d=dupla();return !!d&&d.rol==='navegante';};
-let _dpEs=null,_dpUltimo='',_dpPush=null;
+let _dpEs=null,_dpUltimo='',_dpPush=null,_dpPoll=null;
 
 async function dpApi(metodo,ruta,cuerpo){
   const d=dupla();if(!d) throw new Error('Sin dupla');
@@ -51,7 +51,7 @@ function dpSalir(){
   confirm2('¿Salir de la dupla? Dejan de compartir la jornada. Lo que ya tenés en tu celular se queda.',()=>{
     const d=dupla();
     // primero se sale acá, sin esperar al servidor
-    if(_dpEs){_dpEs.close();_dpEs=null;}clearInterval(_dpPush);_dpPush=null;
+    if(_dpEs){_dpEs.close();_dpEs=null;}clearInterval(_dpPush);_dpPush=null;clearInterval(_dpPoll);_dpPoll=null;
     lsDel(SK_DUPLA);lsDel(SK_DPVISTO);eqDuplaAvisar();dpPintarDlg();dpPintarCabecera();if(typeof renderPerfilEquipo==='function')renderPerfilEquipo();
     showToast('Saliste de la dupla');
     if(d) eqApi('POST','/api/dupla/salir',{},{api:d.api,token:d.token}).catch(()=>{}); // avisar al servidor, si se puede
@@ -107,21 +107,39 @@ function dpPintarCabecera(){
 }
 
 // ── Sincronización
+function dpAbrirSSE(){
+  const d=dupla();if(!d||typeof EventSource==='undefined') return;
+  if(_dpEs&&_dpEs.readyState!==2) return;
+  try{
+    _dpEs=new EventSource(d.api.replace(/\/$/,'')+'/api/eventos?t='+d.token);
+    _dpEs.onmessage=()=>dpPull();
+    _dpEs.onerror=()=>{try{_dpEs.close();}catch(e){}_dpEs=null;};
+  }catch(e){}
+}
 function dpArrancar(){
   const d=dupla();if(!d) return;
-  if(!_dpEs&&typeof EventSource!=='undefined'){
-    try{_dpEs=new EventSource(d.api.replace(/\/$/,'')+'/api/eventos?t='+d.token);_dpEs.onmessage=()=>dpPull();}catch(e){}
-  }
+  dpAbrirSSE();
   if(!_dpPush) _dpPush=setInterval(dpEmpujar,4000);
+  if(!_dpPoll) _dpPoll=setInterval(()=>{
+    if(document.hidden||!dupla()||!navigator.onLine) return;
+    dpAbrirSSE();
+    dpPull();
+  },6000);
 }
 async function dpPull(forzar){
   const d=dupla();if(!d||!navigator.onLine) return;
   try{
     const r=await dpApi('GET','/api/dupla');
     d.rol=r.yo.rol||d.rol;d.companero=r.companero;eqDuplaAvisar();
-    const nueva=forzar||r.version>(d.version||0);
+    const visSrv=(r.estado&&r.estado.visitas)||{};
+    const faltanLoc=d.rol==='navegante'&&Object.keys(visSrv).some(id=>!(visits[id]&&visits[id].done));
+    const nueva=forzar||r.version>(d.version||0)||faltanLoc;
     lsSet(SK_DUPLA,d);dpPintarCabecera();if(document.getElementById('dpDlg').classList.contains('show')) dpPintarDlg();
     if(nueva){d.version=r.version;lsSet(SK_DUPLA,d);dpAplicar(r.estado);}
+    if(d.rol==='verificador'){
+      const pend=Object.entries(visits).filter(([id,v])=>v&&v.done&&!v.remoto&&!visSrv[id]).slice(0,5);
+      for(const [id] of pend) dpReportarVisita(id);
+    }
   }catch(e){}
 }
 function dpAplicar(est){
@@ -197,8 +215,11 @@ async function dpReportarVisita(id){
   const d=dupla();if(!d||d.rol!=='verificador') return;
   const v=visits[id],p=puntos.find(x=>String(x.id)===String(id))||{};
   try{
-    if(v&&v.done&&v.planilla) await dpApi('POST','/api/dupla/estado',{visita:{id:String(id),estado:v.planilla.cierra?'cerrado':'ok',irr:typeof irregsDe==='function'&&irregsDe(v.planilla).length>0,nombre:p.nombre||p.dir||''}});
-    else await dpApi('POST','/api/dupla/estado',{quitarVisita:String(id)});
+    if(v&&v.done){
+      const est=(v.noVisitado||(v.planilla&&v.planilla.cierra))?'cerrado':'ok';
+      const irr=!!(v.planilla&&typeof irregsDe==='function'&&irregsDe(v.planilla).length>0);
+      await dpApi('POST','/api/dupla/estado',{visita:{id:String(id),estado:est,irr,nombre:p.nombre||p.dir||''}});
+    }else await dpApi('POST','/api/dupla/estado',{quitarVisita:String(id)});
   }catch(e){}
 }
 function dpIniciar(){

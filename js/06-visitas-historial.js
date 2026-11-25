@@ -90,7 +90,10 @@ function marcarNoVisitado(id){
   confirm2('¿Marcar este punto como NO visitado? Queda en rojo en el mapa y en el Excel.',function(){
     visits[id]={...(visits[id]||{}),done:true,noVisitado:true};
     guardarVisits();
+    if(typeof dpReportarVisita==='function') dpReportarVisita(id);
     renderV();updStats();
+    if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa(true);
+    if(typeof proxActualizar==='function') proxActualizar();
     showToast('Marcado como no visitado');
     triggerAutosave();
   });
@@ -100,7 +103,11 @@ function markDone(id){
   if(!visits[id])visits[id]={};
   visits[id].done=true;if(!visits[id].fecha) visits[id].fecha=hoy();
   guardarVisits();
-  renderV();updStats();showToast('Marcada como hecha ✓');
+  if(typeof dpReportarVisita==='function') dpReportarVisita(id);
+  renderV();updStats();
+  if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa(true);
+  if(typeof proxActualizar==='function') proxActualizar();
+  showToast('Marcada como hecha ✓');
   triggerAutosave();
 }
 
