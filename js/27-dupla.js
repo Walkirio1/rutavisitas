@@ -144,12 +144,18 @@ function dpAplicar(est){
     Object.keys(visits).forEach(id=>{if(visits[id]&&visits[id].remoto&&!est.visitas[id]){delete visits[id];cambio=true;}});
     if(cambio) guardarVisits();
   }
-  if(cambio){renderP();renderV();updStats();if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa(true);}
+  if(cambio){renderP();renderV();updStats();if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa(true);if(typeof proxActualizar==='function') proxActualizar();}
   // "Próxima parada" que manda el navegante
   if(d.rol==='verificador'&&est.actual&&String(est.actual.ts)!==String(lsGet(SK_DPVISTO))){
     lsSet(SK_DPVISTO,String(est.actual.ts));
     const p=puntos.find(x=>String(x.id)===String(est.actual.id));
-    if(p&&!(visits[p.id]&&visits[p.id].done)) mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
+    const yaAbierta=document.getElementById('ov').classList.contains('show')&&curId===(p&&p.id);
+    const yaAvisada=p&&typeof proxFueAvisadoReciente==='function'&&proxFueAvisadoReciente(p.id);
+    if(p&&!(visits[p.id]&&visits[p.id].done)&&!yaAbierta&&!yaAvisada){
+      if(typeof proxMarcarVisto==='function') proxMarcarVisto(p.id);
+      try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
+      mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
+    }
   }
 }
 // el navegante sube sus cambios de ruta (puntos, marcados y orden)
@@ -175,6 +181,13 @@ async function dpLimpiarVisitas(ids){
 // el navegante avisa cuál es la siguiente parada
 async function dpAvisarParada(id){
   try{await dpApi('POST','/api/dupla/estado',{actual:id});showToast('Le avisé a tu compañero ✓');}catch(e){showToast('No pude avisarle: '+e.message,true);}
+}
+// aviso automático del navegante al llegar a ≤100 m (sin cartel bloqueante para quien maneja)
+async function dpAvisarParadaAuto(id,nombre,dist){
+  try{
+    await dpApi('POST','/api/dupla/estado',{actual:id});
+    showToast('📍 Llegando a '+(nombre||id)+(dist!=null?' ('+fmtDist(dist)+')':'')+' · avisé a tu compañero');
+  }catch(e){}
 }
 // el verificador informa cada visita hecha (o la deshace)
 async function dpReportarVisita(id){

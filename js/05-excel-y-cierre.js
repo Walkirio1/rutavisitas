@@ -145,6 +145,7 @@ function reiniciarEstadoLocal(opts){
   lsSet('sube:limpiadoTs',Date.now());
   if(typeof drv!=='undefined'&&drv.connected) borrarJornadaActualDrive().catch(()=>{});
   if(typeof dpReiniciar==='function') dpReiniciar(true);
+  if(typeof proxReiniciar==='function') proxReiniciar();
   renderP();renderV();updStats();
   if(typeof renderMapa==='function'&&mapa) renderMapa(true);
   if(typeof renderPerfilBtn==='function') renderPerfilBtn();
@@ -193,8 +194,9 @@ function cerrarDia(){
     renderP();updStats();renderH();renderV();
     if(typeof renderMapa==='function'&&mapa) renderMapa(true);
     showToast('Día cerrado: '+hechos.length+(hechos.length===1?' visita guardada':' visitas guardadas')+' ✓');
-    if(drv.connected) borrarJornadaActualDrive().catch(()=>{});
+    if(typeof drv!=='undefined'&&drv.connected) borrarJornadaActualDrive().catch(()=>{});
     if(typeof dpLimpiarVisitas==='function') dpLimpiarVisitas([...ids,...huerfanos]);
+    if(typeof proxActualizar==='function') proxActualizar();
     showTab(3);
   });
 }

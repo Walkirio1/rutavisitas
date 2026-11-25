@@ -173,7 +173,7 @@ function marcarDesdeMapa(id){
   const agregando=!sel.has(id);
   if(agregando) sel.add(id); else sel.delete(id);
   lsSet(SK.sel,[...sel]);
-  renderP();updStats();
+  renderP();updStats();if(typeof proxActualizar==='function') proxActualizar();
   renderMapa(true);
   showToast((agregando?'Voy: ':'Quitado: ')+(p.nombre||p.dir)+' · '+sel.size+' en ruta');
   triggerAutosave();

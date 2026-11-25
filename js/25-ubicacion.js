@@ -117,3 +117,73 @@ async function optUbiCambio(on){
   if(on){showToast('Activado: te va a pedir permiso de ubicación');const g=await ubiPos(9000);if(!g) showToast('No se pudo tomar la ubicación: revisá el permiso del navegador',true);}
 }
 function optSelloCambio(on){lsSet('sube:sello',on);showToast(on?'Las fotos nuevas llevan fecha y hora':'Sello desactivado');}
+
+// ── Aviso automático al acercarse (≤100 m) a un punto de la ruta
+const PROX_M=100,PROX_SALIR_M=250,PROX_COOLDOWN_MS=5*60000;
+const proxOn=()=>lsGet('sube:prox')!==false; // activado por defecto
+let _proxWatch=null;
+const _proxAvisados=new Map();
+
+function proxMarcarVisto(id){_proxAvisados.set(String(id),{ts:Date.now(),lejos:false});}
+function proxFueAvisadoReciente(id){
+  const st=_proxAvisados.get(String(id));
+  return !!st&&(!st.lejos||(Date.now()-st.ts)<PROX_COOLDOWN_MS);
+}
+function proxDetener(){
+  if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
+  _proxWatch=null;
+}
+function proxReiniciar(){_proxAvisados.clear();proxActualizar();}
+
+function proxEvaluar(lat,lng,acc){
+  if(acc&&acc>150) return;
+  _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),ts:Date.now()};
+  if(typeof _ultimaUbic!=='undefined') _ultimaUbic={lat,lng};
+  const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
+  if(!faltan.length){proxDetener();return;}
+  for(const [id,st] of _proxAvisados.entries()){
+    const p=faltan.find(x=>String(x.id)===id);
+    if(p&&distM(lat,lng,p.lat,p.lng)>PROX_SALIR_M) st.lejos=true;
+  }
+  let mejor=null;
+  for(const p of faltan){
+    if(proxFueAvisadoReciente(p.id)) continue;
+    const d=distM(lat,lng,p.lat,p.lng);
+    if(d<=PROX_M&&(!mejor||d<mejor.d)) mejor={p,d};
+  }
+  if(!mejor) return;
+  if(typeof dpEsNavegante==='function'&&dpEsNavegante()){
+    proxMarcarVisto(mejor.p.id);
+    if(typeof dpAvisarParadaAuto==='function') dpAvisarParadaAuto(mejor.p.id,mejor.p.nombre||mejor.p.dir,mejor.d);
+    return;
+  }
+  const abierto=document.querySelector('.ov.show, .dlg.show, .firma-full.show');
+  if(abierto){
+    if(document.getElementById('ov').classList.contains('show')&&curId===mejor.p.id) proxMarcarVisto(mejor.p.id);
+    return;
+  }
+  proxMarcarVisto(mejor.p.id);
+  try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
+  mostrarDlgEnvio(
+    '📍 Estás llegando (a '+fmtDist(mejor.d)+')\n\n'+(mejor.p.nombre||mejor.p.dir)+'\n'+mejor.p.dir+(mejor.p.localidad?' · '+mejor.p.localidad:''),
+    [{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(mejor.p.id)},{txt:'Después',cls:'bd'}]
+  );
+}
+
+function proxActualizar(){
+  if(!proxOn()||document.hidden||!navigator.geolocation||!window.isSecureContext||!(typeof faltanVisitar==='function'&&faltanVisitar().length)){
+    proxDetener();return;
+  }
+  if(_proxWatch!==null) return;
+  _proxWatch=navigator.geolocation.watchPosition(
+    pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+    err=>{if(err&&err.code===1)proxDetener();},
+    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
+  );
+}
+
+function optProxCambio(on){
+  lsSet('sube:prox',on);
+  proxActualizar();
+  showToast(on?'Aviso automático al llegar activado (100 m) ✓':'Aviso automático al llegar desactivado');
+}

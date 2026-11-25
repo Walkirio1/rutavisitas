@@ -126,6 +126,10 @@ dpIniciar();
 setTimeout(contadorPing,4000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(contadorPing,3000);});
 
+// de 25-ubicacion.js (aviso automático al acercarse a ≤100 m)
+setTimeout(()=>{if(typeof proxActualizar==='function') proxActualizar();},2000);
+document.addEventListener('visibilitychange',()=>{if(typeof proxActualizar==='function') proxActualizar();});
+
 
 // Dos pestañas abiertas a la vez: la que estaba de fondo recarga los datos al volver, así no pisa lo que cargó la otra
 let _datosCambiaron=false;

@@ -150,7 +150,7 @@ function agregarTodosARuta(){
   if(!noSel.length){showToast('Ya están todos en la ruta');return;}
   noSel.forEach(p=>sel.add(p.id));
   lsSet(SK.sel,[...sel]);
-  renderP();updStats();
+  renderP();updStats();if(typeof proxActualizar==='function') proxActualizar();
   showToast(`✓ ${noSel.length} punto${noSel.length>1?'s':''} agregado${noSel.length>1?'s':''} a la ruta`);
   triggerAutosave();
 }
@@ -161,7 +161,7 @@ function quitarTodosDeRuta(){
   confirm2(`¿Quitar los ${enRuta} puntos de la ruta? No se borran de la lista de puntos, solo de tu ruta del día.`,()=>{
     puntos.forEach(p=>sel.delete(p.id));
     lsSet(SK.sel,[...sel]);
-    renderP();updStats();
+    renderP();updStats();if(typeof proxActualizar==='function') proxActualizar();
     showToast(`Ruta vaciada (${enRuta} quitados)`);
     triggerAutosave();
   });
@@ -172,7 +172,7 @@ function toggleSel(id){
   const agregando = !sel.has(id);
   if(agregando) sel.add(id); else sel.delete(id);
   lsSet(SK.sel,[...sel]);
-  renderP();updStats();
+  renderP();updStats();if(typeof proxActualizar==='function') proxActualizar();
   // Aviso especial si está agregando un punto sin ubicación
   if(agregando && punto && !punto.lat){
     showToast('<svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Agregado, pero este punto NO está en el mapa',true);

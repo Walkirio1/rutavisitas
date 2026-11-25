@@ -81,6 +81,7 @@ function borrarPlanilla(id){
 // ── MODAL PLANILLA VISITA
 function openPl(id){
   curId=id;plC={};fotoData=null;
+  if(typeof proxMarcarVisto==='function') proxMarcarVisto(id);
   const p=puntos.find(x=>x.id===id)||{};
   const v=visits[id]||{};const pl=v.planilla;
 
@@ -224,7 +225,7 @@ async function guardarVisita(soloGuardar,confirmado){
   if(fotoData){ const idv=curId; guardarFotoSegura(idv,fotoData).then(ok=>{if(ok)guardarVisits();}); }
   else{ fotoDel(curId); fotosEnIDB.delete(String(curId)); }
   eqReportarVisita(curId);dpReportarVisita(curId);
-  renderV();updStats();closeOv();showToast(soloGuardar?'Visita guardada (sin enviar) ✓':'Visita guardada ✓');
+  renderV();updStats();if(typeof proxActualizar==='function') proxActualizar();closeOv();showToast(soloGuardar?'Visita guardada (sin enviar) ✓':'Visita guardada ✓');
 
   // Enviar a Drive; si no se puede, queda pendiente y se avisa
   const idv=curId;
