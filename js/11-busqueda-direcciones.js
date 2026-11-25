@@ -219,6 +219,7 @@ function centrarEnMiUbicacion(){
   showToast('Buscando tu ubicación...');
   const ok=pos=>{
     if(typeof proxEvaluar==='function') proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
+    if(typeof proxActualizar==='function') proxActualizar(true);
     const ll=[pos.coords.latitude,pos.coords.longitude];
     miUbicLayer.clearLayers();
     L.circle(ll,{radius:pos.coords.accuracy||30,color:'#3b82f6',weight:1,fillOpacity:.12}).addTo(miUbicLayer);

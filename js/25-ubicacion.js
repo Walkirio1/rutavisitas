@@ -208,6 +208,8 @@ function proxFueAvisadoReciente(id){
   return !!st&&(!st.lejos||(Date.now()-st.ts)<PROX_COOLDOWN_MS);
 }
 
+const _esIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+
 function renderProxBar(){
   const bar=document.getElementById('proxBar');if(!bar) return;
   const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
@@ -217,6 +219,9 @@ function renderProxBar(){
   if(_proxEstado==='denegado'){
     bg='rgba(245,158,11,.14)';bd='rgba(245,158,11,.5)';col='#b45309';
     tx='📡 Radar sin permiso GPS · Tocá acá para activar';
+  }else if(_proxEstado==='esperando'){
+    bg='rgba(59,130,246,.12)';bd='rgba(59,130,246,.45)';col='#1d4ed8';
+    tx='📡 Radar listo · Tocá acá para activar el GPS';
   }else if(_proxEstado==='activo'&&_proxCercano){
     const {p,d}=_proxCercano;
     const acc=typeof dpEsNavegante==='function'&&dpEsNavegante()?'tocá para avisar':'tocá para abrir';
@@ -241,11 +246,14 @@ function proxDetener(){
 }
 function proxReiniciar(){_proxAvisados.clear();_proxCercano=null;_proxUltimoFixTs=0;proxActualizar();renderProxBar();}
 
-function proxMostrarAyudaPermiso(){
-  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
-  const pasos=ios
-    ?'En iPhone: abrí Ajustes → Privacidad y seguridad → Localización → Safari / LogiMap → elegí «Al usar la app».'
-    :'En Android: mantené apretado el ícono de LogiMap → Información de la app → Permisos → Ubicación → Permitir.\n\nSi la usás desde Chrome: tocá el ícono a la izquierda de la dirección → Permisos → Ubicación → Permitir.';
+function proxMostrarAyudaPermiso(err){
+  const det=err?'\n\n(Detalle: código '+err.code+(err.message?' · '+err.message:'')+')':'';
+  const pasos=_esIOS()
+    ?'Esta app instalada usa los permisos de Safari (no aparece como "LogiMap" en Ajustes).\n\n'
+      +'1) Ajustes → Privacidad y seguridad → Localización → Sitios web de Safari → «Al usar la app» (y activá «Ubicación precisa»).\n'
+      +'2) Ajustes → Apps → Safari → Ubicación (en iOS anterior: Ajustes → Safari → Ubicación) → cambiá de «Preguntar» a «Permitir».\n'
+      +'3) Cerrá LogiMap deslizando hacia arriba (multitarea) y volvé a abrirla.'+det
+    :'En Android: mantené apretado el ícono de LogiMap → Información de la app → Permisos → Ubicación → Permitir.\n\nSi la usás desde Chrome: tocá el ícono a la izquierda de la dirección → Permisos → Ubicación → Permitir.'+det;
   mostrarDlgEnvio(
     '📍 El permiso de ubicación quedó bloqueado en este celular (una vez bloqueado, el navegador no vuelve a preguntar solo).\n\n'+pasos,
     [
@@ -256,27 +264,32 @@ function proxMostrarAyudaPermiso(){
   );
 }
 
+function proxIniciarWatch(porToque){
+  if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}_proxWatch=null;}
+  if(_proxEstado==='off'||_proxEstado==='error'||_proxEstado==='esperando'||porToque) _proxEstado='buscando';
+  renderProxBar();
+  _proxWatch=navigator.geolocation.watchPosition(
+    pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+    err=>{
+      if(err&&err.code===1){
+        lsDel('sube:proxok');_proxEstado='denegado';proxDetener();
+        if(porToque) proxMostrarAyudaPermiso(err);
+        return;
+      }
+      if(err&&(err.code===2||err.code===3)){
+        if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
+        _proxWatch=null;_proxAlta=!_proxAlta;_proxEstado='buscando';renderProxBar();
+        if(!_proxReintento) _proxReintento=setTimeout(()=>{_proxReintento=null;proxActualizar();},3000);
+      }
+    },
+    {enableHighAccuracy:_proxAlta,maximumAge:3000,timeout:12000}
+  );
+}
+
 function proxForzarPedido(){
   _proxDesbloquearAudio();
   if(!navigator.geolocation||!window.isSecureContext){showToast('Este navegador no permite ubicación',true);return;}
-  _proxEstado='buscando';renderProxBar();
-  const ok=pos=>{
-    proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
-    proxActualizar(true);
-    showToast('Radar GPS activo ✓');
-  };
-  const fail=err=>{
-    if(err&&err.code===1){_proxEstado='denegado';proxDetener();proxMostrarAyudaPermiso();}
-    else{
-      _proxEstado='buscando';renderProxBar();
-      showToast('Sin señal GPS todavía: activá Ubicación en el celular y probá en unos segundos',true);
-      proxActualizar(true);
-    }
-  };
-  navigator.geolocation.getCurrentPosition(ok,e1=>{
-    if(e1&&e1.code===1){fail(e1);return;}
-    navigator.geolocation.getCurrentPosition(ok,fail,{enableHighAccuracy:true,maximumAge:0,timeout:14000});
-  },{enableHighAccuracy:false,maximumAge:30000,timeout:7000});
+  proxIniciarWatch(true);
 }
 function proxBarClick(){
   _proxDesbloquearAudio();
@@ -288,6 +301,7 @@ function proxBarClick(){
 function proxEvaluar(lat,lng,acc){
   _proxUltimoFixTs=Date.now();
   _proxEstado='activo';
+  if(!lsGet('sube:proxok')) lsSet('sube:proxok',true);
   _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),ts:Date.now()};
   if(typeof _ultimaUbic!=='undefined') _ultimaUbic={lat,lng};
   const faltan=typeof faltanVisitar==='function'?faltanVisitar():[];
@@ -334,7 +348,7 @@ function proxVigilarPermiso(){
     if(st.state==='denied'){_proxEstado='denegado';renderProxBar();}
     st.onchange=()=>{
       if(st.state==='granted'){_proxEstado='buscando';proxActualizar(true);}
-      else if(st.state==='denied'){_proxEstado='denegado';proxDetener();}
+      else if(st.state==='denied'){lsDel('sube:proxok');_proxEstado='denegado';proxDetener();}
     };
   }).catch(()=>{});
 }
@@ -343,36 +357,17 @@ function proxActualizar(forzar){
   if(!proxOn()||!navigator.geolocation||!window.isSecureContext||!(typeof faltanVisitar==='function'&&faltanVisitar().length)){
     proxDetener();return;
   }
-  proxVigilarPermiso();
-  if(forzar&&_proxWatch!==null){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}_proxWatch=null;}
-  if(_proxWatch===null){
-    if(_proxEstado==='off'||_proxEstado==='error'||forzar) _proxEstado='buscando';
-    renderProxBar();
-    navigator.geolocation.getCurrentPosition(
-      pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
-      ()=>{},
-      {enableHighAccuracy:false,maximumAge:30000,timeout:6000}
-    );
-    _proxWatch=navigator.geolocation.watchPosition(
-      pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
-      err=>{
-        if(err&&err.code===1){_proxEstado='denegado';proxDetener();return;}
-        if(err&&(err.code===2||err.code===3)){
-          if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
-          _proxWatch=null;_proxAlta=!_proxAlta;_proxEstado='buscando';renderProxBar();
-          if(!_proxReintento) _proxReintento=setTimeout(()=>{_proxReintento=null;proxActualizar();},3000);
-        }
-      },
-      {enableHighAccuracy:_proxAlta,maximumAge:3000,timeout:12000}
-    );
-  }else{
-    renderProxBar();
+  if(_esIOS()&&!forzar&&!lsGet('sube:proxok')){
+    _proxEstado='esperando';renderProxBar();return;
   }
+  proxVigilarPermiso();
+  if(forzar||_proxWatch===null) proxIniciarWatch(!!forzar);
+  else renderProxBar();
   if(!_proxGuard){
     _proxGuard=setInterval(()=>{
       if(document.hidden||!proxOn()||_proxEstado==='denegado'||!(typeof faltanVisitar==='function'&&faltanVisitar().length)) return;
       if(_proxWatch===null) proxActualizar();
-      if(Date.now()-_proxUltimoFixTs>7000&&navigator.geolocation){
+      if(_proxEstado==='activo'&&Date.now()-_proxUltimoFixTs>10000&&navigator.geolocation){
         navigator.geolocation.getCurrentPosition(
           pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
           ()=>{},
