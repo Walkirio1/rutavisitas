@@ -1,16 +1,22 @@
 // Prueba de visita: ubicación y hora en cada visita y en las fotos + reportes (hoy / semana / mes)
 const ubiOn=()=>!!lsGet('sube:ubi'),selloOn=()=>!!lsGet('sube:sello'); // opciones del usuario (apagadas por defecto)
-let _ubi=null,_tIni=0; // última posición conocida y momento en que se abrió la planilla
+let _ubi=null,_tIni=0,_ubiUltErr=0; // última posición conocida y momento en que se abrió la planilla
 
 function ubiPos(maxMs=7000){
   return new Promise(res=>{
+    _ubiUltErr=0;
     if(!navigator.geolocation){res(null);return;}
     let listo=false;const fin=p=>{if(!listo){listo=true;res(p);}};
     const t=setTimeout(()=>fin(_ubi&&Date.now()-_ubi.ts<10*60000?_ubi:null),maxMs);
-    navigator.geolocation.getCurrentPosition(p=>{
+    const ok=p=>{
       _ubi={lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),prec:Math.round(p.coords.accuracy||0),ts:Date.now()};
       clearTimeout(t);fin(_ubi);
-    },()=>{clearTimeout(t);fin(null);},{enableHighAccuracy:true,timeout:maxMs,maximumAge:60000});
+    };
+    const fail=e=>{_ubiUltErr=(e&&e.code)||0;clearTimeout(t);fin(null);};
+    navigator.geolocation.getCurrentPosition(ok,e1=>{
+      if(e1&&e1.code===1){fail(e1);return;}
+      navigator.geolocation.getCurrentPosition(ok,fail,{enableHighAccuracy:true,timeout:maxMs,maximumAge:30000});
+    },{enableHighAccuracy:false,timeout:Math.min(4500,maxMs),maximumAge:60000});
   });
 }
 function distM(a,b,c,d){
@@ -114,7 +120,14 @@ async function repCompartir(){
 // opciones (en el perfil)
 async function optUbiCambio(on){
   lsSet('sube:ubi',on);
-  if(on){showToast('Activado: te va a pedir permiso de ubicación');const g=await ubiPos(9000);if(!g) showToast('No se pudo tomar la ubicación: revisá el permiso del navegador',true);}
+  if(on){
+    showToast('Activado: buscando tu ubicación…');
+    const g=await ubiPos(9000);
+    if(!g){
+      if(_ubiUltErr===1) proxMostrarAyudaPermiso();
+      else showToast('No se detectó señal GPS todavía (probá afuera o activá Ubicación del celular)',true);
+    }
+  }
 }
 function optSelloCambio(on){lsSet('sube:sello',on);showToast(on?'Las fotos nuevas llevan fecha y hora':'Sello desactivado');}
 
@@ -158,7 +171,7 @@ function textoParada(p,titulo){
 // ── Aviso automático al acercarse (≤160 m) a un punto de la ruta
 const PROX_M=160,PROX_SALIR_M=300,PROX_COOLDOWN_MS=5*60000;
 const proxOn=()=>lsGet('sube:prox')!==false; // activado por defecto
-let _proxWatch=null,_proxEstado='off',_proxCercano=null,_proxUltimoFixTs=0,_proxGuard=null,_proxReintento=null,_proxAudio=null;
+let _proxWatch=null,_proxEstado='off',_proxCercano=null,_proxUltimoFixTs=0,_proxGuard=null,_proxReintento=null,_proxAudio=null,_proxAlta=true,_proxPermInit=false;
 const _proxAvisados=new Map();
 
 function _proxDesbloquearAudio(){
@@ -228,18 +241,42 @@ function proxDetener(){
 }
 function proxReiniciar(){_proxAvisados.clear();_proxCercano=null;_proxUltimoFixTs=0;proxActualizar();renderProxBar();}
 
+function proxMostrarAyudaPermiso(){
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+  const pasos=ios
+    ?'En iPhone: abrí Ajustes → Privacidad y seguridad → Localización → Safari / LogiMap → elegí «Al usar la app».'
+    :'En Android: mantené apretado el ícono de LogiMap → Información de la app → Permisos → Ubicación → Permitir.\n\nSi la usás desde Chrome: tocá el ícono a la izquierda de la dirección → Permisos → Ubicación → Permitir.';
+  mostrarDlgEnvio(
+    '📍 El permiso de ubicación quedó bloqueado en este celular (una vez bloqueado, el navegador no vuelve a preguntar solo).\n\n'+pasos,
+    [
+      {txt:'Ya lo activé · Probar ahora',cls:'ba',fn:()=>proxForzarPedido()},
+      {txt:'Recargar app',cls:'bd',fn:()=>location.reload()},
+      {txt:'Cerrar',cls:'bd'}
+    ]
+  );
+}
+
 function proxForzarPedido(){
   _proxDesbloquearAudio();
   if(!navigator.geolocation||!window.isSecureContext){showToast('Este navegador no permite ubicación',true);return;}
   _proxEstado='buscando';renderProxBar();
-  navigator.geolocation.getCurrentPosition(
-    pos=>{proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);proxActualizar(true);},
-    err=>{
-      if(err&&err.code===1){_proxEstado='denegado';proxDetener();showToast('Activá el permiso de Ubicación para el radar automático',true);}
-      else{_proxEstado='error';renderProxBar();proxActualizar(true);}
-    },
-    {enableHighAccuracy:true,maximumAge:0,timeout:12000}
-  );
+  const ok=pos=>{
+    proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
+    proxActualizar(true);
+    showToast('Radar GPS activo ✓');
+  };
+  const fail=err=>{
+    if(err&&err.code===1){_proxEstado='denegado';proxDetener();proxMostrarAyudaPermiso();}
+    else{
+      _proxEstado='buscando';renderProxBar();
+      showToast('Sin señal GPS todavía: activá Ubicación en el celular y probá en unos segundos',true);
+      proxActualizar(true);
+    }
+  };
+  navigator.geolocation.getCurrentPosition(ok,e1=>{
+    if(e1&&e1.code===1){fail(e1);return;}
+    navigator.geolocation.getCurrentPosition(ok,fail,{enableHighAccuracy:true,maximumAge:0,timeout:14000});
+  },{enableHighAccuracy:false,maximumAge:30000,timeout:7000});
 }
 function proxBarClick(){
   _proxDesbloquearAudio();
@@ -249,7 +286,6 @@ function proxBarClick(){
 }
 
 function proxEvaluar(lat,lng,acc){
-  if(acc&&acc>250) return;
   _proxUltimoFixTs=Date.now();
   _proxEstado='activo';
   _ubi={lat:+lat.toFixed(6),lng:+lng.toFixed(6),prec:Math.round(acc||0),ts:Date.now()};
@@ -261,10 +297,11 @@ function proxEvaluar(lat,lng,acc){
     if(p&&distM(lat,lng,p.lat,p.lng)>PROX_SALIR_M) st.lejos=true;
   }
   let masCerca=null,mejor=null;
+  const precOk=!(acc&&acc>250);
   for(const p of faltan){
     const d=distM(lat,lng,p.lat,p.lng);
     if(!masCerca||d<masCerca.d) masCerca={p,d,acc};
-    if(!proxFueAvisadoReciente(p.id)&&d<=PROX_M&&(!mejor||d<mejor.d)) mejor={p,d};
+    if(precOk&&!proxFueAvisadoReciente(p.id)&&d<=PROX_M&&(!mejor||d<mejor.d)) mejor={p,d};
   }
   _proxCercano=masCerca;
   renderProxBar();
@@ -290,25 +327,43 @@ function proxEvaluar(lat,lng,acc){
   );
 }
 
+function proxVigilarPermiso(){
+  if(_proxPermInit||!navigator.permissions||!navigator.permissions.query) return;
+  _proxPermInit=true;
+  navigator.permissions.query({name:'geolocation'}).then(st=>{
+    if(st.state==='denied'){_proxEstado='denegado';renderProxBar();}
+    st.onchange=()=>{
+      if(st.state==='granted'){_proxEstado='buscando';proxActualizar(true);}
+      else if(st.state==='denied'){_proxEstado='denegado';proxDetener();}
+    };
+  }).catch(()=>{});
+}
+
 function proxActualizar(forzar){
   if(!proxOn()||!navigator.geolocation||!window.isSecureContext||!(typeof faltanVisitar==='function'&&faltanVisitar().length)){
     proxDetener();return;
   }
+  proxVigilarPermiso();
   if(forzar&&_proxWatch!==null){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}_proxWatch=null;}
   if(_proxWatch===null){
     if(_proxEstado==='off'||_proxEstado==='error'||forzar) _proxEstado='buscando';
     renderProxBar();
+    navigator.geolocation.getCurrentPosition(
+      pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
+      ()=>{},
+      {enableHighAccuracy:false,maximumAge:30000,timeout:6000}
+    );
     _proxWatch=navigator.geolocation.watchPosition(
       pos=>proxEvaluar(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy),
       err=>{
         if(err&&err.code===1){_proxEstado='denegado';proxDetener();return;}
         if(err&&(err.code===2||err.code===3)){
           if(_proxWatch!==null&&navigator.geolocation){try{navigator.geolocation.clearWatch(_proxWatch);}catch(e){}}
-          _proxWatch=null;_proxEstado='buscando';renderProxBar();
+          _proxWatch=null;_proxAlta=!_proxAlta;_proxEstado='buscando';renderProxBar();
           if(!_proxReintento) _proxReintento=setTimeout(()=>{_proxReintento=null;proxActualizar();},3000);
         }
       },
-      {enableHighAccuracy:true,maximumAge:2000,timeout:10000}
+      {enableHighAccuracy:_proxAlta,maximumAge:3000,timeout:12000}
     );
   }else{
     renderProxBar();
