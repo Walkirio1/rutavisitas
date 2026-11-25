@@ -191,6 +191,8 @@ function importXL(input){
       const wb=XLSX.read(e.target.result,{type:'array'});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws);
+      const colsExcel=Object.keys(rows[0]||{});
+      const kRubro=colsExcel.find(k=>/^(rubro|actividad|subrubro|giro|tipo\s*(de\s*)?(negocio|comercio|local))$/i.test(k.trim()));
       // se guarda el Excel tal cual vino (todas las filas y columnas) para devolverlo actualizado
       const nuevos=rows.map(r=>({
         id:String(r['Ubicación ID']||r['ID']||''),
@@ -198,6 +200,7 @@ function importXL(input){
         dir:(String(r['Dirección']||'')+' '+String(r['Numero']||'')).trim(),
         localidad:String(r['Localidad']||''),
         tipo:String(r['Tipo Centro']||''),
+        rubro:kRubro?String(r[kRubro]||'').trim():'',
         obs:String(r['Observaciones']||''),
         lat:null,lng:null,geoErr:null,
       })).filter(r=>r.dir&&r.id);

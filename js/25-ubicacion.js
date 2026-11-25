@@ -118,6 +118,43 @@ async function optUbiCambio(on){
 }
 function optSelloCambio(on){lsSet('sube:sello',on);showToast(on?'Las fotos nuevas llevan fecha y hora':'Sello desactivado');}
 
+// ── Rubro / tipo de negocio del punto (también lo recupera del Excel ya guardado sin reimportar)
+const _RX_RUBRO=/^(rubro|actividad|subrubro|giro|tipo\s*(de\s*)?(negocio|comercio|local))$/i;
+let _rubExcelTs=null,_rubExcelMap=null;
+function rubroDesdeExcel(id){
+  if(id==null) return '';
+  const ex=lsGet('sube:excel');
+  if(!ex||!Array.isArray(ex.aoa)||ex.aoa.length<2) return '';
+  if(_rubExcelTs!==ex.ts||!_rubExcelMap){
+    _rubExcelTs=ex.ts;_rubExcelMap=new Map();
+    const cab=(ex.aoa[0]||[]).map(h=>String(h==null?'':h).trim());
+    let cId=cab.findIndex(h=>/^(ubicaci[oó]n\s*id|id)$/i.test(h));if(cId<0) cId=0;
+    const cRub=cab.findIndex(h=>_RX_RUBRO.test(h));
+    if(cRub>=0){
+      for(let i=1;i<ex.aoa.length;i++){
+        const r=ex.aoa[i]||[];const k=String(r[cId]==null?'':r[cId]).trim();const v=String(r[cRub]==null?'':r[cRub]).trim();
+        if(k&&v) _rubExcelMap.set(k,v);
+      }
+    }
+  }
+  return _rubExcelMap.get(String(id).trim())||'';
+}
+function rubroSoloDePunto(p){return String((p&&p.rubro)||rubroDesdeExcel(p&&p.id)||(p&&p.tipo)||'').trim();}
+function rubroDePunto(p){
+  const r=String((p&&p.rubro)||rubroDesdeExcel(p&&p.id)||'').trim();
+  const t=String((p&&p.tipo)||'').trim();
+  if(r&&t&&r.toLowerCase()!==t.toLowerCase()) return r+' · '+t;
+  return r||t;
+}
+function textoParada(p,titulo){
+  const rub=rubroDePunto(p);
+  const lineas=[titulo,'',(p&& (p.nombre||p.dir))||''];
+  if(rub) lineas.push('🏪 '+rub);
+  lineas.push('📍 '+((p&&p.dir)||'')+(p&&p.localidad?' · '+p.localidad:''));
+  if(p&&p.obs) lineas.push('📝 '+p.obs);
+  return lineas.join('\n');
+}
+
 // ── Aviso automático al acercarse (≤100 m) a un punto de la ruta
 const PROX_M=100,PROX_SALIR_M=250,PROX_COOLDOWN_MS=5*60000;
 const proxOn=()=>lsGet('sube:prox')!==false; // activado por defecto
@@ -154,7 +191,7 @@ function proxEvaluar(lat,lng,acc){
   if(!mejor) return;
   if(typeof dpEsNavegante==='function'&&dpEsNavegante()){
     proxMarcarVisto(mejor.p.id);
-    if(typeof dpAvisarParadaAuto==='function') dpAvisarParadaAuto(mejor.p.id,mejor.p.nombre||mejor.p.dir,mejor.d);
+    if(typeof dpAvisarParadaAuto==='function') dpAvisarParadaAuto(mejor.p.id,mejor.p.nombre||mejor.p.dir,mejor.d,rubroDePunto(mejor.p));
     return;
   }
   const abierto=document.querySelector('.ov.show, .dlg.show, .firma-full.show');
@@ -165,7 +202,7 @@ function proxEvaluar(lat,lng,acc){
   proxMarcarVisto(mejor.p.id);
   try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
   mostrarDlgEnvio(
-    '📍 Estás llegando (a '+fmtDist(mejor.d)+')\n\n'+(mejor.p.nombre||mejor.p.dir)+'\n'+mejor.p.dir+(mejor.p.localidad?' · '+mejor.p.localidad:''),
+    textoParada(mejor.p,'📍 Estás llegando (a '+fmtDist(mejor.d)+')'),
     [{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(mejor.p.id)},{txt:'Después',cls:'bd'}]
   );
 }

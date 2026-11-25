@@ -115,7 +115,7 @@ function openPl(id){
   ubiAlAbrir(p,pl);
   document.getElementById('plI').value=p.id||'';
   document.getElementById('plD').value=p.dir||'';
-  document.getElementById('plR').value=(pl&&pl.rubro)||p.tipo||'';
+  document.getElementById('plR').value=(pl&&pl.rubro)||(typeof rubroSoloDePunto==='function'?rubroSoloDePunto(p):'')||p.tipo||'';
   document.getElementById('plO').value=(pl&&pl.obs)||'';
   borradorRestaurar(id,pl);
 

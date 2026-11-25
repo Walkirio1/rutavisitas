@@ -154,16 +154,18 @@ function dpAplicar(est){
     if(p&&!(visits[p.id]&&visits[p.id].done)&&!yaAbierta&&!yaAvisada){
       if(typeof proxMarcarVisto==='function') proxMarcarVisto(p.id);
       try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
-      mostrarDlgEnvio('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''),[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
+      const txt=typeof textoParada==='function'?textoParada(p,'Próxima parada'):('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''));
+      mostrarDlgEnvio(txt,[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
     }
   }
 }
 // el navegante sube sus cambios de ruta (puntos, marcados y orden)
 async function dpEmpujar(){
   const d=dupla();if(!d||d.rol!=='navegante'||!navigator.onLine) return;
-  const clave=JSON.stringify([puntos.map(p=>[p.id,p.nombre,p.dir,p.localidad,p.tipo,p.lat,p.lng]),[...sel],ordenRuta]);
-  if(clave===_dpUltimo||(!puntos.length&&!_dpUltimo)) return; // no se sube una ruta vacía
-  try{await dpApi('POST','/api/dupla/estado',{puntos:puntos,sel:[...sel],orden:ordenRuta});_dpUltimo=clave;}catch(e){}
+  const ptsEnv=puntos.map(p=>({...p,tipo:(typeof rubroDePunto==='function'?rubroDePunto(p):p.tipo)||''}));
+  const clave=JSON.stringify([ptsEnv.map(p=>[p.id,p.nombre,p.dir,p.localidad,p.tipo,p.lat,p.lng]),[...sel],ordenRuta]);
+  if(clave===_dpUltimo||(!ptsEnv.length&&!_dpUltimo)) return; // no se sube una ruta vacía
+  try{await dpApi('POST','/api/dupla/estado',{puntos:ptsEnv,sel:[...sel],orden:ordenRuta});_dpUltimo=clave;}catch(e){}
 }
 // reinicia las visitas compartidas de la dupla (y si es navegante, opcionalmente vacía la ruta en el servidor)
 async function dpReiniciar(conRuta){
@@ -183,10 +185,10 @@ async function dpAvisarParada(id){
   try{await dpApi('POST','/api/dupla/estado',{actual:id});showToast('Le avisé a tu compañero ✓');}catch(e){showToast('No pude avisarle: '+e.message,true);}
 }
 // aviso automático del navegante al llegar a ≤100 m (sin cartel bloqueante para quien maneja)
-async function dpAvisarParadaAuto(id,nombre,dist){
+async function dpAvisarParadaAuto(id,nombre,dist,rubro){
   try{
     await dpApi('POST','/api/dupla/estado',{actual:id});
-    showToast('📍 Llegando a '+(nombre||id)+(dist!=null?' ('+fmtDist(dist)+')':'')+' · avisé a tu compañero');
+    showToast('📍 Llegando a '+(nombre||id)+(rubro?' · '+rubro:'')+(dist!=null?' ('+fmtDist(dist)+')':'')+' · avisé a tu compañero');
   }catch(e){}
 }
 // el verificador informa cada visita hecha (o la deshace)

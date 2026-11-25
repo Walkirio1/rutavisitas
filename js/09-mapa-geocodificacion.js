@@ -152,8 +152,10 @@ function renderMapa(noFit){
     const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:prio*1000}).addTo(markersLayer);
     marker._puntoId=p.id;marker._prio=prio;
     const gmUrl = urlNavegar(p.lat,p.lng);
+    const rub = typeof rubroDePunto==='function'?rubroDePunto(p):(p.tipo||'');
     const popup = `
       <div class="popup-title">${escapeHtml(p.nombre)}</div>
+      ${rub?`<div class="popup-id" style="color:var(--text-soft);font-weight:600">🏪 ${escapeHtml(rub)}</div>`:''}
       <div class="popup-dir">${escapeHtml(p.dir)}</div>
       <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
       <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con ${NAV_APPS[appNav()].nombre}</a>
