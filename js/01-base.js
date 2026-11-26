@@ -25,8 +25,46 @@ const SK={
   plDef:'sube:pldef',
 };
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
-function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){showToast('Storage lleno: borrar historial viejo',true);}}
-function lsDel(k){try{localStorage.removeItem(k);}catch{}}
+function lsSet(k,v){
+  let s;try{s=JSON.stringify(v);}catch(e){if(k===SK.planillas||k===SK.historial)void datoPut(k,v).catch(()=>{});return;}
+  if(k===SK.planillas||k===SK.historial) void datoPut(k,v).catch(()=>{});
+  try{if(s.length<600000)localStorage.setItem(k,s);else localStorage.removeItem(k);}
+  catch(e){try{localStorage.removeItem(k);}catch{}if(k!==SK.planillas&&k!==SK.historial)showToast('Storage lleno: borrar historial viejo',true);}
+}
+function lsDel(k){try{localStorage.removeItem(k);}catch{}if(k===SK.planillas||k===SK.historial)void datoDel(k).catch(()=>{});}
+
+// Datos pesados separados de las fotos para no competir por espacio en localStorage.
+let _datosDB=null;
+function datosDB(){
+  if(_datosDB)return _datosDB;
+  _datosDB=new Promise((res,rej)=>{
+    try{if(typeof indexedDB==='undefined')throw new Error('IndexedDB no disponible');
+      const rq=indexedDB.open('logimap-datos',1);
+      rq.onupgradeneeded=()=>{if(!rq.result.objectStoreNames.contains('kv'))rq.result.createObjectStore('kv');};
+      rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);
+    }catch(e){rej(e);}
+  });
+  _datosDB.catch(()=>{_datosDB=null;});return _datosDB;
+}
+async function datoOp(modo,tipo,...args){
+  const limite=new Promise(res=>setTimeout(()=>res(null),5000));
+  const op=(async()=>{try{const db=await datosDB();return await new Promise((res,rej)=>{const rq=db.transaction('kv',modo).objectStore('kv')[tipo](...args);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}catch(e){return null;}})();
+  return Promise.race([op,limite]);
+}
+const datoPut=(k,v)=>datoOp('readwrite','put',v,String(k));
+const datoGet=k=>datoOp('readonly','get',String(k));
+const datoDel=k=>datoOp('readwrite','delete',String(k));
+async function hidratarDatosPesados(){
+  if(typeof indexedDB==='undefined')return;
+  try{
+    const [p,h]=await Promise.all([datoGet(SK.planillas),datoGet(SK.historial)]);
+    let cambioP=false,cambioH=false;
+    if(p!==null&&p!==undefined){planillas=p;cambioP=true;}else if(planillas&&planillas.length)await datoPut(SK.planillas,planillas);
+    if(h!==null&&h!==undefined){historial=h;cambioH=true;}else if(historial&&historial.length)await datoPut(SK.historial,historial);
+    if(cambioP){if(typeof renderPlanillas==='function')renderPlanillas();if(typeof aplicarPlantilla==='function')aplicarPlantilla();}
+    if(cambioH&&typeof renderH==='function')renderH();
+  }catch(e){}
+}
 
 // ── ESTADO
 let puntos   = lsGet(SK.puntos)    || [];

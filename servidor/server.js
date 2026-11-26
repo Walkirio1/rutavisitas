@@ -46,13 +46,24 @@ const txt=(v,n=200)=>String(v==null?'':v).slice(0,n);
 const foto=v=>{const s=txt(v,60000);return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s)?s:'';};
 
 // límite simple de pedidos por usuario (o por IP si no hay sesión), contra abusos
-const cuenta=new Map();setInterval(()=>cuenta.clear(),60000);
+const cuenta=new Map();const limitesEstrictos=new Map();setInterval(()=>{cuenta.clear();limitesEstrictos.clear();},60000);
+const ipConfiable=req=>{
+  const remote=String(req.socket&&req.socket.remoteAddress||'?').toLowerCase();
+  const privada=remote==='::1'||remote.startsWith('127.')||remote.startsWith('::ffff:127.')||remote.startsWith('10.')||remote.startsWith('::ffff:10.')||remote.startsWith('192.168.')||remote.startsWith('::ffff:192.168.')||/^172\.(1[6-9]|2\d|3[01])\./.test(remote)||/^::ffff:172\.(1[6-9]|2\d|3[01])\./.test(remote);
+  if(process.env.TRUST_PROXY==='1'||privada){
+    const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();
+    return forwarded||String(req.headers['cf-connecting-ip']||'').trim()||remote;
+  }
+  return remote;
+};
+const limiteEstricto=(req,limite,grupo='auth')=>{const k=grupo+':'+ipConfiable(req),ahora=Date.now();let x=limitesEstrictos.get(k);if(!x||ahora-x.inicio>=60000)x={inicio:ahora,n:0};x.n++;limitesEstrictos.set(k,x);return x.n>limite;};
 const abuso=req=>{
-  const k=bearer(req)||(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.headers['cf-connecting-ip']||req.socket.remoteAddress||'?';
+  const k=bearer(req)||ipConfiable(req);
   const n=(cuenta.get(k)||0)+1;cuenta.set(k,n);return n>300;
 };
 // avisos en vivo al panel del jefe (Server-Sent Events)
 const oyentes=new Map(); // equipo_id -> Set(res)
+const ticketsEventos=new Map();
 const quitarOyente=(set,r)=>{set.delete(r);if(!set.size)for(const [id,s] of oyentes)if(s===set){oyentes.delete(id);break;}};
 const avisar=(equipoId,tipo)=>{const set=oyentes.get(equipoId);if(set)for(const r of set)try{r.write('data: '+JSON.stringify({tipo,ts:Date.now()})+'\n\n');}catch(e){quitarOyente(set,r);}};
 setInterval(()=>{for(const set of oyentes.values())for(const r of set)try{r.write(': latido\n\n');}catch(e){quitarOyente(set,r);}},25000);
@@ -97,6 +108,13 @@ async function optimizar(b){
 const rutas={
   'GET /api/salud':async()=>{let calles=false;try{await osrmGet('/nearest/v1/driving/-60.65,-32.95');calles=true;}catch(e){}return [200,{ok:true,hora:Date.now(),calles}];},
   'POST /api/optimizar':async(req,b)=>optimizar(b),
+  'POST /api/eventos/ticket':async(req)=>{
+    const t=bearer(req);let e=t?ult('SELECT * FROM equipos WHERE admin_token=?',t):null;
+    if(!e){const mm=t?ult('SELECT equipo_id FROM miembros WHERE token=?',t):null;if(mm)e=ult('SELECT * FROM equipos WHERE id=?',mm.equipo_id);}
+    if(!e)return [401,{error:'Sin permiso'}];
+    const ahora=Date.now();for(const [id,d] of ticketsEventos)if(d.expira<ahora)ticketsEventos.delete(id);
+    const ticket=crypto.randomBytes(32).toString('hex');ticketsEventos.set(ticket,{equipo_id:e.id,expira:ahora+60000});return [200,{ticket}];
+  },
   // contador anónimo: la app avisa que está en uso (código al azar + versión + sí/no de 5 funciones). No recibe nada personal.
   'POST /api/ping':async(req,b)=>{
     const i=txt(b.i,40);if(!/^[a-f0-9]{12,40}$/.test(i)) return [400,{error:'Dato inválido'}];
@@ -267,12 +285,18 @@ http.createServer(async(req,res)=>{
       res.writeHead(404);return res.end('No existe');
     }
     if(url.pathname==='/api/eventos'){ // el panel se queda escuchando
-      const tk=url.searchParams.get('t')||'';let e=ult('SELECT * FROM equipos WHERE admin_token=?',tk);
-      if(!e){const mm=ult('SELECT equipo_id FROM miembros WHERE token=?',tk);if(mm) e=ult('SELECT * FROM equipos WHERE id=?',mm.equipo_id);}
+      let e=null;const ticket=url.searchParams.get('ticket')||'';
+      if(ticket){const dato=ticketsEventos.get(ticket);ticketsEventos.delete(ticket);if(dato&&dato.expira>=Date.now())e=ult('SELECT * FROM equipos WHERE id=?',dato.equipo_id);}
+      else {const tk=url.searchParams.get('t')||'';e=ult('SELECT * FROM equipos WHERE admin_token=?',tk);
+        if(!e){const mm=ult('SELECT equipo_id FROM miembros WHERE token=?',tk);if(mm)e=ult('SELECT * FROM equipos WHERE id=?',mm.equipo_id);}}
       if(!e) return json(res,401,{error:'Sin permiso'});
       res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache',Connection:'keep-alive','X-Accel-Buffering':'no',...CORS});try{res.write('retry: 4000\n\n');}catch(e){return;}
       if(!oyentes.has(e.id)) oyentes.set(e.id,new Set());oyentes.get(e.id).add(res);
       req.on('close',()=>{const st=oyentes.get(e.id);if(st){st.delete(res);if(!st.size) oyentes.delete(e.id);}});return;
+    }
+    if(req.method==='POST'&&(['/api/equipo/crear','/api/dupla/crear','/api/unirse'].includes(url.pathname)||url.pathname==='/api/optimizar')){
+      const esOpt=url.pathname==='/api/optimizar';
+      if(limiteEstricto(req,esOpt?40:20,esOpt?'opt':'auth'))return json(res,429,{error:'Demasiados pedidos seguidos, esperá un minuto'});
     }
     if(abuso(req)) return json(res,429,{error:'Demasiados pedidos, esperá un momento'});
     let m=url.pathname.match(/^\/api\/miembro\/(\d+)$/);
@@ -282,3 +306,5 @@ http.createServer(async(req,res)=>{
     const [code,obj]=await h(req,body,url);json(res,code,obj);
   }catch(e){console.error(e);json(res,500,{error:'Error del servidor'});}
 }).listen(PORT,()=>console.log('Verific servidor en el puerto '+PORT));
+const purgarTrazas=()=>{run('DELETE FROM trazas WHERE ts<?',Date.now()-30*86400000);};
+purgarTrazas();setInterval(purgarTrazas,86400000);

@@ -194,9 +194,14 @@ async function enviarRuta(id){
 let es=null,pend=null;
 function enVivo(){
   if(!T||es) return;
-  es=new EventSource('/api/eventos?t='+T);
+  (async()=>{
+    let url;
+    try{const r=await api('POST','/api/eventos/ticket',{});if(!r.ticket)throw new Error('Sin ticket');url='/api/eventos?ticket='+encodeURIComponent(r.ticket);}
+    catch(e){url='/api/eventos?t='+encodeURIComponent(T);}
+    if(es)return;es=new EventSource(url);
   es.onmessage=()=>{clearTimeout(pend);pend=setTimeout(()=>{if(!$('#dlg').classList.contains('on')) cargar();},400);};
-  es.onerror=()=>{};
+  es.onerror=()=>{if(es){es.close();es=null;setTimeout(enVivo,5000);}};
+  })();
 }
 cargar().then(enVivo);setInterval(()=>{if(T&&!$('#dlg').classList.contains('on')) cargar();},30000);
 </script></body></html>

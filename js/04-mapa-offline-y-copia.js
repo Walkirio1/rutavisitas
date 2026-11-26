@@ -58,6 +58,8 @@ async function exportarCopia(){
       const k=localStorage.key(i);
       if(k&&k.startsWith('sube:')&&k!==SK_DRV_ON&&k!==SK_DRV_USER&&k!==SK_IA) datos[k]=localStorage.getItem(k);
     }
+    datos[SK.planillas]=JSON.stringify(planillas||[]);
+    datos[SK.historial]=JSON.stringify(historial||[]);
     const fotos={};
     for(const id of Object.keys(visits||{})){
       const f=await fotoGet(id);if(f) fotos[id]=f;
@@ -89,7 +91,13 @@ function restaurarCopia(input){
     catch(e){showToast('Ese archivo no es una copia de LogiMap',true);return;}
     confirm2('¿Restaurar la copia del '+(c.fecha||'').slice(0,10)+'? Reemplaza lo que hay ahora en este celular.',async function(){
       try{
-        for(const [k,v] of Object.entries(c.datos)) if(esClaveCopiaPermitida(k)&&typeof v==='string') localStorage.setItem(k,v);
+        for(const [k,v] of Object.entries(c.datos)) if(esClaveCopiaPermitida(k)&&typeof v==='string'){
+          if(k===SK.planillas||k===SK.historial){
+            let valor;try{valor=JSON.parse(v);}catch(e){continue;}
+            if(v.length<600000){try{localStorage.setItem(k,v);}catch(e){try{localStorage.removeItem(k);}catch{}}}else{try{localStorage.removeItem(k);}catch{}}
+            if(typeof datoPut==='function')await datoPut(k,valor);
+          }else localStorage.setItem(k,v);
+        }
         await fotosClear();
         for(const [id,f] of Object.entries(c.fotos||{})) await fotoPut(id,f);
         showToast('Copia restaurada ✓ Reiniciando…');
