@@ -25,7 +25,7 @@ function renderPlanillas(){
   const hayDef=plDefId&&planillas.some(x=>x.id===plDefId),modo=modoPlanilla();
   plList.innerHTML=
     fila('Planilla general','De la app · sin marca de empresa · editable',modo==='general','setPlModo(\'general\')','<button class="sm smh" onclick="editarPlantilla()">Editar</button>')+
-    fila('Planilla oficial SUBE','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
+    fila('Planilla estándar LogiMap','Incluida en la app',modo==='sube',"setPlModo('sube')",'')+
     planillas.map(pl=>fila(pl.nombre,'Guardada el '+pl.fecha+(pl.campos?' · '+pl.campos.length+' campos':(pl.firma?' · con firma':'')),hayDef&&plDefId===pl.id,`setPlDef('${pl.id}')`,'',`<button class="sm sma" onclick="detectarYRevisar('${pl.id}')">Detectar</button><button class="sm smh" onclick="abrirDisenador('${pl.id}')">Campos</button><button class="sm smh" onclick="abrirPosFirma('${pl.id}')">Firma</button>${planillas.some(o=>o.id!==pl.id&&o.campos&&o.campos.length)?`<button class="sm smh" onclick="cpAbrir('${pl.id}')">Copiar</button>`:''}<button class="sm smr" onclick="borrarPlanilla('${pl.id}')">🗑️</button>`)).join('');
 }
 
@@ -91,9 +91,9 @@ function openPl(id){
   if(pl&&pl.chV) VN.forEach((n,i)=>{const k=_iv.indexOf(n);if(k>=0&&pl.chV[k])plC['v'+i]=true;});
   // encabezado: la planilla general no lleva marcas de ninguna empresa
   const gen=modoPlanilla()==='general',esPdf=modoPlanilla()==='pdf',plPdf=esPdf?planillas.find(x=>x.id===plDefId):null;
-  document.getElementById('plHizq').textContent=gen?plantilla().titulo:(esPdf&&plPdf?plPdf.nombre.replace(/\.pdf$/i,'').slice(0,22):'SUBE');
+  document.getElementById('plHizq').textContent=gen?plantilla().titulo:(esPdf&&plPdf?plPdf.nombre.replace(/\.pdf$/i,'').slice(0,22):'LogiMap');
   document.getElementById('plHizq').style.fontSize=(gen||esPdf)?'18px':'';
-  document.getElementById('plHder').innerHTML=(gen||esPdf)?'Visita':'Planilla de<br>Verificaciones';
+  document.getElementById('plHder').innerHTML=(gen||esPdf)?'Visita':'Planilla estándar';
   document.getElementById('plLbId').textContent=(gen||esPdf)?'ID':'ID PS';
   document.getElementById('plBoxId').style.display=gen?'none':''; // la planilla general no muestra el ID
   document.getElementById('plFotoSec').style.display=fotoModo()==='no'?'none':'';

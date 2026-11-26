@@ -51,7 +51,7 @@ function estadoVisita(id){
 function initMapa(){
   if(mapa)return;
   // Default: Rosario, Argentina
-  mapa = L.map('mapa',{zoomControl:true,attributionControl:false}).setView([-32.9442,-60.6505],12);
+  mapa = L.map('mapa',{zoomControl:true,attributionControl:true}).setView([-32.9442,-60.6505],12);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,
     attribution:'© OSM'
@@ -270,43 +270,40 @@ function htmlResultadosManual(i){
   ).join('')+'</div>';
 }
 
-// Busca candidatos para un texto libre (dirección corregida o nombre del lugar), siempre dentro de Rosario
+// Busca candidatos para un texto libre (dirección corregida o nombre del lugar) en Argentina
 async function buscarCandidatos(texto,localidad){
   const out=[],vistos=new Set();
   let hubo=false;
   const add=(lat,lng,label)=>{
-    if(lat==null||lng==null||!enRosario(lat,lng)) return;
+    lat=Number(lat);lng=Number(lng);
+    if(!enRosario(lat,lng)) return;
     const k=lat.toFixed(4)+','+lng.toFixed(4),kl='t:'+String(label).trim().toLowerCase();
     if(vistos.has(k)||vistos.has(kl)) return; // mismo lugar o mismo texto: no repetir
     vistos.add(k);vistos.add(kl);out.push({lat,lng,label});
   };
   const {calle,altura}=partirDireccion(texto);
   const cands=calle?variantesCalle(calle):[];
-  // primero en la localidad del punto (Funes, Roldán…); Rosario solo si ahí no aparece nada
-  const loc=(localidad||'Rosario').trim()||'Rosario',locs=loc.toLowerCase()==='rosario'?['Rosario']:[loc,'Rosario'];
-  for(const l of locs){
-    if(out.length) break;
-    for(const c of cands.slice(0,4)){
+  const loc=(localidad||'').trim();
+  for(const c of cands.slice(0,4)){
       try{
-        const url='https://apis.datos.gob.ar/georef/api/direcciones?max=3&provincia=Santa%20Fe&localidad_censal='+encodeURIComponent(l)+'&direccion='+encodeURIComponent(c+(altura?' '+altura:''));
+        const url='https://apis.datos.gob.ar/georef/api/direcciones?max=3'+(loc?'&localidad_censal='+encodeURIComponent(loc):'')+'&direccion='+encodeURIComponent(c+(altura?' '+altura:''));
         const d=await fetchJson(url);hubo=true;
         for(const r of (d&&d.direcciones)||[]){
           const u=r.ubicacion;
           if(u){
-            const loca=(r.localidad_censal&&r.localidad_censal.nombre)||l;
-            add(u.lat,u.lon,(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura)).trim()+', '+loca+', Santa Fe');
+            const loca=(r.localidad_censal&&r.localidad_censal.nombre)||loc;
+            const prov=(r.provincia&&r.provincia.nombre)||'';
+            add(u.lat,u.lon,(((r.calle&&r.calle.nombre)||c)+' '+((r.altura&&r.altura.valor)||altura)).trim()+[loca,prov].filter(Boolean).map(x=>', '+x).join(''));
           }
         }
       }catch(e){console.warn('manual georef:',e);}
-    }
   }
-  const b=ROSARIO_BOX,vb=[b.lngMin,b.latMax,b.lngMax,b.latMin].join(',');
-  const pedidos=['&q='+encodeURIComponent(texto+', '+loc+', Santa Fe')];
-  if(cands[0]) pedidos.unshift('&street='+encodeURIComponent((altura?altura+' ':'')+cands[0])+'&city='+encodeURIComponent(loc)+'&state=Santa%20Fe');
+  const pedidos=['&q='+encodeURIComponent(texto+(loc?', '+loc:''))];
+  if(cands[0]) pedidos.unshift('&street='+encodeURIComponent((altura?altura+' ':'')+cands[0])+(loc?'&city='+encodeURIComponent(loc):''));
   for(const extra of pedidos){
     try{
       await esperarOsm();
-      const d=await fetchJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ar&bounded=1&viewbox='+vb+extra);hubo=true;
+      const d=await fetchJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ar'+extra);hubo=true;
       for(const r of d||[]) add(parseFloat(r.lat),parseFloat(r.lon),(r.display_name||'').split(',').slice(0,4).join(','));
     }catch(e){console.warn('manual nominatim:',e);}
   }

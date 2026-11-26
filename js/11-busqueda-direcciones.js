@@ -1,9 +1,9 @@
-// Búsqueda de direcciones: fuerza Rosario y prueba variantes
+// Búsqueda de direcciones: busca en Argentina y prueba variantes
 // Geocodificar un punto via Google Geocoding API
-// ── BÚSQUEDA DE DIRECCIONES: fuerza Rosario y prueba varias variantes del nombre de la calle
-// Zona permitida (Rosario y Gran Rosario). Todo resultado fuera de esta caja se descarta.
-const ROSARIO_BOX={latMin:-33.12,latMax:-32.78,lngMin:-60.92,lngMax:-60.48};
-const enRosario=(lat,lng)=>lat>ROSARIO_BOX.latMin&&lat<ROSARIO_BOX.latMax&&lng>ROSARIO_BOX.lngMin&&lng<ROSARIO_BOX.lngMax;
+// ── BÚSQUEDA DE DIRECCIONES: prueba variantes del nombre de la calle en Argentina
+// Rango geográfico amplio de Argentina; no limita resultados a una ciudad o provincia.
+const ROSARIO_BOX={latMin:-56,latMax:-21,lngMin:-74,lngMax:-53};
+const enRosario=(lat,lng)=>Number.isFinite(Number(lat))&&Number.isFinite(Number(lng))&&Number(lat)>ROSARIO_BOX.latMin&&Number(lat)<ROSARIO_BOX.latMax&&Number(lng)>ROSARIO_BOX.lngMin&&Number(lng)<ROSARIO_BOX.lngMax;
 
 // Títulos y tipos de calle que se sacan para probar variantes
 const TITULOS=new Set(['dr','dra','doctor','doctora','gral','gl','general','cnel','coronel','tte','teniente','cap','capitan','brig','brigadier','ing','ingeniero','pres','presidente','gob','gobernador','alte','almirante','mons','monsenor','pbro','padre','fray','sgto','sargento','mtro','maestro','prof','profesor','don','dn','dip','diputado','sen','senador','min','ministro','arq','arquitecto','lic','licenciado','hno','hermano','cmte','comandante','cdte','sr','sra','dr','int','intendente']);
@@ -78,7 +78,7 @@ async function esperarOsm(){ // Nominatim pide máx. 1 consulta por segundo
 
 // 1º Georef (datos.gob.ar): muy bueno con calle + altura en Argentina
 async function buscarGeoref(calle,altura,localidad){
-  const url='https://apis.datos.gob.ar/georef/api/direcciones?max=5&provincia=Santa%20Fe&localidad_censal='+encodeURIComponent(localidad)+
+  const url='https://apis.datos.gob.ar/georef/api/direcciones?max=5'+(localidad?'&localidad_censal='+encodeURIComponent(localidad):'')+
             '&direccion='+encodeURIComponent(calle+(altura?' '+altura:''));
   const d=await fetchJson(url);
   for(const r of (d&&d.direcciones)||[]){
@@ -88,13 +88,11 @@ async function buscarGeoref(calle,altura,localidad){
   return null;
 }
 
-// 2º Nominatim (OpenStreetMap), acotado a Rosario
-async function buscarNominatim(calle,altura){
+// 2º Nominatim (OpenStreetMap), limitado al país
+async function buscarNominatim(calle,altura,localidad){
   await esperarOsm();
-  const b=ROSARIO_BOX;
-  const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&countrycodes=ar&bounded=1'+
-            '&viewbox='+[b.lngMin,b.latMax,b.lngMax,b.latMin].join(',')+
-            '&street='+encodeURIComponent((altura?altura+' ':'')+calle)+'&city=Rosario&state=Santa%20Fe';
+  const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&countrycodes=ar'+
+            '&street='+encodeURIComponent((altura?altura+' ':'')+calle)+(localidad?'&city='+encodeURIComponent(localidad):'');
   const d=await fetchJson(url);
   for(const r of d||[]){
     const lat=parseFloat(r.lat),lng=parseFloat(r.lon);
@@ -106,21 +104,19 @@ async function buscarNominatim(calle,altura){
 async function geocodeOne(p){
   const {calle,altura}=partirDireccion(p.dir||'');
   if(!calle) return {lat:null,lng:null,err:'Sin dirección',fuente:'georef',probadas:[]};
-  const loc=(p.localidad||'Rosario').trim()||'Rosario';
+  const loc=(p.localidad||'').trim();
   const cands=variantesCalle(calle);
   const probadas=cands.map(c=>c+(altura?' '+altura:''));
   let hubo=cands.length===0; // sin variantes útiles no se consultó la red: no es un problema de conexión
   for(const c of cands){
-    for(const l of (loc.toLowerCase()==='rosario'?['Rosario']:[loc,'Rosario'])){
-      try{
-        const r=await buscarGeoref(c,altura,l);hubo=true;
+    try{
+      const r=await buscarGeoref(c,altura,loc);hubo=true;
         if(r) return {...r,err:null,fuente:'georef',usada:c+(altura?' '+altura:'')};
-      }catch(e){console.warn('georef:',e);}
-    }
+    }catch(e){console.warn('georef:',e);}
   }
   for(const c of cands.slice(0,3)){
     try{
-      const r=await buscarNominatim(c,altura);hubo=true;
+      const r=await buscarNominatim(c,altura,loc);hubo=true;
       if(r) return {...r,err:null,fuente:'osm',usada:c+(altura?' '+altura:'')};
     }catch(e){console.warn('nominatim:',e);}
   }

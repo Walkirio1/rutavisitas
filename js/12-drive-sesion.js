@@ -10,7 +10,7 @@ const SK_MODO='sube:modo'; // 'google' (con Drive) o 'local' (sin conexión): qu
 
 const drv = {
   clientId: GOOGLE_CLIENT_ID || lsGet(SK.clientId) || '',
-  folderName: lsGet(SK.folderName) || 'Verificaciones SUBE',
+  folderName: lsGet(SK.folderName) || 'Visitas LogiMap',
   rootFolderId: lsGet(SK.rootFolderId) || null,
   autosave: lsGet(SK.autosave) || false,
   lastSync: lsGet(SK.lastSync) || null,
@@ -89,7 +89,7 @@ function saveClientId(){
 }
 
 function saveFolderName(){
-  const v=document.getElementById('folderName').value.trim()||'Verificaciones SUBE';
+  const v=document.getElementById('folderName').value.trim()||'Visitas LogiMap';
   drv.folderName=v;lsSet(SK.folderName,v);
   // Resetear rootFolderId para que se vuelva a buscar/crear
   drv.rootFolderId=null;lsDel(SK.rootFolderId);
