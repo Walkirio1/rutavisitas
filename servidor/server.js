@@ -11,6 +11,9 @@ const db=new DatabaseSync(DB);
 db.exec(`
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS equipos(id INTEGER PRIMARY KEY,nombre TEXT NOT NULL,codigo TEXT UNIQUE NOT NULL,admin_token TEXT UNIQUE NOT NULL,creado INTEGER);
+CREATE TABLE IF NOT EXISTS cuentas(id INTEGER PRIMARY KEY,email TEXT UNIQUE NOT NULL,pass_hash TEXT NOT NULL,nombre TEXT,plan TEXT DEFAULT 'gratis',plan_hasta INTEGER,equipo_id INTEGER,creado INTEGER,ultimo_login INTEGER);
+CREATE TABLE IF NOT EXISTS sesiones(token TEXT PRIMARY KEY,cuenta_id INTEGER NOT NULL,expira INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS recuperaciones(codigo TEXT PRIMARY KEY,cuenta_id INTEGER NOT NULL,expira INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS miembros(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,nombre TEXT NOT NULL,token TEXT UNIQUE NOT NULL,creado INTEGER,visto INTEGER);
 CREATE TABLE IF NOT EXISTS asignaciones(id INTEGER PRIMARY KEY,miembro_id INTEGER NOT NULL,fecha TEXT NOT NULL,puntos TEXT NOT NULL,creado INTEGER,UNIQUE(miembro_id,fecha));
 CREATE TABLE IF NOT EXISTS posiciones(miembro_id INTEGER PRIMARY KEY,lat REAL,lng REAL,prec INTEGER,ts INTEGER);
@@ -18,7 +21,7 @@ CREATE TABLE IF NOT EXISTS trazas(id INTEGER PRIMARY KEY,miembro_id INTEGER NOT 
 CREATE INDEX IF NOT EXISTS trazas_i ON trazas(miembro_id,fecha);
 CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,miembro_id INTEGER NOT NULL,punto_id TEXT NOT NULL,nombre TEXT,localidad TEXT,estado TEXT,ts INTEGER,fecha TEXT,lat REAL,lng REAL,dist INTEGER,dur INTEGER,irr INTEGER,UNIQUE(miembro_id,punto_id,fecha));
 `);
-for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT","ALTER TABLE visitas ADD COLUMN obs TEXT","ALTER TABLE visitas ADD COLUMN irregs TEXT","ALTER TABLE equipos ADD COLUMN plantilla_json TEXT"]){try{db.exec(m);}catch(e){}}
+for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT","ALTER TABLE visitas ADD COLUMN obs TEXT","ALTER TABLE visitas ADD COLUMN irregs TEXT","ALTER TABLE equipos ADD COLUMN plantilla_json TEXT","ALTER TABLE equipos ADD COLUMN plan TEXT DEFAULT 'equipos'","ALTER TABLE equipos ADD COLUMN max_miembros INTEGER DEFAULT 20"]){try{db.exec(m);}catch(e){}}
 db.exec('CREATE TABLE IF NOT EXISTS jornadas(equipo_id INTEGER PRIMARY KEY,json TEXT NOT NULL,version INTEGER NOT NULL,ts INTEGER)');
 db.exec('CREATE TABLE IF NOT EXISTS usos(id TEXT PRIMARY KEY,primero INTEGER,ultimo INTEGER,dia TEXT,dias INTEGER DEFAULT 1,version TEXT,app INTEGER DEFAULT 0,pdf INTEGER DEFAULT 0,equipo INTEGER DEFAULT 0,dupla INTEGER DEFAULT 0,google INTEGER DEFAULT 0)');
 const hoy=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); // fecha de Argentina (UTC-3)
@@ -34,6 +37,10 @@ const leer=req=>new Promise((ok,mal)=>{let b='';req.on('data',c=>{b+=c;if(b.leng
 const bearer=req=>((req.headers.authorization||'').match(/^Bearer\s+(\S+)/)||[])[1]||'';
 const admin=req=>{const t=bearer(req);return t?ult('SELECT * FROM equipos WHERE admin_token=?',t):null;};
 const miembro=req=>{const t=bearer(req);const m=t?ult('SELECT * FROM miembros WHERE token=?',t):null;if(m)run('UPDATE miembros SET visto=? WHERE id=?',Date.now(),m.id);return m;};
+const hashPass=p=>{const salt=crypto.randomBytes(16).toString('hex');return salt+':'+crypto.scryptSync(String(p),salt,64).toString('hex');};
+const checkPass=(p,stored)=>{try{const [salt,hex,...rest]=String(stored||'').split(':');if(!salt||!hex||rest.length)return false;const a=Buffer.from(hex,'hex'),b=crypto.scryptSync(String(p),salt,64);return a.length===b.length&&crypto.timingSafeEqual(a,b);}catch(e){return false;}};
+const limitesPlan=plan=>plan==='gratis'?{maxPuntosDia:20,maxPlanillas:1,maxMiembros:1,calles:false,dupla:false,panel:false}:plan==='pro'?{maxPuntosDia:500,maxPlanillas:10,maxMiembros:2,calles:true,dupla:true,panel:false}:{maxPuntosDia:500,maxPlanillas:10,maxMiembros:5,calles:true,dupla:true,panel:true};
+const cuentaDe=req=>{const s=ult('SELECT * FROM sesiones WHERE token=? AND expira>?',bearer(req),Date.now());return s?ult('SELECT * FROM cuentas WHERE id=?',s.cuenta_id):null;};
 // clave para ver las estadísticas: la define ESTADISTICAS_CLAVE o se crea sola la primera vez (queda en datos/clave-estadisticas.txt)
 const CLAVE_STATS=(()=>{
   if(process.env.ESTADISTICAS_CLAVE) return process.env.ESTADISTICAS_CLAVE;
@@ -109,6 +116,14 @@ async function optimizar(b){
 }
 
 const rutas={
+  'POST /api/auth/registro':async(req,b)=>{const email=txt(b.email,120).trim().toLowerCase(),pass=String(b.password||''),nombre=txt(b.nombre,80).trim(),nombreEquipo=txt(b.nombreEquipo,60).trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||pass.length<8)return [400,{error:'Email o contraseña inválidos (mínimo 8 caracteres)'}];if(ult('SELECT id FROM cuentas WHERE email=?',email))return [409,{error:'Ya existe una cuenta con ese email'}];let eq=null,plan='gratis',plan_hasta=null,equipo_id=null;if(nombreEquipo.length>=2){let codigo=cod();while(ult('SELECT 1 FROM equipos WHERE codigo=?',codigo))codigo=cod();const admin_token=tok(),r=run('INSERT INTO equipos(nombre,codigo,admin_token,creado,plan,max_miembros) VALUES(?,?,?,?,?,?)',nombreEquipo,codigo,admin_token,Date.now(),'equipos',5);eq={id:Number(r.lastInsertRowid),nombre:nombreEquipo,codigo,admin_token};equipo_id=eq.id;plan='equipos';plan_hasta=Date.now()+14*86400000;}const r=run('INSERT INTO cuentas(email,pass_hash,nombre,plan,plan_hasta,equipo_id,creado) VALUES(?,?,?,?,?,?,?)',email,hashPass(pass),nombre||email.split('@')[0],plan,plan_hasta,equipo_id,Date.now()),id=Number(r.lastInsertRowid),token=tok();run('INSERT INTO sesiones(token,cuenta_id,expira) VALUES(?,?,?)',token,id,Date.now()+30*86400000);return [200,{token,adminToken:eq?eq.admin_token:null,cuenta:{id,email,nombre:nombre||email.split('@')[0],plan,plan_hasta},equipo:eq?{id:eq.id,nombre:eq.nombre,codigo:eq.codigo}:null}];},
+  'POST /api/auth/login':async(req,b)=>{const email=txt(b.email,120).trim().toLowerCase(),pass=String(b.password||''),c=ult('SELECT * FROM cuentas WHERE email=?',email);if(!c||!checkPass(pass,c.pass_hash))return [401,{error:'Email o contraseña incorrectos'}];run('UPDATE cuentas SET ultimo_login=? WHERE id=?',Date.now(),c.id);const token=tok();run('INSERT INTO sesiones(token,cuenta_id,expira) VALUES(?,?,?)',token,c.id,Date.now()+30*86400000);const eq=c.equipo_id?ult('SELECT * FROM equipos WHERE id=?',c.equipo_id):null;return [200,{token,adminToken:eq?eq.admin_token:null,cuenta:{id:c.id,email:c.email,nombre:c.nombre,plan:c.plan,plan_hasta:c.plan_hasta},equipo:eq?{id:eq.id,nombre:eq.nombre,codigo:eq.codigo}:null}];},
+  'GET /api/auth/yo':async(req)=>{const c=cuentaDe(req);if(!c)return [401,{error:'Sesión inválida'}];const eq=c.equipo_id?ult('SELECT * FROM equipos WHERE id=?',c.equipo_id):null;return [200,{cuenta:{id:c.id,email:c.email,nombre:c.nombre,plan:c.plan,plan_hasta:c.plan_hasta,limites:limitesPlan(c.plan)},equipo:eq?{id:eq.id,nombre:eq.nombre,codigo:eq.codigo,adminToken:eq.admin_token,plan:eq.plan||'equipos',max_miembros:eq.max_miembros||20}:null}];},
+  'POST /api/auth/vincular':async(req,b)=>{const c=cuentaDe(req);if(!c)return [401,{error:'Sesión inválida'}];const eq=ult('SELECT * FROM equipos WHERE admin_token=?',txt(b.adminToken,80).trim());if(!eq)return [404,{error:'Equipo no encontrado'}];run('UPDATE cuentas SET equipo_id=?,plan=? WHERE id=?',eq.id,eq.plan||'equipos',c.id);return [200,{ok:true,equipo:{id:eq.id,nombre:eq.nombre,codigo:eq.codigo,adminToken:eq.admin_token}}];},
+  'POST /api/auth/logout':async(req)=>{const t=bearer(req);if(t)run('DELETE FROM sesiones WHERE token=?',t);return [200,{ok:true}];},
+  'POST /api/auth/cambiar-clave':async(req,b)=>{const c=cuentaDe(req);if(!c)return [401,{error:'Sesión inválida'}];const actual=String(b.actual||''),nueva=String(b.nueva||'');if(nueva.length<8)return [400,{error:'La contraseña debe tener al menos 8 caracteres'}];if(!checkPass(actual,c.pass_hash))return [401,{error:'Contraseña actual incorrecta'}];run('UPDATE cuentas SET pass_hash=? WHERE id=?',hashPass(nueva),c.id);return [200,{ok:true}];},
+  'GET /api/plan':async(req)=>{const c=cuentaDe(req),a=admin(req),m=miembro(req);if(!c&&!a&&!m)return [401,{error:'Sin permiso'}];const eq=a||(m?ult('SELECT * FROM equipos WHERE id=?',m.equipo_id):null),plan=c?c.plan:((eq&&eq.plan)||'equipos'),planHasta=c?c.plan_hasta:null;return [200,{plan,plan_hasta:planHasta||null,limites:limitesPlan(plan)}];},
+  'POST /api/admin/plan':async(req,b)=>{if(bearer(req)!==CLAVE_STATS)return [401,{error:'Sin permiso'}];const email=txt(b.email,120).trim().toLowerCase(),plan=['gratis','pro','equipos'].includes(b.plan)?b.plan:null;if(!email||!plan)return [400,{error:'Email o plan inválido'}];const c=ult('SELECT * FROM cuentas WHERE email=?',email);if(!c)return [404,{error:'Cuenta no encontrada'}];const dias=Number(b.dias)>0?Number(b.dias):30,plan_hasta=plan==='gratis'?null:Date.now()+dias*86400000,maxM=Number(b.max_miembros)>0?Math.round(Number(b.max_miembros)):limitesPlan(plan).maxMiembros;run('UPDATE cuentas SET plan=?,plan_hasta=? WHERE id=?',plan,plan_hasta,c.id);if(c.equipo_id)run('UPDATE equipos SET plan=?,max_miembros=? WHERE id=?',plan,maxM,c.equipo_id);return [200,{ok:true,email,plan,plan_hasta,max_miembros:maxM}];},
   'GET /api/salud':async()=>{let calles=false;try{await osrmGet('/nearest/v1/driving/-60.65,-32.95');calles=true;}catch(e){}return [200,{ok:true,hora:Date.now(),calles}];},
   'POST /api/optimizar':async(req,b)=>optimizar(b),
   'POST /api/eventos/ticket':async(req)=>{
@@ -147,6 +162,7 @@ const rutas={
     const e=ult('SELECT * FROM equipos WHERE codigo=?',txt(b.codigo,10).toUpperCase().trim());if(!e) return [404,{error:'Ese código no existe'}];
     const otros=todos('SELECT * FROM miembros WHERE equipo_id=?',e.id);
     if(e.tipo==='dupla'&&otros.length>=2) return [409,{error:'Esa dupla ya tiene dos personas'}];
+    if(e.tipo!=='dupla'&&e.max_miembros>0&&otros.length>=e.max_miembros)return [409,{error:'Este equipo alcanzó el límite de integrantes de su plan'}];
     const nombre=txt(b.nombre,60).trim()||'Sin nombre',fot=foto(b.foto),token=tok();
     const rol=e.tipo==='dupla'?(otros[0]&&otros[0].rol==='verificador'?'navegante':'verificador'):null;
     const r=run('INSERT INTO miembros(equipo_id,nombre,token,creado,visto,foto,rol) VALUES(?,?,?,?,?,?,?)',e.id,nombre,token,Date.now(),Date.now(),fot,rol);
@@ -269,7 +285,7 @@ const rutas={
     });
     const visitas=todos('SELECT v.*,m.nombre AS miembro FROM visitas v JOIN miembros m ON m.id=v.miembro_id WHERE v.equipo_id=? AND v.fecha=? ORDER BY v.ts DESC LIMIT 500',e.id,f);
     for(const v of visitas){try{v.irregs=v.irregs?JSON.parse(v.irregs):[];if(!Array.isArray(v.irregs))v.irregs=[];}catch(err){v.irregs=[];}v.obs=v.obs||'';}
-    return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas,envLabel:ENV_LABEL,plantillaMeta:metaPlantilla(e.plantilla_json)}];
+    return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas,envLabel:ENV_LABEL,plantillaMeta:metaPlantilla(e.plantilla_json),plan:e.plan||'equipos',maxMiembros:e.max_miembros||20}];
   },
   'POST /api/asignar':async(req,b)=>{
     const e=admin(req);if(!e) return [401,{error:'Sin permiso'}];
@@ -311,7 +327,7 @@ http.createServer(async(req,res)=>{
       if(!oyentes.has(e.id)) oyentes.set(e.id,new Set());oyentes.get(e.id).add(res);
       req.on('close',()=>{const st=oyentes.get(e.id);if(st){st.delete(res);if(!st.size) oyentes.delete(e.id);}});return;
     }
-    if(req.method==='POST'&&(['/api/equipo/crear','/api/dupla/crear','/api/unirse'].includes(url.pathname)||url.pathname==='/api/optimizar')){
+    if(req.method==='POST'&&(['/api/equipo/crear','/api/dupla/crear','/api/unirse','/api/auth/registro','/api/auth/login','/api/auth/cambiar-clave'].includes(url.pathname)||url.pathname==='/api/optimizar')){
       const esOpt=url.pathname==='/api/optimizar';
       if(limiteEstricto(req,esOpt?40:20,esOpt?'opt':'auth'))return json(res,429,{error:'Demasiados pedidos seguidos, esperá un minuto'});
     }

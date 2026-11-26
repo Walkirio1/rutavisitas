@@ -2,7 +2,7 @@
 // (El servidor está en /servidor; el PDF y las fotos siguen yendo al Drive de cada uno.)
 const SERVIDOR_HOST='hivemind.tail38381c.ts.net';
 const esHostOficial=h=>typeof h==='string'&&(h==='logimap.app'||h.endsWith('.logimap.app')||h===SERVIDOR_HOST);
-const SERVIDOR_URL=(typeof location!=='undefined'&&esHostOficial(location.hostname))?location.origin:'https://'+SERVIDOR_HOST;
+const SERVIDOR_URL=(typeof location!=='undefined'&&esHostOficial(location.hostname))?location.origin:'https://app.logimap.app';
 const SK_EQ='sube:eq',SK_EQCOLA='sube:eqcola',SK_EQVISTO='sube:eqvisto';
 const equipo=()=>lsGet(SK_EQ)||null;
 
