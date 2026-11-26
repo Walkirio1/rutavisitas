@@ -160,7 +160,58 @@ function borrarDia(){
   });
 }
 
-// ── CERRAR DÍA → HISTORIAL
+// ── CERRAR DÍA / FINALIZAR JORNADA → HISTORIAL
+function crearEntradaHistorial(){
+  const enRuta=puntos.filter(p=>sel.has(p.id));
+  const hechos=puntos.filter(p=>estadoVisita(p.id)==='ok');
+  const cerrados=puntos.filter(p=>{const e=estadoVisita(p.id);return e==='cerrado'||e==='no';});
+  return {
+    fecha:hoy(),
+    hora:ahora(),
+    puntos:JSON.parse(JSON.stringify(puntos)),
+    sel:[...sel],
+    orden:ordenRuta.slice(),
+    inicioId:typeof inicioId!=='undefined'?(inicioId||null):null,
+    visits:visitsSinFotos(visits), // el historial no guarda fotos (ya se enviaron a Drive)
+    total:enRuta.length||puntos.length,
+    hechos:hechos.length,
+    cerrados:cerrados.length,
+    completa:true,
+  };
+}
+
+function finalizarJornada(ignorarPendientes){
+  if(!puntos.length&&!Object.keys(visits).length){
+    showToast('No hay ninguna jornada activa para finalizar',true);return;
+  }
+  const sinEnviar=typeof pendientesEnvio==='function'?pendientesEnvio().length:0;
+  if(sinEnviar&&!ignorarPendientes){
+    mostrarDlgEnvio(
+      'Hay '+sinEnviar+' visita'+(sinEnviar>1?'s':'')+' sin enviar a Drive.\n\nTe conviene enviarlas antes de finalizar (al finalizar se borran las fotos locales de hoy), pero si querés podés finalizar igual.',
+      [
+        {txt:'☁️ Enviar pendientes a Drive',cls:'ba',fn:()=>{if(typeof showTab==='function')showTab(1);if(typeof reintentarPendientes==='function')reintentarPendientes();}},
+        {txt:'Finalizar igual',cls:'bd',fn:()=>finalizarJornada(true)},
+        {txt:'Cancelar',cls:'bd'}
+      ]
+    );
+    return;
+  }
+  const hechos=puntos.filter(p=>estadoVisita(p.id)==='ok').length;
+  const cerrados=puntos.filter(p=>{const e=estadoVisita(p.id);return e==='cerrado'||e==='no';}).length;
+  const pend=Math.max(0,puntos.length-hechos-cerrados);
+  const resumen=hechos+' hecha'+(hechos===1?'':'s')+(cerrados?' · '+cerrados+' cerrada'+(cerrados===1?'':'s'):'')+(pend?' · '+pend+' pendiente'+(pend===1?'':'s'):'')+' (total: '+puntos.length+' punto'+(puntos.length===1?'':'s')+').';
+  confirm2('¿Finalizar la jornada actual?\n\n'+resumen+'\n\nSe guarda completa en el Historial (la podés volver a abrir cuando quieras) y la app queda limpia para la próxima jornada.',function(){
+    try{const fx=generarExcelJornada();if(typeof drv!=='undefined'&&drv.connected)subirExcelADrive(fx).then(()=>emailEmpresa()?compartirDiaConEmpresa(true):0).catch(e=>console.warn('excel del día:',e));}catch(e){console.warn(e);}
+    const entrada=crearEntradaHistorial();
+    historial=[entrada,...historial].slice(0,60);
+    lsSet(SK.historial,historial);
+    reiniciarEstadoLocal();
+    if(typeof renderH==='function') renderH();
+    showToast('🏁 Jornada finalizada y guardada en Historial ✓');
+    if(typeof showTab==='function') showTab(3);
+  });
+}
+
 function cerrarDia(){
   const sinEnviar=pendientesEnvio().length;
   if(sinEnviar){

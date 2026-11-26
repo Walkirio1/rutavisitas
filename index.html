@@ -145,9 +145,9 @@
         <div class="cfg-tx"><div class="cfg-nm">Informe / Email</div><div class="cfg-ds">Generar resumen de jornada</div></div>
         <span class="cfg-ar">›</span>
       </button>
-      <button class="cfg-item" onclick="closeCfg();cerrarDia()">
+      <button class="cfg-item" onclick="closeCfg();finalizarJornada()">
         <span class="cfg-ic"><svg class="ico" style="vertical-align:-2px"><use href="#i-folder"/></svg></span>
-        <div class="cfg-tx"><div class="cfg-nm">Cerrar día</div><div class="cfg-ds">Guarda la jornada en el historial</div></div>
+        <div class="cfg-tx"><div class="cfg-nm">Finalizar jornada</div><div class="cfg-ds">Guarda todo en el historial y deja la app libre</div></div>
         <span class="cfg-ar">›</span>
       </button>
       <button class="cfg-item" onclick="elegirTema()">
@@ -254,10 +254,11 @@
       <button class="sm sma" onclick="siguientePunto()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-nav"/></svg> Siguiente punto</button>
       <button class="sm smh" onclick="rutaCompleta()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-map"/></svg> Ruta completa</button>
       <button class="sm smb" onclick="exportarExcel()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-file"/></svg> Excel actualizado</button>
+      <button class="sm smh" onclick="finalizarJornada()">🏁 Finalizar jornada</button>
     </div>
     <div class="flt-info" id="fltInfoV" style="display:none"></div>
     <div id="vlist"></div>
-    <button class="btn bd" style="margin-top:14px" onclick="cerrarDia()"><svg class="ico" style="vertical-align:-2px"><use href="#i-folder"/></svg> Cerrar día</button>
+    <button class="btn bd" style="margin-top:14px" onclick="finalizarJornada()">🏁 Finalizar jornada</button>
     <div class="empty" id="vEmpty"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg></span><p>Seleccioná puntos en la pestaña Puntos.</p></div>
   </div>
 
@@ -268,6 +269,7 @@
       <button class="sm smh" onclick="centrarEnMiUbicacion()"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg> Mi ubicación</button>
       <button class="sm smh" onclick="centrarEnPuntos()"><svg class="ico" style="vertical-align:-2px"><use href="#i-target"/></svg> Ver todos</button>
       <button class="sm sma" onclick="siguientePunto()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-nav"/></svg> Siguiente punto</button>
+      <button class="sm smh" onclick="finalizarJornada()">🏁 Finalizar jornada</button>
     </div>
 
     <div id="mapaLeyenda" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text-soft)"></div>
@@ -290,7 +292,7 @@
     </div>
     <div id="hReporte"></div>
     <div id="hlist"></div>
-    <div class="empty" id="hEmpty"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-clock"/></svg></span><p>Cerrá el día desde el encabezado<br/>para guardar jornadas aquí.</p></div>
+    <div class="empty" id="hEmpty"><span class="ei"><svg class="ico" style="vertical-align:-2px"><use href="#i-clock"/></svg></span><p>Tocá «Finalizar jornada» en Visitas o Mapa<br/>para guardar tus jornadas acá y volver a abrirlas cuando quieras.</p></div>
   </div>
 
   <!-- TAB 4: PLANILLAS GUARDADAS -->
@@ -385,6 +387,7 @@
     <button class="btn ba" onclick="compartirInforme()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-upload"/></svg> Compartir informe con PDFs y fotos</button>
     <button class="btn bw" style="margin-top:6px" onclick="sendWA()"><svg class="ico" aria-hidden="true" style="vertical-align:-3px;"><use href="#i-chat"/></svg> Enviar solo el resumen por WhatsApp</button>
     <button class="btn bd" style="margin-top:6px" onclick="sendEmail()"><svg class="ico" style="vertical-align:-2px"><use href="#i-mail"/></svg> Enviar por email</button>
+    <button class="btn bd" style="margin-top:10px" onclick="finalizarJornada()">🏁 Finalizar jornada</button>
   </div>
 
 </div><!-- /app -->

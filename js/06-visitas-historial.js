@@ -132,9 +132,10 @@ function renderH(){
       const v=h.visits&&h.visits[p.id]||{};
       const pl=v.planilla;
       const irregs=irregsDe(pl);
+      const icEst=v.noVisitado||(pl&&pl.cierra)?'🔴':(v.done?'✅':'⏳');
       return `<div style="padding:7px 10px;background:var(--bg-2);border-radius:8px;margin-bottom:4px;border:1px solid var(--line)">
         <div style="display:flex;gap:6px">
-          <span>${v.done?'✅':'⏳'}</span>
+          <span>${icEst}</span>
           <div style="flex:1">
             <div style="font-size:11px;font-weight:700">${p.nombre}</div>
             <div style="font-size:10px;color:var(--text-mute)">${IC("pin")} ${p.dir} · ID: ${p.id}</div>
@@ -155,13 +156,63 @@ function renderH(){
       </div>
       ${open?`<div style="margin-bottom:8px;padding-left:8px;border-left:2px solid rgba(59,130,246,.3)">
         ${rows}
-        <button class="sm smr" style="font-size:10px;margin-top:4px" onclick="borrarJornada(${i})"><svg class="ico" style="vertical-align:-2px"><use href="#i-trash"/></svg> Borrar esta jornada</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          <button class="sm sma" style="font-size:11px" onclick="reabrirJornada(${i})">📂 Volver a abrir esta jornada</button>
+          <button class="sm smr" style="font-size:10px" onclick="borrarJornada(${i})"><svg class="ico" style="vertical-align:-2px"><use href="#i-trash"/></svg> Borrar</button>
+        </div>
       </div>`:''}
     </div>`;
   }).join('');
 }
 
 function toggleHist(i){histOpenIdx=histOpenIdx===i?null:i;renderH();}
+
+function aplicarJornadaHistorial(h){
+  puntos=JSON.parse(JSON.stringify(h.puntos||[]));
+  sel=new Set(Array.isArray(h.sel)?h.sel.map(String):puntos.map(p=>String(p.id)));
+  ordenRuta=Array.isArray(h.orden)?h.orden.map(String):[];
+  if(typeof inicioId!=='undefined'){
+    inicioId=h.inicioId||null;
+    if(inicioId) lsSet('sube:inicio',inicioId); else lsDel('sube:inicio');
+  }
+  visits=JSON.parse(JSON.stringify(h.visits||{}));
+  lsSet(SK.puntos,puntos);lsSet(SK.sel,[...sel]);lsSet(SK_ORDEN,ordenRuta);guardarVisits();
+  if(typeof borradorBorrar==='function') borradorBorrar();
+  renderP();renderV();updStats();renderH();
+  if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa();
+  if(typeof proxActualizar==='function') proxActualizar();
+  if(typeof renderPerfilBtn==='function') renderPerfilBtn();
+  triggerAutosave();
+  showToast('📂 Jornada del '+(h.fecha||'')+' abierta ✓');
+  if(typeof showTab==='function') showTab(1);
+}
+
+function reabrirJornada(i){
+  const h=historial[i];
+  if(!h||!(h.puntos&&h.puntos.length)){showToast('Esta jornada no tiene puntos para abrir',true);return;}
+  const hayActiva=puntos.length>0||Object.keys(visits).length>0;
+  if(hayActiva){
+    mostrarDlgEnvio(
+      'Ya tenés una jornada en curso ('+puntos.length+' punto'+(puntos.length===1?'':'s')+').\n\n¿Qué querés hacer antes de volver a abrir la del '+h.fecha+' '+(h.hora||'')+'?',
+      [
+        {txt:'💾 Guardar la actual en Historial y abrir esa',cls:'ba',fn:()=>{
+          const copia=JSON.parse(JSON.stringify(h));
+          const act=typeof crearEntradaHistorial==='function'?crearEntradaHistorial():{
+            fecha:hoy(),hora:ahora(),puntos:JSON.parse(JSON.stringify(puntos)),sel:[...sel],
+            orden:ordenRuta.slice(),visits:visitsSinFotos(visits),total:puntos.length,
+            hechos:Object.values(visits).filter(v=>v&&v.done).length,completa:true
+          };
+          historial=[act,...historial].slice(0,60);lsSet(SK.historial,historial);
+          aplicarJornadaHistorial(copia);
+        }},
+        {txt:'Reemplazar la actual sin guardar',cls:'bd',fn:()=>aplicarJornadaHistorial(h)},
+        {txt:'Cancelar',cls:'bd'}
+      ]
+    );
+    return;
+  }
+  confirm2('¿Volver a abrir la jornada del '+h.fecha+' '+(h.hora||'')+' ('+h.puntos.length+' puntos)? Seguirá guardada también en el Historial.',()=>aplicarJornadaHistorial(h));
+}
 
 function borrarJornada(i){
   confirm2('¿Borrar esta jornada del historial?',function(){
