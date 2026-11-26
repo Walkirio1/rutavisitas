@@ -66,21 +66,21 @@ function renderV(){
       <div class="vh">
         <div class="vnum ${v.done?'vd':'vp'}">${i}</div>
         <div class="vb">
-          <div class="va">${p.nombre}${!p.lat?' <span class="geo-tag err" style="vertical-align:middle"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin mapa</span>':''}</div>
-          <div class="vid2">${IC("pin")} ${p.dir} · ID: ${p.id}</div>
+          <div class="va">${escapeHtml(p.nombre)}${!p.lat?' <span class="geo-tag err" style="vertical-align:middle"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin mapa</span>':''}</div>
+          <div class="vid2">${IC("pin")} ${escapeHtml(p.dir)} · ID: ${escapeHtml(p.id)}</div>
           ${p.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute)">${escapeHtml(p.obs)}</div>`:''}
-          ${pl&&!v.noVisitado?`<div style="font-size:11px;color:#10b981;margin-top:4px">${IC("file")} ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+irregs.join(', '):''}</div>`:''}
+          ${pl&&!v.noVisitado?`<div style="font-size:11px;color:#10b981;margin-top:4px">${IC("file")} ${irregs.length} irregularidad${irregs.length!==1?'es':''}${irregs.length?': '+escapeHtml(irregs.join(', ')):''}</div>`:''}
           ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:2px">${IC("edit")} ${escapeHtml(pl.obs)}</div>`:''}
         </div>
         ${v.done
-          ?`<button class="vst ${estadoVisita(p.id)==='ok'?'vsd':(estadoVisita(p.id)==='no'?'vsn':'vsr')} vbtn" onclick="openPl('${p.id}')" aria-label="Abrir la planilla para modificarla">${estadoVisita(p.id)==='ok'?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha ›':(estadoVisita(p.id)==='cerrado'?'✕ Cerrado ›':'✕ No visitada ›')}</button>`
+          ?`<button class="vst ${estadoVisita(p.id)==='ok'?'vsd':(estadoVisita(p.id)==='no'?'vsn':'vsr')} vbtn" data-id="${escapeHtml(p.id)}" onclick="openPl(this.dataset.id)" aria-label="Abrir la planilla para modificarla">${estadoVisita(p.id)==='ok'?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Hecha ›':(estadoVisita(p.id)==='cerrado'?'✕ Cerrado ›':'✕ No visitada ›')}</button>`
           :`<span class="vst vsp">Pendiente</span>`}
       </div>
       ${!v.done?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button class="sm smb" onclick="openPl('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-list"/></svg> Planilla</button>
-        <button class="sm smh" onclick="markDone('${p.id}')"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar hecha</button>
-        <button class="sm smh" onclick="marcarNoVisitado('${p.id}')">${IC("ban")} No se visitó</button>
-      </div>`:`<div style="font-size:11px;color:${v.noVisitado?'var(--text-mute)':'#10b981'};margin-top:6px">${v.noVisitado?'No se visitó':'<svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · '+(pl?pl.fecha+' '+pl.hora:'')}${v.envio&&v.envio.estado==='pendiente'?' · <span style="color:#f59e0b">☁️ Sin enviar'+(v.envio.local?' (copia en el celular)':'')+'</span>':''}</div>`}
+        <button class="sm smb" data-id="${escapeHtml(p.id)}" onclick="openPl(this.dataset.id)"><svg class="ico" style="vertical-align:-2px"><use href="#i-list"/></svg> Planilla</button>
+        <button class="sm smh" data-id="${escapeHtml(p.id)}" onclick="markDone(this.dataset.id)"><svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar hecha</button>
+        <button class="sm smh" data-id="${escapeHtml(p.id)}" onclick="marcarNoVisitado(this.dataset.id)">${IC("ban")} No se visitó</button>
+      </div>`:`<div style="font-size:11px;color:${v.noVisitado?'var(--text-mute)':'#10b981'};margin-top:6px">${v.noVisitado?'No se visitó':'<svg class="ico" style="vertical-align:-2px"><use href="#i-check-circle"/></svg> Completada · '+(pl?escapeHtml(pl.fecha)+' '+escapeHtml(pl.hora):'')}${v.envio&&v.envio.estado==='pendiente'?' · <span style="color:#f59e0b">☁️ Sin enviar'+(v.envio.local?' (copia en el celular)':'')+'</span>':''}</div>`}
     </div>`;
   }).join('');
 }
@@ -137,9 +137,9 @@ function renderH(){
         <div style="display:flex;gap:6px">
           <span>${icEst}</span>
           <div style="flex:1">
-            <div style="font-size:11px;font-weight:700">${p.nombre}</div>
-            <div style="font-size:10px;color:var(--text-mute)">${IC("pin")} ${p.dir} · ID: ${p.id}</div>
-            ${irregs.length?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">⚠️ ${irregs.join(', ')}</div>`:''}
+            <div style="font-size:11px;font-weight:700">${escapeHtml(p.nombre)}</div>
+            <div style="font-size:10px;color:var(--text-mute)">${IC("pin")} ${escapeHtml(p.dir)} · ID: ${escapeHtml(p.id)}</div>
+            ${irregs.length?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">⚠️ ${escapeHtml(irregs.join(', '))}</div>`:''}
             ${pl&&pl.obs?`<div class="obs-corta" style="font-size:10px;color:var(--text-mute);margin-top:1px">${IC("edit")} ${escapeHtml(pl.obs)}</div>`:''}
           </div>
         </div>
@@ -148,10 +148,10 @@ function renderH(){
     return `<div>
       <div class="hrow" onclick="toggleHist(${i})">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">📅 ${h.fecha} · ${h.hora}</div>
-          <div style="font-size:10px;color:var(--text-mute);margin-top:2px">${h.hechos}/${h.total} verificados</div>
+          <div style="font-size:13px;font-weight:700">📅 ${escapeHtml(h.fecha)} · ${escapeHtml(h.hora)}</div>
+          <div style="font-size:10px;color:var(--text-mute);margin-top:2px">${escapeHtml(String(h.hechos??''))}/${escapeHtml(String(h.total??''))} verificados</div>
         </div>
-        <span class="bdg gr">${h.hechos} hechos</span>
+        <span class="bdg gr">${escapeHtml(String(h.hechos??''))} hechos</span>
         <span style="font-size:12px;color:var(--text-mute)">${open?'▲':'▼'}</span>
       </div>
       ${open?`<div style="margin-bottom:8px;padding-left:8px;border-left:2px solid rgba(59,130,246,.3)">

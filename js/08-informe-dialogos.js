@@ -10,7 +10,7 @@ function addEmail(){
 function removeEmail(i){emails.splice(i,1);lsSet(SK.emails,emails);renderChips();}
 function renderChips(){
   document.getElementById('chips').innerHTML=emails.map((e,i)=>
-    `<span class="chip">${e}<button onclick="removeEmail(${i})">✕</button></span>`
+    `<span class="chip">${escapeHtml(e)}<button onclick="removeEmail(${i})">✕</button></span>`
   ).join('');
 }
 
@@ -29,8 +29,8 @@ function renderRes(){
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line-2)">
       <span>${v.done?'✅':'⏳'}</span>
       <div style="flex:1;font-size:11px">
-        <div>${p.nombre}</div>
-        <div style="font-size:10px;color:var(--text-mute)">${p.dir} · ID: ${p.id}</div>
+        <div>${escapeHtml(p.nombre)}</div>
+        <div style="font-size:10px;color:var(--text-mute)">${escapeHtml(p.dir)} · ID: ${escapeHtml(p.id)}</div>
       </div>
       ${v.done?`<span class="bdg ${irr?'rd':'gr'}">${irr?irr+' irreg.':'OK'}</span>`:''}
     </div>`;
@@ -105,8 +105,8 @@ function closeDlg(){document.getElementById('dlg').classList.remove('show');dlgC
 // (toastTm ya declarado arriba)
 // Escapa el texto y deja pasar sólo los íconos propios de la app (<svg class="ico" ...><use href="#i-xxx"/></svg>)
 function htmlConIconos(msg){
-  const esc=String(msg).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return esc.replace(/&lt;svg class="ico" style="vertical-align:-2px"&gt;&lt;use href="#(i-[a-z-]+)"\/&gt;&lt;\/svg&gt;/g,
+  const esc=String(msg==null?'':msg).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return esc.replace(/&lt;svg class=&quot;ico&quot; style=&quot;vertical-align:-2px&quot;&gt;&lt;use href=&quot;#(i-[a-z-]+)&quot;\/&gt;&lt;\/svg&gt;/g,
     '<svg class="ico" style="vertical-align:-2px"><use href="#$1"/></svg>');
 }
 function showToast(msg,err){
