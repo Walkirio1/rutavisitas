@@ -21,20 +21,21 @@ b{color:var(--tx);font-weight:600}a{color:var(--ac)}code{background:#eef1f6;bord
 <a href="./">← Volver a la app</a>
 
 <h1>Política de privacidad</h1>
-<small>Última actualización: octubre de 2026</small>
+<small>Última actualización: noviembre de 2026</small>
 
-<p><b>LogiMap</b> (en adelante, "la app") es una herramienta para organizar visitas de verificación, completar planillas, sacar fotos y guardarlas en tu propio Google Drive. Esta política explica qué datos usa y qué hace con ellos.</p>
+<p><b>LogiMap</b> (en adelante, "la app") es una herramienta para organizar visitas de verificación, completar planillas, sacar fotos y guardarlas en tu celular y, si lo elegís, en tu propio Google Drive. Esta política explica qué datos usa y qué hace con ellos.</p>
 
 <h2>Qué datos usa la app</h2>
 <ul>
-<li><b>Tu cuenta de Google:</b> al iniciar sesión, la app conoce tu correo electrónico para mostrarte con qué cuenta estás conectado/a.</li>
-<li><b>Ubicación:</b> al hacer una visita, la app registra tu ubicación y la hora para comprobar que estuviste en el local y las escribe en la foto. Se guarda solo en tu celular y en tu Drive junto con la visita; no se envía a nosotros.</li>
-<li><b>Equipos (opcional):</b> si te unís a un equipo con una invitación, el servidor de tu equipo recibe tu nombre y, por cada visita, el local, la hora, el estado y (si activaste la ubicación) las coordenadas y la distancia al local. No recibe PDFs ni fotos.</li>
-<li><b>Rutas por calles:</b> al optimizar una ruta, la app envía a nuestro servidor las coordenadas de las paradas (sin nombres ni datos del local) solo para calcular el mejor orden. No se guardan.</li>
-<li><b>Contador anónimo de uso:</b> la app envía a nuestro servidor un código al azar de esta instalación, la versión de la app y cinco datos de sí/no (si está instalada en la pantalla de inicio, si usás planilla propia, equipo, dupla o Google). Sirve solo para saber cuántas personas usan la app. No contiene nombre, correo, visitas, fotos, direcciones ni ubicación, y no permite saber quién sos. Podés desactivarlo en Ajustes → Privacidad.</li>
+<li><b>Tu cuenta de Google:</b> al iniciar sesión, la app conoce tu correo, tu nombre y tu foto de perfil para mostrarte con qué cuenta estás conectado/a.</li>
+<li><b>Ubicación:</b> si la autorizás, se usa en el celular, también sin conexión: muestra tu posición en el mapa, avisa con el radar al estar a unos 160 m de un punto, puede estampar fecha, hora y lugar en la foto (sello opcional) y, al registrar la visita, comprueba si estabas en el local. Esa posición queda en el dispositivo. Solo viaja a nuestro servidor si te unís por tu cuenta a un Equipo o a una Dupla, o si pedís optimizar la ruta por calles y el inicio es tu posición.</li>
+<li><b>Equipos (opcional):</b> si te unís a un equipo con una invitación, el servidor de tu equipo recibe tu nombre y, por cada visita, el local, la hora, el estado y (si activaste la ubicación) las coordenadas y la distancia al local. Si además activás compartir tu posición, quien coordina el equipo te ve en el mapa mientras la app está abierta. No recibe PDFs ni fotos.</li>
+<li><b>Dupla (opcional):</b> si creás o te unís a una dupla, el servidor comparte con tu compañero la ruta (paradas, direcciones y coordenadas de los puntos), el orden y el estado de cada visita. No recibe fotos ni PDFs. El aviso de llegada se calcula en el celular; al servidor se le indica qué parada sigue, no un recorrido continuo de tu GPS.</li>
+<li><b>Rutas por calles:</b> al optimizar una ruta, la app envía a nuestro servidor las coordenadas de las paradas (sin nombres ni datos del local) y el punto de inicio, que puede ser tu posición si no elegiste otro. Sirve solo para calcular el orden. No se guardan.</li>
+<li><b>Contador anónimo de uso:</b> si está activo, la app envía a nuestro servidor un código al azar de esta instalación, la versión de la app y cinco datos de sí/no (si está instalada en la pantalla de inicio, si usás planilla propia, equipo, dupla o Google). Sirve solo para saber cuántas personas usan la app. No contiene nombre, correo, visitas, fotos, direcciones ni ubicación, y no permite saber quién sos. Podés desactivarlo en el perfil, sección Privacidad («Contar mi uso de forma anónima»).</li>
 <li><b>Google Drive:</b> la app solo accede a los archivos y carpetas que <b>ella misma crea</b> (permiso <code>drive.file</code>). No puede ver ni modificar el resto de tu Drive. Allí guarda las planillas, las fotos de las visitas y el Excel de cada jornada. Además usa la carpeta oculta de la app (permiso <code>drive.appdata</code>) para el respaldo automático de la jornada, que no aparece entre tus archivos.</li>
-<li><b>Puntos, visitas, planillas y fotos:</b> se guardan <b>en tu propio celular</b> (almacenamiento del navegador) y, si lo permitís, en tu Drive. No se envían a ningún servidor nuestro.</li>
-<li><b>Ubicación:</b> si la autorizás, se usa para mostrarte tu posición y el punto más cercano. No se guarda ni se envía a nadie.</li>
+<li><b>Puntos, visitas, planillas y fotos:</b> se guardan <b>en tu celular</b>. <code>localStorage</code> guarda puntos, visitas, ajustes, planillas PDF e historial de jornadas. <code>IndexedDB</code> guarda las fotos de las visitas. Si conectás Google, una copia va también a tu Drive. Fuera de Equipo, Dupla, el cálculo de la ruta y el contador anónimo, no se envían a un servidor nuestro.</li>
+<li><b>Notificaciones (opcionales):</b> si las activás, el propio celular te avisa al acercarte a un punto, cuando llega una parada o al subir archivos a Drive. El aviso se muestra en el dispositivo; no usamos un servidor de notificaciones.</li>
 <li><b>Cámara y fotos:</b> solo para las fotos de las visitas y de listas de direcciones que vos elegís sacar o seleccionar.</li>
 </ul>
 
@@ -56,12 +57,11 @@ b{color:var(--tx);font-weight:600}a{color:var(--ac)}code{background:#eef1f6;bord
 
 <h2>Cómo borrar tus datos</h2>
 <ul>
-<li>En la app, <b>Ajustes → Cerrar día</b> o <b>Limpiar</b> borra los datos de la jornada del celular.</li>
+<li><b>Ajustes → Finalizar jornada</b> guarda la jornada en el historial del celular y borra del día en curso los puntos, las visitas y las fotos locales. <b>Limpiar</b> (en Puntos) borra el día actual sin pasarlo al historial. El historial se borra aparte, desde Historial.</li>
 <li>Los archivos que la app creó en tu Drive los podés borrar vos desde Google Drive.</li>
 <li>Podés quitar el acceso de la app desde <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
 </ul>
 
 <h2>Contacto</h2>
 <p>Para consultas sobre privacidad: <b>logimap.soporte@gmail.com</b>.</p>
-<p><small>Este texto es un modelo básico; conviene que lo revise un profesional antes de publicar la app en las tiendas.</small></p>
 </main></body></html>
