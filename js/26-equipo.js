@@ -124,10 +124,12 @@ function eqReportarRemota(id,v){
 // cada visita hecha se informa al panel del jefe (si no hay señal, queda en cola)
 function eqReportarVisita(id){
   const e=equipo();if(!e) return;
-  const v=visits[id],pl=v&&v.planilla;if(!pl) return;
+  const v=visits[id];if(!v||!v.done) return;
+  const pl=v.planilla;
   const p=puntos.find(x=>String(x.id)===String(id))||{};
-  const g=pl.gps;
-  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:pl.cierra?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl.dist!=null?pl.dist:null,dur:pl.durMin||null,irr:irregsDe(pl).length>0,dupla_con:eqCompanero()};
+  const g=pl&&pl.gps;
+  const irr=pl&&typeof irregsDe==='function'?irregsDe(pl).length>0:false;
+  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:(v.noVisitado||(pl&&pl.cierra))?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl&&pl.dist!=null?pl.dist:null,dur:pl&&pl.durMin!=null?pl.durMin:null,irr,dupla_con:eqCompanero()};
   const cola=(lsGet(SK_EQCOLA)||[]).filter(x=>x.punto_id!==item.punto_id);cola.push(item);lsSet(SK_EQCOLA,cola);
   eqVaciarCola();
 }

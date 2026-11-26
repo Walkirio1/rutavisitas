@@ -54,10 +54,22 @@ document.addEventListener('click',()=>{
 },true);
 
 // de 14-envios-pendientes.js
-window.addEventListener('online',()=>setTimeout(()=>reintentarPendientes(true),2500));
+window.addEventListener('online',()=>{
+  setTimeout(()=>{if(typeof revisarActualizacion==='function') revisarActualizacion();},1500);
+  setTimeout(()=>{
+    if(!drv.connected && lsGet(SK_DRV_ON)) reconectarDrive();
+    else if(drv.connected){
+      reintentarPendientes(true);
+      if(drv.autosave && drv.autosavePending) triggerAutosave();
+    }
+  },2500);
+});
 
 // de 14-envios-pendientes.js
-setInterval(()=>{if(drv.connected&&pendientesEnvio().length)reintentarPendientes(true);},60000);
+setInterval(()=>{
+  if(drv.connected&&pendientesEnvio().length) reintentarPendientes(true);
+  else if(!drv.connected&&lsGet(SK_DRV_ON)&&navigator.onLine!==false&&pendientesEnvio().length) reconectarDrive();
+},60000);
 
 // de 16-app-instalacion.js
 document.getElementById('appVersion').textContent='Versión '+APP_VERSION;

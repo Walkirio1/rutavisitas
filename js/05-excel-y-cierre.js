@@ -94,7 +94,8 @@ function generarExcelJornada(){
 }
 async function subirExcelADrive(file){
   const root=await driveGetRootFolderId();
-  const dia=await driveGetOrCreateFolder((new Date()).toISOString().slice(0,10),root);
+  const fc=typeof fechaCarpetaLocal==='function'?fechaCarpetaLocal():(new Date()).toISOString().slice(0,10);
+  const dia=await driveGetOrCreateFolder(fc,root);
   await driveUploadFile(file.name,file.type,file,dia);
 }
 async function exportarExcel(){

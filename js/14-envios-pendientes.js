@@ -7,7 +7,18 @@ function marcarEnvio(id,estado,motivo){
   renderV();updateDriveBadge();
 }
 function pendientesEnvio(){
-  return Object.keys(visits).filter(id=>{const v=visits[id];return v&&v.done&&v.planilla&&v.envio&&v.envio.estado==='pendiente';});
+  return Object.keys(visits).filter(id=>{const v=visits[id];return v&&v.done&&!v.remoto&&v.planilla&&v.envio&&v.envio.estado==='pendiente';});
+}
+function marcarVisitasSinEnviarAlConectar(){
+  let n=0;
+  for(const [id,v] of Object.entries(visits)){
+    if(v&&v.done&&!v.remoto&&!v.noVisitado&&v.planilla&&!v.planilla.drivePdfUrl&&(!v.envio||!v.envio.estado)){
+      v.envio={estado:'pendiente',motivo:'Guardada sin conexión con Drive',ts:Date.now(),local:false};
+      n++;
+    }
+  }
+  if(n){guardarVisits();renderV();updateDriveBadge();}
+  return n;
 }
 function renderPendientes(){
   const box=document.getElementById('vPendientes');if(!box) return;
@@ -43,29 +54,76 @@ function avisarNoEnviado(id){
   ]);
 }
 
+let _avisoRecoMostrado=false,_envioOkPendiente=null;
+function modalBloqueanteAbierto(){
+  return ['ov','firmaDlg','updDlg'].some(id=>{const e=document.getElementById(id);return e&&e.classList&&e.classList.contains('show');});
+}
+function avisarReconectarParaPendientes(forzar){
+  const n=pendientesEnvio().length;
+  if(!n||navigator.onLine===false) return;
+  if(!forzar&&_avisoRecoMostrado) return;
+  if(modalBloqueanteAbierto()) return;
+  _avisoRecoMostrado=true;
+  mostrarDlgEnvio(`☁️ Tenés ${n} visita${n>1?'s':''} guardada${n>1?'s':''} sin enviar a Google Drive.\n\nTocá el botón para conectar Google y subir los PDF y fotos ahora.`,[
+    {txt:'Conectar Google y enviar ahora',cls:'ba',fn:()=>{_avisoRecoMostrado=false;connectDrive();}},
+    {txt:'Guardar en el celular',cls:'bd',fn:()=>guardarEnCelular()},
+    {txt:'Más tarde',cls:'bd'}
+  ]);
+}
+function avisarEnvioCompletoDrive(enviadas){
+  if(!enviadas||!enviadas.length) return;
+  if(modalBloqueanteAbierto()){
+    _envioOkPendiente=(_envioOkPendiente||[]).concat(enviadas);
+    showToast('✓ Todo enviado a Drive ('+enviadas.length+')');
+    return;
+  }
+  const n=enviadas.length;
+  const lista=enviadas.slice(0,5).map(t=>'• '+t).join('\n')+(n>5?'\n• … y '+(n-5)+' más':'');
+  const carpeta=(typeof drv!=='undefined'&&drv.folderName)?'\n\nCarpeta en Drive: '+drv.folderName:'';
+  const msg='✅ ¡Listo! Se envi'+(n===1?'ó 1 visita':'aron '+n+' visitas')+' a tu Google Drive (PDF y fotos).\n\n'+lista+carpeta;
+  mostrarDlgEnvio(msg,[{txt:'Entendido',cls:'ba'}]);
+}
+
 let _reintentando=false;
 async function reintentarPendientes(silent){
   if(_reintentando) return;
   const ids=pendientesEnvio();
   if(!ids.length){if(!silent)showToast('No hay nada pendiente ✓');return;}
-  if(!drv.connected){if(!silent)showToast('Todavía sin conexión con Drive: tocá ⚙ → Google Drive → Entrar con Google',true);return;}
   if(navigator.onLine===false){if(!silent)showToast('Sin internet: se reintenta solo cuando vuelva',true);return;}
-  _reintentando=true;let ok=0;
+  if(!drv.connected){
+    if(!silent) connectDrive();
+    else if(lsGet(SK_DRV_ON)||lsGet(SK_MODO)==='google') avisarReconectarParaPendientes(false);
+    return;
+  }
+  _reintentando=true;const enviadas=[];let authErr=false;
   try{
-    if(!silent)showToast('Enviando '+ids.length+'...');
-    const pdf=await pdfParaVisita();
-    for(const id of ids){
-      const punto=puntos.find(p=>p.id===id),v=visits[id];
-      if(!punto||!v||!v.planilla) continue;
-      if(v.planilla.tieneFoto&&!v.planilla.foto){const f=await fotoGet(id);if(f)v.planilla.foto=f;}
-      if(await subirVisitaADrive(punto,v,pdf.b64,pdf.nombre)) ok++; else break; // si una falla, probablemente no hay señal: no insistir
+    try{await ensureToken();}catch(e){authErr=true;}
+    if(!authErr){
+      if(!silent)showToast('Enviando '+ids.length+'...');
+      const pdf=await pdfParaVisita();
+      for(const id of ids){
+        const punto=puntos.find(p=>p.id===id),v=visits[id];
+        if(!punto||!v||!v.planilla) continue;
+        if(v.planilla.tieneFoto&&!v.planilla.foto){const f=await fotoGet(id);if(f)v.planilla.foto=f;}
+        if(await subirVisitaADrive(punto,v,pdf.b64,pdf.nombre)) enviadas.push(punto.nombre||punto.dir||id);
+        else{if(v.envio&&v.envio.motivo==='Sesión de Google vencida') authErr=true;break;} // si una falla, probablemente no hay señal o venció la sesión
+      }
     }
   }catch(e){console.error('reintentar:',e);}
   finally{_reintentando=false;}
-  renderPendientes();
+  renderPendientes();renderV();updateDriveBadge();
+  if(authErr){avisarReconectarParaPendientes(!silent);return;}
   const quedan=pendientesEnvio().length;
-  if(ok&&!quedan) showToast('✓ Todo enviado a Drive');
-  else if(!silent&&quedan) showToast(quedan+' siguen sin enviar. Probá de nuevo o guardalas en el celular',true);
+  if(enviadas.length&&!quedan){
+    _avisoRecoMostrado=false;
+    if(typeof triggerAutosave==='function') triggerAutosave();
+    showToast('✓ Todo enviado a Drive');
+    avisarEnvioCompletoDrive(enviadas);
+  }else if(enviadas.length&&quedan){
+    showToast('Se enviaron '+enviadas.length+', quedan '+quedan+' pendientes',true);
+  }else if(!silent&&quedan){
+    showToast(quedan+' siguen sin enviar. Probá de nuevo o guardalas en el celular',true);
+  }
 }
 /* (se ejecuta al final, en js/99-arranque.js) */
 /* (se ejecuta al final, en js/99-arranque.js) */

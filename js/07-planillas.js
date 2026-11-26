@@ -231,6 +231,10 @@ async function guardarVisita(soloGuardar,confirmado){
   const idv=curId;
   const punto = puntos.find(p=>p.id===idv);
   if(soloGuardar){
+    if(!modoLocal&&drv.connected){
+      visits[idv].envio={estado:'local',ts:Date.now(),local:false};
+      guardarVisits();
+    }
     // solo guardada en la app: no se envía ni queda pendiente
     if(modoLocal) mostrarDlgEnvio('Visita guardada en la app. ¿Querés guardar también el PDF y la foto en el celular?',[
       {txt:'Guardar en el celular',cls:'ba',fn:()=>guardarEnCelular([idv])},
@@ -254,6 +258,10 @@ function closeOv(){
   document.getElementById('ov').classList.remove('show');
   document.body.style.overflow='';
   if(typeof _updPendiente!=='undefined'&&_updPendiente) setTimeout(()=>mostrarCartelActualizacion(_updPendiente),250);
+  else if(typeof _envioOkPendiente!=='undefined'&&_envioOkPendiente){
+    const lista=_envioOkPendiente;_envioOkPendiente=null;
+    setTimeout(()=>avisarEnvioCompletoDrive(lista),250);
+  }
 }
 // Cerrar la planilla con ESC (en PC)
 /* (se ejecuta al final, en js/99-arranque.js) */

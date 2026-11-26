@@ -25,23 +25,53 @@ const drv = {
   autosavePending: false,
 };
 
+let _tokenReq = null;
+let _gScriptLoading = { gapi: false, gsi: false };
+
+function asegurarScriptsGoogle(){
+  if(navigator.onLine===false) return;
+  if(typeof gapi==='undefined' && !_gScriptLoading.gapi){
+    _gScriptLoading.gapi=true;
+    const s=document.createElement('script');
+    s.src='https://apis.google.com/js/api.js';s.async=true;s.defer=true;
+    s.onload=s.onerror=()=>{_gScriptLoading.gapi=false;};
+    document.head.appendChild(s);
+  }
+  if((typeof google==='undefined'||!google.accounts||!google.accounts.oauth2) && !_gScriptLoading.gsi){
+    _gScriptLoading.gsi=true;
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;
+    s.onload=s.onerror=()=>{_gScriptLoading.gsi=false;};
+    document.head.appendChild(s);
+  }
+}
+
 // Esperar a que GAPI y GIS carguen
-function waitForGoogleLibs(){
-  return new Promise((resolve)=>{
+function waitForGoogleLibs(timeoutMs=15000){
+  asegurarScriptsGoogle();
+  return new Promise((resolve,reject)=>{
+    const deadline=Date.now()+timeoutMs;
     const check=()=>{
       const gapiOk = typeof gapi !== 'undefined';
       const gisOk = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
       if(gapiOk && gisOk){
         if(!drv.gapiReady){
-          gapi.load('client',async()=>{
-            await gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
-            drv.gapiReady=true;
-            drv.gisReady=true;
-            resolve();
-          });
+          try{
+            gapi.load('client',async()=>{
+              try{
+                await gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
+                drv.gapiReady=true;
+                drv.gisReady=true;
+                resolve();
+              }catch(e){reject(e);}
+            });
+          }catch(e){reject(e);}
         }else{
+          drv.gisReady=true;
           resolve();
         }
+      }else if(Date.now()>=deadline){
+        reject(new Error('No cargó Google. Revisá tu internet y probá de nuevo.'));
       }else{
         setTimeout(check,200);
       }
@@ -90,15 +120,43 @@ function initTokenClient(){
     scope: DRIVE_SCOPE,
     error_callback: (err)=>{
       console.warn('oauth:',err);
+      if(_tokenReq){
+        clearTimeout(_tokenReq.timer);
+        const req=_tokenReq;_tokenReq=null;
+        drv.connected=false;updateDriveBadge();renderDriveTab();
+        req.reject(new Error('AUTH_NEEDED:'+((err&&err.type)||'oauth_error')));
+        return;
+      }
       const m={popup_closed:'Cerraste la ventana de Google antes de terminar. Tocá "Entrar con Google" de nuevo.',
                popup_failed_to_open:'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio.'}[err&&err.type];
       if(m&&!drv.silentTry) errorGate(m);
+      const wasSilent=drv.silentTry;
       drv.silentTry=false;
+      if(wasSilent && typeof avisarReconectarParaPendientes==='function') avisarReconectarParaPendientes(false);
     },
     callback: async (resp)=>{
+      if(_tokenReq){
+        clearTimeout(_tokenReq.timer);
+        const req=_tokenReq;_tokenReq=null;
+        if(resp.error){
+          drv.connected=false;updateDriveBadge();renderDriveTab();
+          req.reject(new Error('AUTH_NEEDED:'+resp.error));
+          return;
+        }
+        drv.accessToken = resp.access_token;
+        drv.tokenExpiry = Date.now() + ((resp.expires_in||3600)*1000) - 60000;
+        gapi.client.setToken({access_token: drv.accessToken});
+        drv.connected = true;
+        req.resolve();
+        return;
+      }
       if(resp.error){
         console.error(resp);
-        if(drv.silentTry){drv.silentTry=false;return;} // reconexión silenciosa fallida: no molestar
+        if(drv.silentTry){
+          drv.silentTry=false;
+          if(typeof avisarReconectarParaPendientes==='function') avisarReconectarParaPendientes(false);
+          return; // reconexión silenciosa fallida: no molestar
+        }
         const m=resp.error==='access_denied'
           ?'Google no dejó entrar con esta cuenta. Pedí que la agreguen como usuario de prueba de la app.'
           :'No se pudo entrar ('+resp.error+'). Probá de nuevo.';
@@ -121,11 +179,13 @@ function initTokenClient(){
       }catch(e){console.warn('perfil de Google:',e);}
       // el auto-guardado de la jornada queda activado desde el primer ingreso
       if(lsGet(SK.autosave)===null){drv.autosave=true;lsSet(SK.autosave,true);}
+      if(typeof marcarVisitasSinEnviarAlConectar==='function') marcarVisitasSinEnviarAlConectar();
       updateDriveBadge();
       renderDriveTab();
       if(!silent) showToast('✓ Conectado a Drive');
       checkJornadaActual();
-      setTimeout(()=>reintentarPendientes(true),2500);
+      setTimeout(()=>reintentarPendientes(true),1200);
+      if(drv.autosave && drv.autosavePending && typeof triggerAutosave==='function') triggerAutosave();
     }
   });
 }
@@ -168,14 +228,17 @@ let _toqueUsado=false;
 
 // Al abrir la app: si ya había iniciado sesión antes, reconecta sola (sin popups de consentimiento)
 async function reconectarDrive(){
-  if(!drv.clientId || !lsGet(SK_DRV_ON)) return;
+  if(!drv.clientId || !lsGet(SK_DRV_ON) || drv.connected || navigator.onLine===false) return;
   drv.user = lsGet(SK_DRV_USER) || null;
   try{
     await waitForGoogleLibs();
     initTokenClient();
     drv.silentTry=true;
     drv.tokenClient.requestAccessToken({prompt:'',login_hint:drv.user||undefined});
-  }catch(e){console.error('reconectar:',e);}
+  }catch(e){
+    console.warn('reconectar:',e);
+    if(typeof avisarReconectarParaPendientes==='function') avisarReconectarParaPendientes(false);
+  }
 }
 
 function disconnectDrive(){
@@ -189,21 +252,28 @@ function disconnectDrive(){
 }
 
 async function ensureToken(){
-  if(!drv.connected) throw new Error('No conectado a Drive');
-  // Si el token está por vencer, pedirlo de nuevo silenciosamente
-  if(Date.now() > drv.tokenExpiry){
-    return new Promise((resolve,reject)=>{
-      initTokenClient();
-      drv.tokenClient.callback = (resp)=>{
-        if(resp.error){reject(resp.error);return;}
-        drv.accessToken=resp.access_token;
-        drv.tokenExpiry=Date.now()+((resp.expires_in||3600)*1000)-60000;
-        gapi.client.setToken({access_token:drv.accessToken});
-        resolve();
-      };
-      drv.tokenClient.requestAccessToken({prompt:''});
-    });
+  if(!drv.connected) throw new Error('AUTH_NEEDED:not_connected');
+  if(Date.now() <= drv.tokenExpiry) return;
+  if(_tokenReq) return _tokenReq.promise;
+  initTokenClient();
+  let resFn, rejFn;
+  const promise = new Promise((resolve,reject)=>{resFn=resolve;rejFn=reject;});
+  const timer = setTimeout(()=>{
+    if(!_tokenReq || _tokenReq.promise!==promise) return;
+    _tokenReq=null;
+    drv.connected=false;updateDriveBadge();renderDriveTab();
+    rejFn(new Error('AUTH_NEEDED:timeout'));
+  },10000);
+  _tokenReq={promise,resolve:resFn,reject:rejFn,timer};
+  try{
+    drv.tokenClient.requestAccessToken({prompt:'',login_hint:drv.user||undefined});
+  }catch(e){
+    clearTimeout(timer);
+    if(_tokenReq && _tokenReq.promise===promise) _tokenReq=null;
+    drv.connected=false;updateDriveBadge();renderDriveTab();
+    rejFn(new Error('AUTH_NEEDED:'+((e&&e.message)||'request_failed')));
   }
+  return promise;
 }
 
 function updateDriveBadge(){

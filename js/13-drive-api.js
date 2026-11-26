@@ -241,12 +241,19 @@ async function driveSubirOReemplazar(nombre,mime,content,parentId){
 }
 
 // Subir visita (foto + PDF rellenado) a Drive
+function fechaCarpetaLocal(fechaTexto){
+  const m=String(fechaTexto||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
   if(!drv.connected){marcarEnvio(punto.id,'pendiente','Sin conexión con Drive');return false;}
   const fallos = [];
   try{
     const root = await driveGetRootFolderId();
-    const fechaCarpeta = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
+    const fechaCarpeta = fechaCarpetaLocal(visita && visita.planilla && visita.planilla.fecha); // YYYY-MM-DD local
     const dia = await driveGetOrCreateFolder(fechaCarpeta, root);
     const base = nombreVisita(punto); // todo va directo en la carpeta del día, sin subcarpeta por visita
 
@@ -276,7 +283,8 @@ async function subirVisitaADrive(punto, visita, pdfB64, pdfNombre){
     }
   }catch(e){
     console.error('subir a Drive:',e);
-    marcarEnvio(punto.id,'pendiente',String((e&&e.message)||e).slice(0,140));
+    const msg=String((e&&e.message)||e);
+    marcarEnvio(punto.id,'pendiente',msg.startsWith('AUTH_NEEDED:')?'Sesión de Google vencida':msg.slice(0,140));
     return false;
   }
   if(fallos.length){
@@ -297,7 +305,7 @@ async function compartirDiaConEmpresa(avisar){
   try{
     await ensureToken();
     const root=await driveGetRootFolderId();
-    const dia=await driveGetOrCreateFolder((new Date()).toISOString().slice(0,10),root);
+    const dia=await driveGetOrCreateFolder(fechaCarpetaLocal(),root);
     const hecho=lsGet('sube:compartidos')||[];
     const clave=dia+'|'+mail;
     if(!hecho.includes(clave)){

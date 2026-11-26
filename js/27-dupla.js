@@ -1,7 +1,7 @@
 // Trabajar en dupla: dos personas comparten la misma jornada.
 //  🚗 Navegante: arma la ruta en el mapa y avisa cuál es la siguiente parada.
 //  🚶 Verificador: baja y completa la planilla; cada visita se ve al instante en el celu del navegante.
-const SK_DUPLA='sube:dupla',SK_DPVISTO='sube:dpactual';
+const SK_DUPLA='sube:dupla',SK_DPVISTO='sube:dpactual',SK_DPQUITAR='sube:dpquitar';
 const dupla=()=>lsGet(SK_DUPLA)||null;
 const dpBase=()=>lsGet('sube:srv')||SERVIDOR_URL;
 const dpEsNavegante=()=>{const d=dupla();return !!d&&d.rol==='navegante';};
@@ -137,8 +137,18 @@ async function dpPull(forzar){
     lsSet(SK_DUPLA,d);dpPintarCabecera();if(document.getElementById('dpDlg').classList.contains('show')) dpPintarDlg();
     if(nueva){d.version=r.version;lsSet(SK_DUPLA,d);dpAplicar(r.estado);}
     if(d.rol==='verificador'){
-      const pend=Object.entries(visits).filter(([id,v])=>v&&v.done&&!v.remoto&&!visSrv[id]).slice(0,5);
-      for(const [id] of pend) dpReportarVisita(id);
+      let q=(lsGet(SK_DPQUITAR)||[]).map(String);
+      while(q.length){
+        const qid=q[0];
+        if(visits[qid]&&visits[qid].done){q=q.slice(1);lsSet(SK_DPQUITAR,q);continue;}
+        try{await dpApi('POST','/api/dupla/estado',{quitarVisita:qid});q=q.slice(1);lsSet(SK_DPQUITAR,q);}
+        catch(e){break;}
+      }
+      const pend=Object.entries(visits).filter(([id,v])=>v&&v.done&&!v.remoto&&!visSrv[id]).slice(0,30);
+      for(const [id] of pend){
+        if(!navigator.onLine) break;
+        await dpReportarVisita(id);
+      }
     }
   }catch(e){}
 }
@@ -213,18 +223,28 @@ async function dpAvisarParadaAuto(id,nombre,dist,rubro){
 // el verificador informa cada visita hecha (o la deshace)
 async function dpReportarVisita(id){
   const d=dupla();if(!d||d.rol!=='verificador') return;
-  const v=visits[id],p=puntos.find(x=>String(x.id)===String(id))||{};
+  const sid=String(id),v=visits[id],p=puntos.find(x=>String(x.id)===sid)||{};
+  const sacarDeCola=()=>{const q=(lsGet(SK_DPQUITAR)||[]).filter(x=>String(x)!==sid);if(q.length)lsSet(SK_DPQUITAR,q);else lsDel(SK_DPQUITAR);};
   try{
     if(v&&v.done){
+      sacarDeCola();
       const est=(v.noVisitado||(v.planilla&&v.planilla.cierra))?'cerrado':'ok';
       const irr=!!(v.planilla&&typeof irregsDe==='function'&&irregsDe(v.planilla).length>0);
-      await dpApi('POST','/api/dupla/estado',{visita:{id:String(id),estado:est,irr,nombre:p.nombre||p.dir||''}});
-    }else await dpApi('POST','/api/dupla/estado',{quitarVisita:String(id)});
-  }catch(e){}
+      await dpApi('POST','/api/dupla/estado',{visita:{id:sid,estado:est,irr,nombre:p.nombre||p.dir||''}});
+    }else{
+      await dpApi('POST','/api/dupla/estado',{quitarVisita:sid});
+      sacarDeCola();
+    }
+  }catch(e){
+    if(!(v&&v.done)){
+      const q=lsGet(SK_DPQUITAR)||[];
+      if(!q.includes(sid)){q.push(sid);lsSet(SK_DPQUITAR,q);}
+    }
+  }
 }
 function dpIniciar(){
   dpPintarCabecera();
   if(dupla()){dpArrancar();setTimeout(()=>dpPull(true),1500);}
-  window.addEventListener('online',()=>setTimeout(dpPull,1500));
+  window.addEventListener('online',()=>setTimeout(()=>{dpAbrirSSE();dpPull(true);},1500));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden) dpPull();});
 }

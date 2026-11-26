@@ -114,6 +114,13 @@ async function checkJornadaActual(){
       return;
     }
     const localVacia = !puntos.length && Object.keys(visits).length===0;
+    const hayPend = typeof pendientesEnvio==='function' && pendientesEnvio().length>0;
+    const hechasLoc = Object.values(visits).filter(v=>v&&v.done&&!v.remoto).length;
+    const hechasDrv = Object.values(j.visits||{}).filter(v=>v&&v.done&&!v.remoto).length;
+    if(!localVacia && (hayPend || hechasLoc > hechasDrv)){
+      if(drv.autosave) triggerAutosave();
+      return;
+    }
     const driveMasNueva = !localVacia && j.timestamp && j.timestamp > 0 &&
       (puntos.length !== (j.puntos||[]).length || JSON.stringify([...sel].sort()) !== JSON.stringify((j.sel||[]).sort()));
 
