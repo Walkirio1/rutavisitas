@@ -1,7 +1,8 @@
 // Equipos: el verificador se une con una invitación, recibe la ruta que le asigna su jefe y le informa cada visita hecha.
 // (El servidor está en /servidor; el PDF y las fotos siguen yendo al Drive de cada uno.)
 const SERVIDOR_HOST='hivemind.tail38381c.ts.net';
-const SERVIDOR_URL=(typeof location!=='undefined'&&location.hostname===SERVIDOR_HOST)?location.origin:'https://'+SERVIDOR_HOST;
+const esHostOficial=h=>typeof h==='string'&&(h==='logimap.app'||h.endsWith('.logimap.app')||h===SERVIDOR_HOST);
+const SERVIDOR_URL=(typeof location!=='undefined'&&esHostOficial(location.hostname))?location.origin:'https://'+SERVIDOR_HOST;
 const SK_EQ='sube:eq',SK_EQCOLA='sube:eqcola',SK_EQVISTO='sube:eqvisto';
 const equipo=()=>lsGet(SK_EQ)||null;
 
@@ -26,7 +27,7 @@ function eqLeerInvitacion(txt){
 }
 // la invitación solo puede apuntar al servidor de Verific: con otro, nombre, foto, visitas y GPS irían a un tercero
 function servidorValido(api){
-  try{const u=new URL(api);return (u.protocol==='https:'&&u.hostname===SERVIDOR_HOST)?u.origin:'';}catch(e){return '';}
+  try{const u=new URL(api);return (u.protocol==='https:'&&esHostOficial(u.hostname))?u.origin:'';}catch(e){return '';}
 }
 async function eqUnirse(codigo,api){
   const nombre=(perfil&&perfil().nombre)||'';

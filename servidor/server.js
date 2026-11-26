@@ -53,8 +53,9 @@ const ipConfiable=req=>{
   const remote=String(req.socket&&req.socket.remoteAddress||'?').toLowerCase();
   const privada=remote==='::1'||remote.startsWith('127.')||remote.startsWith('::ffff:127.')||remote.startsWith('10.')||remote.startsWith('::ffff:10.')||remote.startsWith('192.168.')||remote.startsWith('::ffff:192.168.')||/^172\.(1[6-9]|2\d|3[01])\./.test(remote)||/^::ffff:172\.(1[6-9]|2\d|3[01])\./.test(remote);
   if(process.env.TRUST_PROXY==='1'||privada){
+    const cf=String(req.headers['cf-connecting-ip']||'').trim();
     const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();
-    return forwarded||String(req.headers['cf-connecting-ip']||'').trim()||remote;
+    return cf||forwarded||remote;
   }
   return remote;
 };
