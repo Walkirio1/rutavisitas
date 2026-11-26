@@ -122,20 +122,20 @@ function renderP(){
     const geoBadge = geoOk
       ? `<span class="geo-tag ok" title="Ubicación en mapa"><svg class="ico" style="vertical-align:-2px"><use href="#i-pin"/></svg> En mapa</span>`
       : geoErr
-        ? `<span class="geo-tag err" title="No se pudo ubicar: ${p.geoErr}"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin ubicación</span>`
+        ? `<span class="geo-tag err" title="No se pudo ubicar: ${escapeHtml(p.geoErr)}"><svg class="ico" style="vertical-align:-2px"><use href="#i-alert"/></svg> Sin ubicación</span>`
         : `<span class="geo-tag pen"><svg class="ico" style="vertical-align:-2px"><use href="#i-hourglass"/></svg> Pendiente</span>`;
     return `<div class="pi${s?' sel':''}${geoErr?' geo-err':''}">
       <div class="pnum">${i+1}</div>
       <div class="pb">
-        <div class="pno">${p.nombre}</div>
-        <div class="pd">${IC("pin")} ${p.dir}</div>
-        <div class="pid">ID: ${p.id}</div>
-        ${p.obs?`<div class="pobs">${IC("info")} ${p.obs}</div>`:''}
-        <span class="ptag ${p.tipo.includes('Venta')?'tv':'tr'}">${p.tipo}</span>
+        <div class="pno">${escapeHtml(p.nombre)}</div>
+        <div class="pd">${IC("pin")} ${escapeHtml(p.dir)}</div>
+        <div class="pid">ID: ${escapeHtml(p.id)}</div>
+        ${p.obs?`<div class="pobs">${IC("info")} ${escapeHtml(p.obs)}</div>`:''}
+        <span class="ptag ${(p.tipo||'').includes('Venta')?'tv':'tr'}">${escapeHtml(p.tipo)}</span>
         ${geoBadge}
-        ${geoErr?`<div style="font-size:10px;color:#f59e0b;margin-top:3px">${p.geoErr}</div>`:''}
+        ${geoErr?`<div style="font-size:10px;color:#f59e0b;margin-top:3px">${escapeHtml(p.geoErr)}</div>`:''}
       </div>
-      <button class="sm ${s?'smg':'smh'}" onclick="toggleSel('${p.id}')">${s?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'+ Agregar'}</button>
+      <button class="sm ${s?'smg':'smh'}" data-id="${escapeHtml(p.id)}" onclick="toggleSel(this.dataset.id)">${s?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'+ Agregar'}</button>
     </div>`;
   }).join('');
 }

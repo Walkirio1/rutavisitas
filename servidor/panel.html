@@ -36,7 +36,8 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dataJson=v=>esc(JSON.stringify(v));
 let APP='https://walkirio1.github.io/rutavisitas/';
 fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{}); // si el servidor también sirve la app, la invitación apunta ahí
 let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null,FECHA='';
@@ -78,7 +79,7 @@ function bajarExcel(){
 function pintar(){
   const m=D.miembros,as=m.reduce((a,x)=>a+x.asignados,0),ok=m.reduce((a,x)=>a+x.hechos,0),ce=m.reduce((a,x)=>a+x.cerrados,0),pe=m.reduce((a,x)=>a+x.pendientes,0);
   const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
-  $('#app').innerHTML=`<header><h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1><span class="cod">${D.codigo}</span><button class="s" onclick="copiar('${inv}')">🔗 Copiar invitación</button></header>
+  $('#app').innerHTML=`<header><h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1><span class="cod">${esc(D.codigo)}</span><button class="s" data-inv="${esc(inv)}" onclick="copiar(this.dataset.inv)">🔗 Copiar invitación</button></header>
   <main>
   <div class="card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:120px">${FECHA&&FECHA!==hoyAR()?'📅 Viendo un día anterior':'📅 Hoy'}</b>
     <input type="date" value="${esc(D.fecha)}" max="${hoyAR()}" onchange="irFecha(this.value)" style="width:auto">
@@ -86,16 +87,16 @@ function pintar(){
     <button onclick="bajarExcel()">⬇️ Descargar Excel del día</button></div>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
   <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1&&esHoy()?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
-  ${m.length?m.map(x=>`<div class="mb">${av(x)}<div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+hora(x.visto):''} · ${x.asignados} asignados</small>
-    <div class="barra"><i style="width:${x.asignados?Math.min(100,(x.hechos+x.cerrados)/x.asignados*100):0}%"></i></div></div>
-    <div style="text-align:center;min-width:90px"><b style="font-size:18px">${x.hechos}</b>/${x.asignados}<br><small style="color:var(--mut)">hechas</small></div>
-    ${esHoy()?`<button class="s" onclick="dlgAsignar(${x.id})">Asignar ruta</button>`:''}<button class="r" onclick="quitar(${x.id},'${esc(x.nombre).replace(/'/g,'')}')">✕</button></div>`).join(''):
-    `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${D.codigo}</b>.</div>`}</div>
+  ${m.length?m.map(x=>{const na=Number(x.asignados)||0,nh=Number(x.hechos)||0,nc=Number(x.cerrados)||0;return `<div class="mb">${av(x)}<div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+esc(hora(x.visto)):''} · ${esc(x.asignados)} asignados</small>
+    <div class="barra"><i style="width:${na?Math.min(100,(nh+nc)/na*100):0}%"></i></div></div>
+    <div style="text-align:center;min-width:90px"><b style="font-size:18px">${esc(x.hechos)}</b>/${esc(x.asignados)}<br><small style="color:var(--mut)">hechas</small></div>
+    ${esHoy()?`<button class="s" data-mid="${dataJson(x.id)}" onclick="dlgAsignar(JSON.parse(this.dataset.mid))">Asignar ruta</button>`:''}<button class="r" data-mid="${dataJson(x.id)}" data-nom="${esc(x.nombre)}" onclick="quitar(JSON.parse(this.dataset.mid),this.dataset.nom)">✕</button></div>`;}).join(''):
+    `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${esc(D.codigo)}</b>.</div>`}</div>
   <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2>
   <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px;align-items:center">${m.map(x=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colDe(x.id)};margin-right:4px"></i>${esc(x.nombre)} (pendientes)</span>`).join('')}<span>⭕ posición actual · ┈ recorrido de hoy</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px"></i>hecha</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></i>cerrada</span></div>
   ${m.some(x=>x.puntos.some(p=>p.lat==null))?`<button class="s" id="btnGeo" onclick="ubicarTodos()" style="margin-bottom:8px">📍 Ubicar en el mapa los puntos sin ubicación</button>`:''}
   <div id="mapa"></div></div>
-  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+(v.dist<1000?v.dist+' m':(v.dist/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${hora(v.ts)}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
+  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+esc(v.dist<1000?v.dist+' m':(Number(v.dist)/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${esc(hora(v.ts))}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
   </main>`;
   setTimeout(dibujarMapa,50);
 }
@@ -119,7 +120,7 @@ function dlgAsignar(id){
   <label class="s" style="display:block;text-align:center;padding:12px;border-radius:12px;cursor:pointer;margin-bottom:8px;border:1px dashed var(--mut)">📂 Subir Excel o CSV<input type="file" id="arch" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="leerArchivo(this)"></label>
   <textarea id="pega" placeholder="1001	Kiosco Don Pepe	Córdoba 1500	Rosario" oninput="vistaRuta()"></textarea>
   <div id="vistaR" style="font-size:13px;color:var(--mut);margin-top:6px;min-height:18px"></div>
-  <div style="display:flex;gap:8px;margin-top:10px"><button onclick="enviarRuta(${id})" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
+  <div style="display:flex;gap:8px;margin-top:10px"><button data-mid="${dataJson(id)}" onclick="enviarRuta(JSON.parse(this.dataset.mid))" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
   $('#dlg').classList.add('on');
 }
 
