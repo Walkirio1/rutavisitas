@@ -1,0 +1,20 @@
+services:
+  verific-beta:
+    build: .
+    container_name: verific-beta
+    restart: unless-stopped
+    ports:
+      - "8788:8787"
+    volumes:
+      - /datos/verific-beta:/datos
+      - ..:/web:ro
+    environment:
+      - APP_DIR=/web
+      - OSRM_URL=http://verific-osrm:5000
+      - ENV_LABEL=BETA · PRUEBAS
+    networks:
+      - servidor_default
+
+networks:
+  servidor_default:
+    external: true
