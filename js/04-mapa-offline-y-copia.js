@@ -72,6 +72,13 @@ async function exportarCopia(){
     descargarArchivos([file]);
   }catch(e){console.error(e);showToast('No se pudo armar la copia',true);}
 }
+const COPIA_CLAVES_PERMITIDAS=new Set([
+  'sube:puntos','sube:sel','sube:visits','sube:historial','sube:emails','sube:orden','sube:inicio','sube:tema','sube:nav','sube:ubi','sube:sello','sube:prox','sube:notif',
+  'sube:planillas','sube:autosave','sube:pldef','sube:excel','sube:errores','sube:tut','sube:instdismiss2','sube:dszoomvisto',
+  'sube:borrador','sube:foldername','sube:plantilla','sube:plmodo'
+]);
+const COPIA_CLAVES_BLOQUEADAS=new Set(['sube:pro','sube:srv','sube:equipo','sube:dupla','sube:perfil','sube:modo','sube:drvuser','sube:drvon','sube:iakey','sube:clientid','sube:cid','sube:eq','sube:eqcola','sube:eqdupla','sube:eqperfil','sube:eqpos','sube:eqvisto','sube:rootfolderid','sube:compartidos','sube:cping','sube:contar','sube:dpactual','sube:dpquitar','sube:lastsync','sube:mkpulso','sube:proxok','sube:limpiadots']);
+function esClaveCopiaPermitida(k){return typeof k==='string'&&COPIA_CLAVES_PERMITIDAS.has(k)&&!COPIA_CLAVES_BLOQUEADAS.has(k)&&!['__proto__','prototype','constructor'].includes(k);}
 function restaurarCopia(input){
   const file=input.files[0];input.value='';
   if(!file) return;
@@ -82,7 +89,7 @@ function restaurarCopia(input){
     catch(e){showToast('Ese archivo no es una copia de LogiMap',true);return;}
     confirm2('¿Restaurar la copia del '+(c.fecha||'').slice(0,10)+'? Reemplaza lo que hay ahora en este celular.',async function(){
       try{
-        for(const [k,v] of Object.entries(c.datos)) localStorage.setItem(k,v);
+        for(const [k,v] of Object.entries(c.datos)) if(esClaveCopiaPermitida(k)&&typeof v==='string') localStorage.setItem(k,v);
         await fotosClear();
         for(const [id,f] of Object.entries(c.fotos||{})) await fotoPut(id,f);
         showToast('Copia restaurada ✓ Reiniciando…');

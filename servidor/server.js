@@ -6,7 +6,7 @@ const OSRM=(process.env.OSRM_URL||'http://osrm:5000').replace(/\/$/,'');
 const PORT=+process.env.PORT||8787,DB=process.env.DB||path.join(__dirname,'datos','verific.db');
 fs.mkdirSync(path.dirname(DB),{recursive:true});
 const APP_DIR=process.env.APP_DIR?path.resolve(process.env.APP_DIR):null; // carpeta de la app (index.html, js/, css/…); si no se define, solo se sirve el panel
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.pdf':'application/pdf'};
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.pdf':'application/pdf','.woff2':'font/woff2'};
 const db=new DatabaseSync(DB);
 db.exec(`
 PRAGMA journal_mode=WAL;
@@ -53,8 +53,9 @@ const abuso=req=>{
 };
 // avisos en vivo al panel del jefe (Server-Sent Events)
 const oyentes=new Map(); // equipo_id -> Set(res)
-const avisar=(equipoId,tipo)=>{const set=oyentes.get(equipoId);if(set)for(const r of set)r.write('data: '+JSON.stringify({tipo,ts:Date.now()})+'\n\n');};
-setInterval(()=>{for(const set of oyentes.values())for(const r of set)r.write(': latido\n\n');},25000);
+const quitarOyente=(set,r)=>{set.delete(r);if(!set.size)for(const [id,s] of oyentes)if(s===set){oyentes.delete(id);break;}};
+const avisar=(equipoId,tipo)=>{const set=oyentes.get(equipoId);if(set)for(const r of set)try{r.write('data: '+JSON.stringify({tipo,ts:Date.now()})+'\n\n');}catch(e){quitarOyente(set,r);}};
+setInterval(()=>{for(const set of oyentes.values())for(const r of set)try{r.write(': latido\n\n');}catch(e){quitarOyente(set,r);}},25000);
 
 
 // ── Optimizador de rutas por calles reales (usa OSRM para las distancias y ordena acá)
@@ -148,12 +149,14 @@ const rutas={
   },
   'POST /api/dupla/rol':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const eq=ult('SELECT tipo FROM equipos WHERE id=?',m.equipo_id);if(!eq||eq.tipo!=='dupla') return [403,{error:'Solo disponible en modo dupla'}];
     const rol=b.rol==='verificador'?'verificador':'navegante',otro=rol==='navegante'?'verificador':'navegante';
     run('UPDATE miembros SET rol=? WHERE id=?',rol,m.id);run('UPDATE miembros SET rol=? WHERE equipo_id=? AND id<>?',otro,m.equipo_id,m.id);
     avisar(m.equipo_id,'rol');return [200,{ok:true,rol}];
   },
   'POST /api/dupla/estado':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
+    const eq=ult('SELECT tipo FROM equipos WHERE id=?',m.equipo_id);if(!eq||eq.tipo!=='dupla') return [403,{error:'Solo disponible en modo dupla'}];
     const j=ult('SELECT json,version FROM jornadas WHERE equipo_id=?',m.equipo_id),est=j?JSON.parse(j.json):{},v=(j?j.version:0)+1;
     const lista=(a,n)=>Array.isArray(a)?a.slice(0,n):null;
     if(b.puntos){const l=lista(b.puntos,500);if(l) est.puntos=l.map(p=>({id:txt(p.id,60),nombre:txt(p.nombre),dir:txt(p.dir),localidad:txt(p.localidad,80),tipo:txt(p.tipo,60),lat:Number.isFinite(+p.lat)&&p.lat!=null?+p.lat:null,lng:Number.isFinite(+p.lng)&&p.lng!=null?+p.lng:null}));}
@@ -267,7 +270,7 @@ http.createServer(async(req,res)=>{
       const tk=url.searchParams.get('t')||'';let e=ult('SELECT * FROM equipos WHERE admin_token=?',tk);
       if(!e){const mm=ult('SELECT equipo_id FROM miembros WHERE token=?',tk);if(mm) e=ult('SELECT * FROM equipos WHERE id=?',mm.equipo_id);}
       if(!e) return json(res,401,{error:'Sin permiso'});
-      res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache',Connection:'keep-alive','X-Accel-Buffering':'no',...CORS});res.write('retry: 4000\n\n');
+      res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache',Connection:'keep-alive','X-Accel-Buffering':'no',...CORS});try{res.write('retry: 4000\n\n');}catch(e){return;}
       if(!oyentes.has(e.id)) oyentes.set(e.id,new Set());oyentes.get(e.id).add(res);
       req.on('close',()=>{const st=oyentes.get(e.id);if(st){st.delete(res);if(!st.size) oyentes.delete(e.id);}});return;
     }

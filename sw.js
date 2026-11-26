@@ -5,7 +5,7 @@
 const CACHE = 'sube-v102';
 const TILES = 'sube-tiles'; // mapa guardado para usar sin señal (no se borra al actualizar)
 const PRECACHE = [
-  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './lib/leaflet/leaflet.js', './lib/leaflet/leaflet.css', './lib/leaflet/images/layers.png', './lib/leaflet/images/layers-2x.png', './lib/leaflet/images/marker-icon.png', './lib/leaflet/images/marker-icon-2x.png', './lib/leaflet/images/marker-shadow.png', './lib/pdf-lib.min.js', './lib/xlsx.full.min.js',
+  './', './index.html', './manifest.webmanifest', './planilla-predeterminada.pdf', './privacidad.html', './terminos.html', './lib/leaflet/leaflet.js', './lib/leaflet/leaflet.css', './lib/leaflet/images/layers.png', './lib/leaflet/images/layers-2x.png', './lib/leaflet/images/marker-icon.png', './lib/leaflet/images/marker-icon-2x.png', './lib/leaflet/images/marker-shadow.png', './lib/pdf-lib.min.js', './lib/xlsx.full.min.js', './lib/pdfjs/pdf.min.js', './lib/pdfjs/pdf.worker.min.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/marca-agua.png',
   './icons/hero.webp', './icons/nav-puntos.webp', './icons/nav-visitas.webp', './icons/nav-mapa.webp', './icons/nav-ajustes.webp', './icons/bg-claro.webp', './icons/bg-oscuro.webp',
   './css/01-base.css',
@@ -93,6 +93,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
+    if (url.pathname.startsWith('/api/')) return;
     e.respondWith(redPrimero(req));
   } else if (url.hostname.endsWith('tile.openstreetmap.org')) {
     // mapa: primero lo guardado, si no hay, la red (y se guarda para la próxima)
