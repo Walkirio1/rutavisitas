@@ -70,13 +70,13 @@ Para que un jefe de operaciones pague licencias por su equipo, [servidor/panel.h
 
 - [x] **Renovación no bloqueante de `ensureToken()` y sincronización offline → online completa** (resuelto en `v99`, [js/12-drive-sesion.js](js/12-drive-sesion.js), [js/14-envios-pendientes.js](js/14-envios-pendientes.js), [js/15-autosave.js](js/15-autosave.js), [js/27-dupla.js](js/27-dupla.js)).
 - [x] **Crítico — Stored XSS:** sanear con `escapeHtml()` / `esc()` y atributos `data-*` en [js/02-puntos.js](js/02-puntos.js), [js/06-visitas-historial.js](js/06-visitas-historial.js), [js/08-informe-dialogos.js](js/08-informe-dialogos.js), [js/20-campos.js](js/20-campos.js) y [servidor/panel.html](servidor/panel.html) (resuelto en `v103`).
-- [~] **Crítico — Auth y endpoints públicos en `servidor/server.js`:** validación `tipo === 'dupla'` en `/api/dupla/rol` y `/api/dupla/estado` hecha en `v103`; pendiente proteger creación de equipos/duplas/OSRM, proxy confiable y sacar tokens de query string en SSE `/api/eventos`.
-- [ ] **Crítico — Límite de `localStorage` (~5 MB):** mover los PDFs base64 subidos (`sube:planillas` en [js/07-planillas.js](js/07-planillas.js)) y el historial pesado a **IndexedDB**.
+- [x] **Auth, límites y endpoints públicos en `servidor/server.js`:** validación `tipo === 'dupla'` en `/api/dupla/*` (`v103`), IP real segura en `abuso()` con `TRUST_PROXY`/red privada, rate limit estricto anti-spam (`429`) en creación/unión y `/api/optimizar`, y tickets efímeros de un solo uso vía `POST /api/eventos/ticket` para SSE sin exponer tokens en URL (`v104`).
+- [x] **Crítico — Límite de `localStorage` (~5 MB):** planillas PDF (`sube:planillas`) e historial de jornadas (`sube:historial`) persistidos en **IndexedDB** (`logimap-datos`, `hidratarDatosPesados()`) con limpieza automática en `localStorage` si superan 600 KB o hay `QuotaExceededError` (`v104`).
 - [x] **Alto — Estabilidad servidor y SW** (resuelto en `v103`):
   - En [servidor/server.js](servidor/server.js): `.woff2` agregado al mapa `MIME` y `r.write()` de SSE protegido con `try/catch`.
   - En [sw.js](sw.js): `/api/` excluido de `redPrimero()` y precacheados `pdf.min.js` / `pdf.worker.min.js`.
   - En [js/04-mapa-offline-y-copia.js](js/04-mapa-offline-y-copia.js): allowlist estricta de claves al restaurar copias JSON (bloquea `sube:pro`, `sube:srv`, credenciales y claves desconocidas).
-- [ ] **Medio — Higiene:** unificar `css/01`–`css/12` (eliminar la deuda de `!important` en `css/12-sobrio.css`), agregar purga/TTL a la tabla `trazas` en SQLite/Postgres y ampliar la suite de tests automatizados.
+- [~] **Medio — Higiene:** purga/TTL automática de 30 días en `trazas` (`purgarTrazas()`, `v104`) y suite ampliada de tests (`test_fase0_seguridad.js`); pendiente unificar `css/01`–`css/12` (deuda `!important` en `css/12-sobrio.css`) al migrar frontend en Fase 2.
 
 ---
 
@@ -109,7 +109,7 @@ Para que un jefe de operaciones pague licencias por su equipo, [servidor/panel.h
 
 ## 7. Hoja de ruta priorizada por fases
 
-- **Fase 0 — Desbloqueo y limpieza (en curso → `v103` listo):** ya resuelto en `v103` el desbloqueo nacional (sin `ROSARIO_BOX` ni `Santa Fe` fijo), limpieza visible de marca `SUBE` → `LogiMap`, `attributionControl: true`, saneamiento XSS, estabilidad SW/`.woff2`/SSE/`dupla` y allowlist de copias JSON. Queda pendiente de Fase 0: finalizar textos legales, auth extra en `server.js`, migrar PDFs/historial a IndexedDB y pruebas en 2 Android + 1 iPhone reales.
+- **Fase 0 — Desbloqueo y limpieza (CERRADA técnicamente en `v104`):** desbloqueo nacional (sin `ROSARIO_BOX` ni `Santa Fe` fijo), limpieza visible de marca `SUBE` → `LogiMap`, `attributionControl: true`, textos legales definitivos ([privacidad.html](privacidad.html) y [terminos.html](terminos.html)), saneamiento XSS, estabilidad SW/`.woff2`/SSE/`dupla`, allowlist copias JSON, **IndexedDB para PDFs e historial**, rate limit + proxy seguro + tickets SSE + TTL `trazas`. Solo resta validación en celulares reales de calle.
 - **Fase 1 — Listo para cobrar en Web/PWA + Panel B2B (3–4 semanas):** dominio propio + VPS (PostgreSQL + OSRM Argentina + backups) + verificación Google OAuth + mapas/geocoding legales + **Panel de Control v2** (cuentas, plantilla oficial sincronizada, ficha de evidencia, mapa incremental, reparto geográfico) + cobro inicial por MercadoPago / transferencia.
 - **Fase 2 — Tiendas y Escala (con clientes pagos validados):** **Google Play primero** (TWA o Capacitor, test cerrado 14 días) → **App Store (iOS)** vía Capacitor con plugins nativos, OAuth nativo (PKCE + Sign in with Apple) y cobro B2B web. *(Postergar como YAGNI hasta demanda real: OCR con IA/Tesseract, refactor cosmético CSS y multi-equipo por jefe.)*
 
