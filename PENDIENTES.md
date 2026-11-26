@@ -1,4 +1,6 @@
-# LogiMap · estado y pendientes (octubre 2026)
+# LogiMap · estado y pendientes
+
+> **Plan comercial, publicación en tiendas, seguridad y roadmap GPS offline:** ver [PLAN_ESCALADO.md](PLAN_ESCALADO.md).
 
 ## Lo que ya funciona
 - App del verificador (sin servidor): Excel → mapa → ruta → planilla (propia o PDF de la empresa) con firma y fotos → PDF e informe (WhatsApp, mail, Excel, Drive).
@@ -39,3 +41,10 @@
 - Pruebas para Grok: `pruebas/RONDA-4-GROK.md` y `pruebas/RONDA-5-GROK.md`.
 - Sin probar en celular real: cámara, firma, Google/Drive de punta a punta, hoja de compartir, dos celulares con equipo y dupla, instalación del ícono.
 - El ícono de la app (pin con brillo) sigue con el estilo anterior.
+
+## Estado a noviembre 2026 (versión 100)
+- **Limpieza de jornadas repetidas (`v92`):** reinicio limpio de visitas huérfanas, borrador, Dupla y respaldo de Drive (`sube:limpiadoTs`) al limpiar o reemplazar Excel conservando coordenadas previas.
+- **Aviso automático por proximidad (`v93`–`v98`):** radar a 160 m con barra en vivo, sonido, vibración, rubro desde Excel y autito GPS con rumbo en tiempo real en el mapa (`js/25-ubicacion.js`, `js/09-mapa-geocodificacion.js`).
+- **Sincronización offline → online completa (`v99`):** recarga automática de librerías de Google al volver señal, renovación segura sin colgar `ensureToken()`, cartel de confirmación al subir pendientes a Drive, carpeta local sin salto UTC, protección de `checkJornadaActual` y cola completa en Dupla/Equipo.
+- **Mapa interactivo (`v100`):** botón «Marcar como hecha / Desmarcar hecha» directamente en el popup del punto en el mapa (`js/09-mapa-geocodificacion.js`, `js/10-tema-navegacion.js`).
+- **Documentado para etapas futuras:** plan de escalado comercial / tiendas y explotación de GPS offline asentados en [PLAN_ESCALADO.md](PLAN_ESCALADO.md).
