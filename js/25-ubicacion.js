@@ -325,6 +325,7 @@ function proxEvaluar(lat,lng,acc,heading){
     proxMarcarVisto(mejor.p.id);
     proxSonar();
     try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(e){}
+    if(typeof enviarNotif==='function') enviarNotif('📍 Llegando: '+(mejor.p.nombre||mejor.p.dir),'A '+fmtDist(mejor.d)+(mejor.p.dir&&mejor.p.nombre?' · '+mejor.p.dir:''),'prox-'+mejor.p.id,mejor.p.id);
     if(typeof dpAvisarParadaAuto==='function') dpAvisarParadaAuto(mejor.p.id,mejor.p.nombre||mejor.p.dir,mejor.d,rubroDePunto(mejor.p));
     return;
   }
@@ -336,6 +337,7 @@ function proxEvaluar(lat,lng,acc,heading){
   proxMarcarVisto(mejor.p.id);
   proxSonar();
   try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(e){}
+  if(typeof enviarNotif==='function') enviarNotif('📍 Estás llegando: '+(mejor.p.nombre||mejor.p.dir),'A '+fmtDist(mejor.d)+(mejor.p.dir&&mejor.p.nombre?' · '+mejor.p.dir:''),'prox-'+mejor.p.id,mejor.p.id);
   mostrarDlgEnvio(
     textoParada(mejor.p,'📍 Estás llegando (a '+fmtDist(mejor.d)+')'),
     [{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(mejor.p.id)},{txt:'Después',cls:'bd'}]
@@ -385,4 +387,58 @@ function optProxCambio(on){
   proxActualizar(on);
   renderProxBar();
   showToast(on?'Aviso automático al llegar activado (160 m) ✓':'Aviso automático al llegar desactivado');
+}
+
+function notifOn(){
+  return !!lsGet('sube:notif');
+}
+
+function enviarNotif(titulo,cuerpo,tag,puntoId){
+  if(!notifOn()||typeof Notification==='undefined'||Notification.permission!=='granted') return false;
+  const opts={body:cuerpo||'',tag:tag||'rutavisas',icon:'icons/icon-192.png',badge:'icons/icon-192.png',data:{puntoId:puntoId||null}};
+  try{
+    if(navigator.serviceWorker&&navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        if(reg&&typeof reg.showNotification==='function') return reg.showNotification(titulo,opts);
+        new Notification(titulo,opts);
+      }).catch(()=>{try{new Notification(titulo,opts);}catch(e){}});
+      return true;
+    }
+  }catch(e){}
+  try{new Notification(titulo,opts);return true;}catch(e){return false;}
+}
+
+function optNotifCambio(on){
+  const cb=document.getElementById('optNotif');
+  if(!on){
+    lsSet('sube:notif',false);
+    showToast('Notificaciones desactivadas');
+    return;
+  }
+  if(typeof Notification==='undefined'){
+    lsSet('sube:notif',false);
+    if(cb) cb.checked=false;
+    showToast('Este navegador no soporta notificaciones',true);
+    return;
+  }
+  if(Notification.permission==='granted'){
+    lsSet('sube:notif',true);
+    showToast('Notificaciones activadas ✓');
+    return;
+  }
+  if(Notification.permission==='denied'){
+    lsSet('sube:notif',false);
+    if(cb) cb.checked=false;
+    showToast('Tenés bloqueadas las notificaciones para este sitio en el navegador',true);
+    return;
+  }
+  Notification.requestPermission().then(res=>{
+    const ok=res==='granted';
+    lsSet('sube:notif',ok);
+    if(cb) cb.checked=ok;
+    showToast(ok?'Notificaciones activadas ✓':'Permiso de notificaciones denegado',!ok);
+  }).catch(()=>{
+    lsSet('sube:notif',false);
+    if(cb) cb.checked=false;
+  });
 }

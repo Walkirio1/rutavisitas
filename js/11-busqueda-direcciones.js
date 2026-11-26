@@ -253,6 +253,8 @@ function centrarEnMiUbicacion(){
 // Centrar para ver todos los puntos
 function centrarEnPuntos(){
   if(!mapa)return;
+  if(typeof _seguirAuto!=='undefined')_seguirAuto=false;
+  if(typeof _mapaArrastrado!=='undefined')_mapaArrastrado=true;
   const conGeo=puntos.filter(p=>p.lat&&p.lng);
   if(!conGeo.length){showToast('No hay puntos en el mapa',true);return;}
   const bounds=conGeo.map(p=>[p.lat,p.lng]);

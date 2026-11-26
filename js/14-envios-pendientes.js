@@ -81,6 +81,7 @@ function avisarEnvioCompletoDrive(enviadas){
   const lista=enviadas.slice(0,5).map(t=>'• '+t).join('\n')+(n>5?'\n• … y '+(n-5)+' más':'');
   const carpeta=(typeof drv!=='undefined'&&drv.folderName)?'\n\nCarpeta en Drive: '+drv.folderName:'';
   const msg='✅ ¡Listo! Se envi'+(n===1?'ó 1 visita':'aron '+n+' visitas')+' a tu Google Drive (PDF y fotos).\n\n'+lista+carpeta;
+  if(typeof enviarNotif==='function') enviarNotif('✅ Envío a Google Drive listo','Se envi'+(n===1?'ó 1 visita':'aron '+n+' visitas')+' a Drive.','drive-sync');
   mostrarDlgEnvio(msg,[{txt:'Entendido',cls:'ba'}]);
 }
 

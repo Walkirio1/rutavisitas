@@ -43,7 +43,7 @@ function openPerfil(){
   reco.style.display=conn?'none':'';
   document.getElementById('perfilSinCon').style.display=conn?'':'none';
   document.getElementById('perfilEmpresa').value=p.emailEmpresa||'';
-  renderPerfilEquipo();document.getElementById('optUbi').checked=ubiOn();document.getElementById('optSello').checked=selloOn();const op=document.getElementById('optProx');if(op)op.checked=proxOn();contadorSync();proSync();
+  renderPerfilEquipo();document.getElementById('optUbi').checked=ubiOn();document.getElementById('optSello').checked=selloOn();const op=document.getElementById('optProx');if(op)op.checked=proxOn();const on=document.getElementById('optNotif');if(on)on.checked=typeof notifOn==='function'&&notifOn();contadorSync();proSync();
   document.getElementById('perfilEnviarEmp').style.display=(conn&&p.emailEmpresa)?'':'none';
   const hechasHoy=Object.values(visits).filter(v=>v&&v.done).length;
   const totHist=historial.reduce((a,h)=>a+(h.hechos||0),0);

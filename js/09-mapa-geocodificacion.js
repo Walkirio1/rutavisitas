@@ -58,7 +58,7 @@ function initMapa(){
   }).addTo(mapa);
   markersLayer = L.layerGroup().addTo(mapa);
   mapa.on('zoomend',marcarTapados);
-  mapa.on('dragstart',()=>{_seguirAuto=false;});
+  mapa.on('dragstart',()=>{_seguirAuto=false;_mapaArrastrado=true;});
   miUbicLayer = L.layerGroup().addTo(mapa);
   mapa.on('click',e=>{
     if(ubicando===null) return;
@@ -176,21 +176,47 @@ function renderMapa(noFit){
 
   marcarTapados();
 
-  // Auto-fit a los bounds si hay markers (no al abrir/cerrar el cartel)
+  // Al abrir el mapa priorizar la ubicación actual del auto si hay GPS reciente
+  const tieneUbiReciente=typeof _ubi!=='undefined'&&_ubi&&Date.now()-_ubi.ts<5*60000;
   if(noFit){
     // sin reencuadrar
+  }else if(tieneUbiReciente){
+    _seguirAuto=true;_mapaArrastrado=false;
+    mapa.setView([_ubi.lat,_ubi.lng],Math.max(mapa.getZoom()||16,16));
   }else if(bounds.length===1){
     mapa.setView(bounds[0],15);
   }else if(bounds.length>1){
     mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
   }
-  if(typeof _ubi!=='undefined'&&_ubi&&Date.now()-_ubi.ts<5*60000){
+  if(tieneUbiReciente){
     actualizarAutoMapa(_ubi.lat,_ubi.lng,_ubi.prec,_ubi.heading);
   }
 }
 
+function ubicarAutoAlAbrirMapa(){
+  if(!mapa) return;
+  _mapaArrastrado=false;
+  if(typeof _ubi!=='undefined'&&_ubi&&Date.now()-_ubi.ts<5*60000){
+    _seguirAuto=true;
+    mapa.setView([_ubi.lat,_ubi.lng],Math.max(mapa.getZoom()||16,16));
+    actualizarAutoMapa(_ubi.lat,_ubi.lng,_ubi.prec,_ubi.heading);
+    return;
+  }
+  if(typeof _esIOS==='function'&&_esIOS()&&!lsGet('sube:proxok')) return;
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude,prec=pos.coords.accuracy||0,heading=pos.coords.heading;
+    if(typeof _ubi!=='undefined') _ubi={lat,lng,prec,heading,ts:Date.now()};
+    actualizarAutoMapa(lat,lng,prec,heading);
+    if(mapa&&!_mapaArrastrado&&(typeof _tabPos==='undefined'||_tabPos===2)){
+      _seguirAuto=true;
+      mapa.setView([lat,lng],Math.max(mapa.getZoom()||16,16));
+    }
+  },()=>{},{enableHighAccuracy:true,maximumAge:60000,timeout:8000});
+}
+
 // ── AUTITO GPS EN TIEMPO REAL
-let _autoMarker=null,_autoCirculo=null,_seguirAuto=false,_autoUltPos=null,_autoRumbo=0;
+let _autoMarker=null,_autoCirculo=null,_seguirAuto=false,_mapaArrastrado=false,_autoUltPos=null,_autoRumbo=0;
 function calcularRumbo(aLat,aLng,bLat,bLng){
   const r=x=>x*Math.PI/180,dl=r(bLng-aLng),y=Math.sin(dl)*Math.cos(r(bLat)),
     x=Math.cos(r(aLat))*Math.sin(r(bLat))-Math.sin(r(aLat))*Math.cos(r(bLat))*Math.cos(dl);

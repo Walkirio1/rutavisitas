@@ -183,6 +183,7 @@ function dpAplicar(est){
       if(typeof proxMarcarVisto==='function') proxMarcarVisto(p.id);
       if(typeof proxSonar==='function') proxSonar();
       try{if(navigator.vibrate)navigator.vibrate([120,70,120]);}catch(e){}
+      if(typeof enviarNotif==='function') enviarNotif('Próxima parada: '+(p.nombre||p.dir),p.dir+(p.localidad?' · '+p.localidad:''),'dupla-'+p.id,p.id);
       const txt=typeof textoParada==='function'?textoParada(p,'Próxima parada'):('Próxima parada\n\n'+(p.nombre||p.dir)+'\n'+p.dir+(p.localidad?' · '+p.localidad:''));
       mostrarDlgEnvio(txt,[{txt:'Abrir la planilla',cls:'ba',fn:()=>openPl(p.id)},{txt:'Después',cls:'bd'}]);
     }
