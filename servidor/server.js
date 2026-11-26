@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS trazas(id INTEGER PRIMARY KEY,miembro_id INTEGER NOT 
 CREATE INDEX IF NOT EXISTS trazas_i ON trazas(miembro_id,fecha);
 CREATE TABLE IF NOT EXISTS visitas(id INTEGER PRIMARY KEY,equipo_id INTEGER NOT NULL,miembro_id INTEGER NOT NULL,punto_id TEXT NOT NULL,nombre TEXT,localidad TEXT,estado TEXT,ts INTEGER,fecha TEXT,lat REAL,lng REAL,dist INTEGER,dur INTEGER,irr INTEGER,UNIQUE(miembro_id,punto_id,fecha));
 `);
-for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT"]){try{db.exec(m);}catch(e){}}
+for(const m of ["ALTER TABLE miembros ADD COLUMN dupla TEXT","ALTER TABLE visitas ADD COLUMN dupla_con TEXT","ALTER TABLE equipos ADD COLUMN tipo TEXT DEFAULT 'equipo'","ALTER TABLE miembros ADD COLUMN foto TEXT","ALTER TABLE miembros ADD COLUMN rol TEXT","ALTER TABLE visitas ADD COLUMN obs TEXT","ALTER TABLE visitas ADD COLUMN irregs TEXT","ALTER TABLE equipos ADD COLUMN plantilla_json TEXT"]){try{db.exec(m);}catch(e){}}
 db.exec('CREATE TABLE IF NOT EXISTS jornadas(equipo_id INTEGER PRIMARY KEY,json TEXT NOT NULL,version INTEGER NOT NULL,ts INTEGER)');
 db.exec('CREATE TABLE IF NOT EXISTS usos(id TEXT PRIMARY KEY,primero INTEGER,ultimo INTEGER,dia TEXT,dias INTEGER DEFAULT 1,version TEXT,app INTEGER DEFAULT 0,pdf INTEGER DEFAULT 0,equipo INTEGER DEFAULT 0,dupla INTEGER DEFAULT 0,google INTEGER DEFAULT 0)');
 const hoy=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); // fecha de Argentina (UTC-3)
@@ -30,7 +30,7 @@ const run=(t,...a)=>db.prepare(t).run(...a);
 
 const CORS={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Private-Network':'true','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,POST,DELETE,OPTIONS'};
 const json=(res,code,obj)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8',...CORS});res.end(JSON.stringify(obj));};
-const leer=req=>new Promise((ok,mal)=>{let b='';req.on('data',c=>{b+=c;if(b.length>3e6){mal(new Error('grande'));req.destroy();}});req.on('end',()=>{try{ok(b?JSON.parse(b):{});}catch(e){mal(e);}});});
+const leer=req=>new Promise((ok,mal)=>{let b='';req.on('data',c=>{b+=c;if(b.length>4.5e6){mal(new Error('grande'));req.destroy();}});req.on('end',()=>{try{ok(b?JSON.parse(b):{});}catch(e){mal(e);}});});
 const bearer=req=>((req.headers.authorization||'').match(/^Bearer\s+(\S+)/)||[])[1]||'';
 const admin=req=>{const t=bearer(req);return t?ult('SELECT * FROM equipos WHERE admin_token=?',t):null;};
 const miembro=req=>{const t=bearer(req);const m=t?ult('SELECT * FROM miembros WHERE token=?',t):null;if(m)run('UPDATE miembros SET visto=? WHERE id=?',Date.now(),m.id);return m;};
@@ -42,6 +42,8 @@ const CLAVE_STATS=(()=>{
   const k=crypto.randomBytes(9).toString('hex');fs.writeFileSync(f,k+'\n');console.log('Clave de estadísticas (guardada en '+f+'): '+k);return k;
 })();
 const txt=(v,n=200)=>String(v==null?'':v).slice(0,n);
+const ENV_LABEL=txt(process.env.ENV_LABEL||'',40).trim();
+const metaPlantilla=jsonStr=>{try{const p=JSON.parse(jsonStr);return {nombre:p.nombre,updatedAt:p.updatedAt,campos:Array.isArray(p.campos)?p.campos.length:0};}catch(e){return null;}};
 // foto de perfil: solo una imagen en data: base64 (lo que arma la app); cualquier otra cosa se descarta
 const foto=v=>{const s=txt(v,60000);return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s)?s:'';};
 
@@ -195,11 +197,23 @@ const rutas={
     if(!ult('SELECT 1 FROM miembros WHERE equipo_id=?',m.equipo_id)){run('DELETE FROM jornadas WHERE equipo_id=?',m.equipo_id);run('DELETE FROM equipos WHERE id=?',m.equipo_id);}
     return [200,{ok:true}];
   },
+  'POST /api/equipo/plantilla':async(req,b)=>{
+    const e=admin(req);if(!e)return [401,{error:'Sin permiso'}];
+    if(b.borrar){run('UPDATE equipos SET plantilla_json=NULL WHERE id=?',e.id);avisar(e.id,'plantilla');return [200,{ok:true,plantillaMeta:null}];}
+    const nombre=txt(b.nombre,120).trim()||'Plantilla del equipo',b64=typeof b.b64==='string'?b.b64.trim():'';
+    if(!(b64.length>20&&b64.length<=3.5e6&&/^[A-Za-z0-9+/=]+$/.test(b64)))return [400,{error:'Plantilla inválida o supera el límite'}];
+    const plantilla={nombre,b64,campos:Array.isArray(b.campos)?b.campos:null,firma:b.firma||null,updatedAt:Date.now()},jsonStr=JSON.stringify(plantilla);
+    run('UPDATE equipos SET plantilla_json=? WHERE id=?',jsonStr,e.id);avisar(e.id,'plantilla');return [200,{ok:true,plantillaMeta:metaPlantilla(jsonStr)}];
+  },
+  'GET /api/equipo/plantilla':async(req)=>{
+    const m=miembro(req),eq=admin(req)||(m?ult('SELECT * FROM equipos WHERE id=?',m.equipo_id):null);if(!eq)return [401,{error:'Sin permiso'}];
+    return [200,{plantilla:eq.plantilla_json?JSON.parse(eq.plantilla_json):null}];
+  },
   'GET /api/mi-ruta':async(req)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
-    const e=ult('SELECT nombre FROM equipos WHERE id=?',m.equipo_id),f=hoy();
+    const e=ult('SELECT nombre,plantilla_json FROM equipos WHERE id=?',m.equipo_id),f=hoy();
     const a=ult('SELECT puntos FROM asignaciones WHERE miembro_id=? AND fecha=?',m.id,f);
-    return [200,{equipo:e.nombre,nombre:m.nombre,fecha:f,puntos:a?JSON.parse(a.puntos):[]}];
+    return [200,{equipo:e.nombre,nombre:m.nombre,fecha:f,puntos:a?JSON.parse(a.puntos):[],plantillaMeta:metaPlantilla(e.plantilla_json),envLabel:ENV_LABEL}];
   },
   'POST /api/visita':async(req,b)=>{
     const m=miembro(req);if(!m) return [401,{error:'Sesión inválida'}];
@@ -214,9 +228,10 @@ const rutas={
       if(d&&d.id!==m.id){const o=ult('SELECT nombre,dupla FROM miembros WHERE id=?',d.id);if(o&&o.nombre===con&&o.dupla===m.nombre) dueno=d.id;}
       run('UPDATE miembros SET dupla=? WHERE id=?',con,m.id);
     }
-    run(`INSERT INTO visitas(equipo_id,miembro_id,punto_id,nombre,localidad,estado,ts,fecha,lat,lng,dist,dur,irr,dupla_con) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(miembro_id,punto_id,fecha) DO UPDATE SET estado=excluded.estado,ts=excluded.ts,lat=excluded.lat,lng=excluded.lng,dist=excluded.dist,dur=excluded.dur,irr=excluded.irr,dupla_con=excluded.dupla_con`,
-      m.equipo_id,dueno,pid,txt(b.nombre),txt(b.localidad,80),b.estado==='cerrado'?'cerrado':'ok',n(b.ts)||Date.now(),f,n(b.lat),n(b.lng),n(b.dist),n(b.dur),b.irr?1:0,con);
+    const obs=txt(b.obs,1000),irregs=Array.isArray(b.irregs)?JSON.stringify(b.irregs.slice(0,30).map(x=>txt(x,120)).filter(Boolean)):'';
+    run(`INSERT INTO visitas(equipo_id,miembro_id,punto_id,nombre,localidad,estado,ts,fecha,lat,lng,dist,dur,irr,dupla_con,obs,irregs) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(miembro_id,punto_id,fecha) DO UPDATE SET estado=excluded.estado,ts=excluded.ts,lat=excluded.lat,lng=excluded.lng,dist=excluded.dist,dur=excluded.dur,irr=excluded.irr,dupla_con=excluded.dupla_con,obs=excluded.obs,irregs=excluded.irregs`,
+      m.equipo_id,dueno,pid,txt(b.nombre),txt(b.localidad,80),b.estado==='cerrado'?'cerrado':'ok',n(b.ts)||Date.now(),f,n(b.lat),n(b.lng),n(b.dist),n(b.dur),b.irr?1:0,con,obs,irregs);
     avisar(m.equipo_id,'visita');return [200,{ok:true}];
   },
   // el celular avisa con quién está en dupla (vacío = ya no está en dupla)
@@ -252,7 +267,8 @@ const rutas={
       return {id:m.id,nombre:m.nombre,foto:m.foto||'',dupla:m.dupla||null,visto:m.visto,pos,traza,asignados:pts.length,hechos:v.filter(x=>x.estado==='ok').length,cerrados:v.filter(x=>x.estado==='cerrado').length,pendientes:pts.filter(p=>!v.some(x=>x.punto_id===String(p.id))).length,puntos:pts};
     });
     const visitas=todos('SELECT v.*,m.nombre AS miembro FROM visitas v JOIN miembros m ON m.id=v.miembro_id WHERE v.equipo_id=? AND v.fecha=? ORDER BY v.ts DESC LIMIT 500',e.id,f);
-    return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas}];
+    for(const v of visitas){try{v.irregs=v.irregs?JSON.parse(v.irregs):[];if(!Array.isArray(v.irregs))v.irregs=[];}catch(err){v.irregs=[];}v.obs=v.obs||'';}
+    return [200,{equipo:e.nombre,codigo:e.codigo,fecha:f,miembros:ms,visitas,envLabel:ENV_LABEL,plantillaMeta:metaPlantilla(e.plantilla_json)}];
   },
   'POST /api/asignar':async(req,b)=>{
     const e=admin(req);if(!e) return [401,{error:'Sin permiso'}];

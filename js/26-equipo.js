@@ -1,6 +1,7 @@
 // Equipos: el verificador se une con una invitación, recibe la ruta que le asigna su jefe y le informa cada visita hecha.
 // (El servidor está en /servidor; el PDF y las fotos siguen yendo al Drive de cada uno.)
-const SERVIDOR_URL='https://hivemind.tail38381c.ts.net'; // servidor de Verific (rutas por calles y equipos)
+const SERVIDOR_HOST='hivemind.tail38381c.ts.net';
+const SERVIDOR_URL=(typeof location!=='undefined'&&location.hostname===SERVIDOR_HOST)?location.origin:'https://'+SERVIDOR_HOST;
 const SK_EQ='sube:eq',SK_EQCOLA='sube:eqcola',SK_EQVISTO='sube:eqvisto';
 const equipo=()=>lsGet(SK_EQ)||null;
 
@@ -25,7 +26,7 @@ function eqLeerInvitacion(txt){
 }
 // la invitación solo puede apuntar al servidor de Verific: con otro, nombre, foto, visitas y GPS irían a un tercero
 function servidorValido(api){
-  try{return api&&new URL(api).origin===new URL(SERVIDOR_URL).origin?SERVIDOR_URL:'';}catch(e){return '';}
+  try{const u=new URL(api);return (u.protocol==='https:'&&u.hostname===SERVIDOR_HOST)?u.origin:'';}catch(e){return '';}
 }
 async function eqUnirse(codigo,api){
   const nombre=(perfil&&perfil().nombre)||'';
@@ -73,6 +74,7 @@ function eqMostrarInvitacion(){
 async function eqTraerRuta(silencioso){
   try{
     const r=await eqApi('GET','/api/mi-ruta');
+    if(r.plantillaMeta) eqSincronizarPlantilla(r.plantillaMeta).catch(()=>{});
     if(!r.puntos.length){if(!silencioso)showToast('Todavía no te asignaron una ruta para hoy');return 0;}
     let n=0;
     r.puntos.forEach(p=>{
@@ -92,10 +94,24 @@ async function eqRevisarRuta(forzar){
   const e=equipo();if(!e||!navigator.onLine) return;
   try{
     const r=await eqApi('GET','/api/mi-ruta');
+    if(r.plantillaMeta) eqSincronizarPlantilla(r.plantillaMeta).catch(()=>{});
     const clave=r.fecha+':'+r.puntos.map(p=>p.id).join(',');
     if(!r.puntos.length||(!forzar&&lsGet(SK_EQVISTO)===clave)) return;
     confirm2('📥 '+r.nombre+', tu jefe te asignó '+r.puntos.length+' punto'+(r.puntos.length>1?'s':'')+' para hoy. ¿Traerlos a tu ruta?',()=>eqTraerRuta(),()=>lsSet(SK_EQVISTO,clave));
   }catch(err){}
+}
+async function eqSincronizarPlantilla(meta){
+  if(!meta||!meta.updatedAt)return false;
+  if(lsGet('sube:eqplts')===meta.updatedAt&&Array.isArray(planillas)&&planillas.some(x=>x.id==='eq_oficial'))return false;
+  const r=await eqApi('GET','/api/equipo/plantilla');
+  if(r&&r.plantilla&&r.plantilla.b64){
+    const item={id:'eq_oficial',nombre:r.plantilla.nombre||'Plantilla del equipo',b64:r.plantilla.b64,fecha:hoy(),oficialEquipo:true};
+    if(r.plantilla.campos)item.campos=r.plantilla.campos;if(r.plantilla.firma)item.firma=r.plantilla.firma;
+    planillas=[item,...planillas.filter(x=>x.id!=='eq_oficial')].slice(0,10);lsSet(SK.planillas,planillas);lsSet('sube:eqplts',meta.updatedAt);
+    if(typeof setPlDef==='function')setPlDef('eq_oficial');else{plDefId='eq_oficial';lsSet(SK.plDef,'eq_oficial');}
+    showToast('📄 Planilla oficial del equipo actualizada ✓');return true;
+  }
+  return false;
 }
 // nombre y foto de tu perfil, para que el jefe te vea con tu nombre y tu cara (se reenvía si los cambiás)
 async function eqPerfilSync(){
@@ -129,7 +145,7 @@ function eqReportarVisita(id){
   const p=puntos.find(x=>String(x.id)===String(id))||{};
   const g=pl&&pl.gps;
   const irr=pl&&typeof irregsDe==='function'?irregsDe(pl).length>0:false;
-  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:(v.noVisitado||(pl&&pl.cierra))?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl&&pl.dist!=null?pl.dist:null,dur:pl&&pl.durMin!=null?pl.durMin:null,irr,dupla_con:eqCompanero()};
+  const item={punto_id:String(id),nombre:p.nombre||'',localidad:p.localidad||'',estado:(v.noVisitado||(pl&&pl.cierra))?'cerrado':'ok',ts:Date.now(),lat:g?g.lat:(p.lat||null),lng:g?g.lng:(p.lng||null),dist:pl&&pl.dist!=null?pl.dist:null,dur:pl&&pl.durMin!=null?pl.durMin:null,irr,dupla_con:eqCompanero(),obs:(pl&&pl.obs)?String(pl.obs).slice(0,1000):'',irregs:(pl&&typeof irregsDe==='function')?irregsDe(pl):[]};
   const cola=(lsGet(SK_EQCOLA)||[]).filter(x=>x.punto_id!==item.punto_id);cola.push(item);lsSet(SK_EQCOLA,cola);
   eqVaciarCola();
 }
