@@ -8,6 +8,7 @@
 header{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:16px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 header h1{margin:0;font-size:20px;flex:1;min-width:160px}header small{display:block;font-weight:500;opacity:.85;font-size:12px}
 .cod{background:rgba(255,255,255,.18);padding:6px 12px;border-radius:20px;font-weight:800;letter-spacing:.12em}
+.badge-env{background:#fbbf24;color:#422006;border-radius:20px;padding:5px 10px;font-size:11px;font-weight:900;letter-spacing:.05em}
 main{max-width:1100px;margin:0 auto;padding:14px}
 .card{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:14px;margin-bottom:14px}
 h2{margin:0 0 10px;font-size:15px}
@@ -22,14 +23,19 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 .mb:first-of-type{border-top:0}
 .mb .n{flex:1;min-width:150px}.mb .n b{font-size:15px}.mb .n small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
 .barra{height:10px;background:#e4ecf8;border-radius:6px;overflow:hidden;margin-top:6px}.barra i{display:block;height:100%;background:var(--vd)}
-.pt{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--ln);font-size:13px}
-.pt:first-child{border-top:0}.pt .d{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pt{display:flex;gap:8px;align-items:center;padding:8px 6px;border-top:1px solid var(--ln);font-size:13px;cursor:pointer;border-radius:8px}
+.pt:hover{background:#f7faff}.pt:first-child{border-top:0}.pt .d{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .pt small{color:var(--mut)}.pt span{margin-left:auto;color:var(--mut);font-size:12px;white-space:nowrap}
+.filtros{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin-bottom:10px}
 #mapa{height:340px;border-radius:12px;border:1px solid var(--ln)}
 .dlg{position:fixed;inset:0;background:rgba(10,20,50,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
 .dlg.on{display:flex}.dlg>div{background:#fff;border-radius:18px;padding:18px;width:min(640px,100%);max-height:92vh;overflow:auto}
 .vacio{color:var(--mut);text-align:center;padding:18px;font-size:14px}
-@media(max-width:600px){.nums{grid-template-columns:1fr 1fr}}
+.toast{position:fixed;right:16px;bottom:16px;z-index:10001;background:#12244d;color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 10px 25px rgba(10,20,50,.25);max-width:min(360px,calc(100vw - 32px))}
+.toast.err{background:#b42318}
+.tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800}
+.tag.ok{background:#d1fae5;color:#065f46}.tag.am{background:#fef3c7;color:#92400e}.tag.rj{background:#fee2e2;color:#991b1b}.tag.gr{background:#eef3fb;color:#475569}
+@media(max-width:600px){.nums{grid-template-columns:1fr 1fr}.filtros{grid-template-columns:1fr}}
 </style></head><body>
 <div id="app"></div>
 <div class="dlg" id="dlg"><div id="dlgc"></div></div>
@@ -39,91 +45,257 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dataJson=v=>esc(JSON.stringify(v));
 let APP='https://walkirio1.github.io/rutavisitas/';
-fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{}); // si el servidor también sirve la app, la invitación apunta ahí
-let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null,FECHA='';
+fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{});
+let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null,FECHA='',MOSTRAR_TODAS=false;
+let FILTROS={miembro:'',estado:'',q:''};
 const h=location.hash.match(/t=([a-f0-9]+)/);if(h){T=h[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);}
 async function api(m,p,b){
   const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(T?{Authorization:'Bearer '+T}:{})},body:b?JSON.stringify(b):undefined});
   const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'Error');return j;
 }
-function entrada(){
-  $('#app').innerHTML=`<header><h1>LogiMap<small>Panel del equipo</small></h1></header><main><div class="card" style="max-width:460px;margin:30px auto">
-  <h2>Creá tu equipo</h2><p style="color:var(--mut);font-size:14px;margin-top:0">Después invitás a tus verificadores con un código y les asignás sus rutas.</p>
-  <input id="nom" placeholder="Nombre del equipo (ej: Verificaciones Rosario)"><div style="height:10px"></div><button onclick="crear()">Crear equipo</button>
-  <p style="color:var(--mut);font-size:12px;margin-bottom:0">¿Ya tenés uno? Abrí el enlace de acceso que te dimos al crearlo.</p></div></main>`;
+function toast(msg,err=false){
+  const x=document.createElement('div');x.className='toast'+(err?' err':'');x.textContent=msg;
+  document.body.appendChild(x);setTimeout(()=>x.remove(),3600);
 }
-async function crear(){try{const r=await api('POST','/api/equipo/crear',{nombre:$('#nom').value});T=r.adminToken;localStorage.setItem('vf_admin',T);
-  alert('Guardá este enlace de acceso (es tu llave):\n\n'+location.origin+'/#t='+T);cargar();}catch(e){alert(e.message);}}
+function cerrarDlg(){$('#dlg').classList.remove('on');}
+function confirmar(msg,fn){
+  $('#dlgc').innerHTML=`<h2>Confirmar</h2><p style="color:var(--mut);font-size:14px">${esc(msg)}</p>
+    <div style="display:flex;gap:8px;margin-top:12px"><button id="dlgSi">Confirmar</button><button class="s" onclick="cerrarDlg()">Cancelar</button></div>`;
+  $('#dlg').classList.add('on');
+  $('#dlgSi').onclick=()=>{cerrarDlg();fn();};
+}
+function mostrarLlave(url){
+  $('#dlgc').innerHTML=`<h2>Equipo creado ✓</h2>
+    <p style="color:var(--mut);font-size:13px;margin-top:0">Guardá este enlace de acceso (es tu llave para entrar desde cualquier navegador):</p>
+    <input readonly id="llaveUrl" value="${esc(url)}" style="margin-bottom:10px">
+    <div style="display:flex;gap:8px"><button onclick="copiar($('#llaveUrl').value)">🔗 Copiar enlace</button><button class="s" onclick="cerrarDlg();cargar()">Entrar al panel</button></div>`;
+  $('#dlg').classList.add('on');
+}
+function entrarLlave(){
+  const x=($('#llaveIn')||{}).value?$('#llaveIn').value.trim():'';
+  const m=x.match(/[?#&]t=([a-f0-9]+)/i)||x.match(/^([a-f0-9]{16,})$/i);
+  if(!m) return toast('Pegá el enlace completo o el token de acceso válido',true);
+  T=m[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);cargar();
+}
+function resetShell(){mapa=null;capa=null;$('#app').innerHTML='';}
+function entrada(){
+  resetShell();
+  $('#app').innerHTML=`<header><h1>LogiMap<small>Panel del equipo</small></h1></header><main>
+  <div class="card" style="max-width:460px;margin:24px auto 14px">
+    <h2>Creá tu equipo</h2><p style="color:var(--mut);font-size:14px;margin-top:0">Después invitás a tus verificadores con un código y les asignás sus rutas.</p>
+    <input id="nom" placeholder="Nombre del equipo (ej: Visitas Centro)"><div style="height:10px"></div><button onclick="crear()">Crear equipo</button>
+  </div>
+  <div class="card" style="max-width:460px;margin:0 auto">
+    <h2>Ya tengo llave o enlace de panel</h2>
+    <p style="color:var(--mut);font-size:13px;margin-top:0">Pegá el enlace que guardaste al crear tu equipo (o solo el código de llave):</p>
+    <input id="llaveIn" placeholder="https://.../#t=..." style="margin-bottom:10px"><button class="s" onclick="entrarLlave()">Entrar con mi llave</button>
+  </div></main>`;
+}
+async function crear(){
+  try{
+    const r=await api('POST','/api/equipo/crear',{nombre:$('#nom').value});
+    T=r.adminToken;localStorage.setItem('vf_admin',T);
+    mostrarLlave(location.origin+'/#t='+T);
+  }catch(e){toast(e.message,true);}
+}
 async function cargar(){
   if(!T) return entrada();
-  try{D=await api('GET','/api/panel'+(FECHA?'?fecha='+FECHA:''));}catch(e){localStorage.removeItem('vf_admin');T='';return entrada();}
+  try{D=await api('GET','/api/panel'+(FECHA?'?fecha='+FECHA:''));}
+  catch(e){localStorage.removeItem('vf_admin');T='';return entrada();}
   pintar();
 }
 function hora(ts){return ts?new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'';}
 const av=x=>x.foto?`<img src="${esc(x.foto)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid ${colDe(x.id)};flex:none">`:`<span style="width:44px;height:44px;border-radius:50%;background:${colDe(x.id)};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">${esc((x.nombre||'?').slice(0,1).toUpperCase())}</span>`;
-
 const hoyAR=()=>new Date(Date.now()-3*3600*1000).toISOString().slice(0,10);
 const esHoy=()=>!FECHA||FECHA===hoyAR();
-function irFecha(f){FECHA=(!f||f===hoyAR())?'':f;cargar();}
+function irFecha(f){FECHA=(!f||f===hoyAR())?'':f;MOSTRAR_TODAS=false;cargar();}
+
+function visitasFiltradas(){
+  const q=FILTROS.q.trim().toLowerCase();
+  return (D.visitas||[]).map((v,i)=>({v,i})).filter(({v})=>{
+    if(FILTROS.miembro&&v.miembro!==FILTROS.miembro) return false;
+    if(FILTROS.estado==='ok'&&v.estado!=='ok') return false;
+    if(FILTROS.estado==='cerrado'&&v.estado!=='cerrado') return false;
+    if(FILTROS.estado==='irr'&&!v.irr&&!(v.irregs&&v.irregs.length)) return false;
+    if(q){
+      const hay=[v.nombre,v.punto_id,v.localidad,v.miembro,v.obs].concat(v.irregs||[]).join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
 function bajarExcel(){
-  if(!window.XLSX) return alert('No pude cargar el generador de Excel (sin internet).');
+  if(!window.XLSX) return toast('No pude cargar el generador de Excel (sin internet).',true);
   const m=D.miembros;
   const resumen=[['Verificador','En dupla con','Asignados','Hechos','Cerrados','Pendientes','Avance %']].concat(m.map(x=>[x.nombre,x.dupla||'',x.asignados,x.hechos,x.cerrados,x.pendientes,x.asignados?Math.round((x.hechos+x.cerrados)/x.asignados*100):0]));
-  const vis=[['Fecha','Verificador','En dupla con','ID punto','Local','Localidad','Estado','Hora','Distancia al local (m)','Irregularidades']].concat(D.visitas.slice().reverse().map(v=>[D.fecha,v.miembro,v.dupla_con||'',v.punto_id,v.nombre||'',v.localidad||'',v.estado==='ok'?'Hecha':'Cerrada',hora(v.ts),v.dist==null?'':v.dist,v.irr?'Sí':'No']));
+  const vis=[['Fecha','Verificador','En dupla con','ID punto','Local','Localidad','Estado','Hora','Distancia al local (m)','Irregularidades','Irregularidades (detalle)','Observaciones']].concat(D.visitas.slice().reverse().map(v=>[D.fecha,v.miembro,v.dupla_con||'',v.punto_id,v.nombre||'',v.localidad||'',v.estado==='ok'?'Hecha':'Cerrada',hora(v.ts),v.dist==null?'':v.dist,v.irr?'Sí':'No',Array.isArray(v.irregs)?v.irregs.join('; '):'',v.obs||'']));
   const pend=[['Verificador','ID punto','Local','Dirección','Localidad']];
   m.forEach(x=>x.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===x.id)) pend.push([x.nombre,p.id,p.nombre||'',p.dir||'',p.localidad||'']);}));
   const wb=XLSX.utils.book_new();
   [['Resumen',resumen],['Visitas',vis],['Pendientes',pend]].forEach(([n,a])=>{const ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=a[0].map(()=>({wch:22}));XLSX.utils.book_append_sheet(wb,ws,n);});
   XLSX.writeFile(wb,'LogiMap-'+(D.equipo||'equipo').replace(/[^\w-]+/g,'_')+'-'+D.fecha+'.xlsx');
 }
+
+function asegurarShell(){
+  if($('#panelHdr')&&$('#mapa')) return;
+  $('#app').innerHTML=`<header id="panelHdr"></header>
+  <main>
+    <div id="panelTop"></div>
+    <div class="card">
+      <h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2>
+      <div id="mapaLeyenda" style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px;align-items:center"></div>
+      <div id="mapaGeoBtn"></div>
+      <div id="mapa"></div>
+    </div>
+    <div id="panelBot"></div>
+  </main>`;
+}
+
+function renderListaVisitas(){
+  const bot=$('#panelVisitasLista');if(!bot||!D) return;
+  const list=visitasFiltradas(),lim=MOSTRAR_TODAS?list.length:100,sub=list.slice(0,lim);
+  bot.innerHTML=sub.length?sub.map(({v,i})=>`<div class="pt" data-vidx="${i}" onclick="verVisita(Number(this.dataset.vidx))">
+    <i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i>
+    <div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br>
+      <small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+esc(v.dist<1000?v.dist+' m':(Number(v.dist)/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}${v.obs?' · 📝':''}</small>
+    </div>
+    <span>${esc(hora(v.ts))}</span></div>`).join('')
+    +(list.length>lim?`<div style="text-align:center;margin-top:10px"><button class="s" onclick="MOSTRAR_TODAS=true;renderListaVisitas()">Mostrar todas (${list.length})</button></div>`:'')
+    :'<div class="vacio">No hay visitas que coincidan con el filtro.</div>';
+}
+
 function pintar(){
+  asegurarShell();
   const m=D.miembros,as=m.reduce((a,x)=>a+x.asignados,0),ok=m.reduce((a,x)=>a+x.hechos,0),ce=m.reduce((a,x)=>a+x.cerrados,0),pe=m.reduce((a,x)=>a+x.pendientes,0);
   const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
-  $('#app').innerHTML=`<header><h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1><span class="cod">${esc(D.codigo)}</span><button class="s" data-inv="${esc(inv)}" onclick="copiar(this.dataset.inv)">🔗 Copiar invitación</button></header>
-  <main>
+  $('#panelHdr').innerHTML=`<h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1>
+    ${D.envLabel?`<span class="badge-env">${esc(D.envLabel)}</span>`:''}
+    <span class="cod">${esc(D.codigo)}</span>
+    <button class="s" data-inv="${esc(inv)}" onclick="copiar(this.dataset.inv)">🔗 Copiar invitación</button>`;
+
+  const pm=D.plantillaMeta;
+  $('#panelTop').innerHTML=`
   <div class="card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:120px">${FECHA&&FECHA!==hoyAR()?'📅 Viendo un día anterior':'📅 Hoy'}</b>
     <input type="date" value="${esc(D.fecha)}" max="${hoyAR()}" onchange="irFecha(this.value)" style="width:auto">
     ${FECHA&&FECHA!==hoyAR()?`<button class="s" onclick="irFecha('')">Volver a hoy</button>`:''}
     <button onclick="bajarExcel()">⬇️ Descargar Excel del día</button></div>
+  <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px"><h2 style="margin:0 0 4px">📄 Plantilla PDF oficial del equipo</h2>
+    ${pm?`<div style="font-size:13px"><b>${esc(pm.nombre)}</b> · <small style="color:var(--mut)">Actualizada ${esc(pm.updatedAt?new Date(pm.updatedAt).toLocaleString('es-AR'):'')}</small></div>`
+       :`<div style="font-size:12px;color:var(--mut)">Subí el PDF oficial de tu empresa (máx. 2 MB) y baja automático a todo el equipo.</div>`}
+    </div>
+    ${pm?`<button class="r" onclick="quitarPlantilla()">Quitar</button>`:`<label class="s" style="padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer;background:#e8effc;color:#1d4fb8">📤 Subir PDF oficial<input type="file" accept=".pdf" style="display:none" onchange="subirPlantilla(this)"></label>`}
+  </div>
   <div class="card"><div class="nums"><div><b>${ok}</b><span>visitas hechas</span></div><div><b>${ce}</b><span>cerrados</span></div><div><b>${pe}</b><span>pendientes</span></div><div><b>${as?Math.round((ok+ce)/as*100):0}%</b><span>de la ruta</span></div></div></div>
   <div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Equipo</h2>${m.length>1&&esHoy()?`<button onclick="dlgAsignar(0)">📋 Repartir entre todos</button>`:''}</div>
   ${m.length?m.map(x=>{const na=Number(x.asignados)||0,nh=Number(x.hechos)||0,nc=Number(x.cerrados)||0;return `<div class="mb">${av(x)}<div class="n"><b>${esc(x.nombre)}</b><small>${x.pos?'📍 en ruta · ':'<span title="No comparte su ubicación o tiene la app cerrada">📍 sin ubicación · </span>'}${x.dupla?'👥 en dupla con '+esc(x.dupla)+' · ':''}${x.visto?'Activo '+esc(hora(x.visto)):''} · ${esc(x.asignados)} asignados</small>
     <div class="barra"><i style="width:${na?Math.min(100,(nh+nc)/na*100):0}%"></i></div></div>
     <div style="text-align:center;min-width:90px"><b style="font-size:18px">${esc(x.hechos)}</b>/${esc(x.asignados)}<br><small style="color:var(--mut)">hechas</small></div>
     ${esHoy()?`<button class="s" data-mid="${dataJson(x.id)}" onclick="dlgAsignar(JSON.parse(this.dataset.mid))">Asignar ruta</button>`:''}<button class="r" data-mid="${dataJson(x.id)}" data-nom="${esc(x.nombre)}" onclick="quitar(JSON.parse(this.dataset.mid),this.dataset.nom)">✕</button></div>`;}).join(''):
-    `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${esc(D.codigo)}</b>.</div>`}</div>
-  <div class="card"><h2>Mapa de hoy <small style="color:var(--vd);font-weight:700">● en vivo</small></h2>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px;align-items:center">${m.map(x=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colDe(x.id)};margin-right:4px"></i>${esc(x.nombre)} (pendientes)</span>`).join('')}<span>⭕ posición actual · ┈ recorrido de hoy</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px"></i>hecha</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></i>cerrada</span></div>
-  ${m.some(x=>x.puntos.some(p=>p.lat==null))?`<button class="s" id="btnGeo" onclick="ubicarTodos()" style="margin-bottom:8px">📍 Ubicar en el mapa los puntos sin ubicación</button>`:''}
-  <div id="mapa"></div></div>
-  <div class="card"><h2>Últimas visitas</h2>${D.visitas.length?D.visitas.slice(0,60).map(v=>`<div class="pt"><i class="d" style="background:${v.estado==='ok'?'var(--vd)':'var(--rj)'}"></i><div><b>${esc(v.nombre||v.punto_id)}</b> <small>${esc(v.localidad)}</small><br><small>${esc(v.miembro)}${v.dupla_con?' 👥 con '+esc(v.dupla_con):''}${v.dist!=null?' · a '+esc(v.dist<1000?v.dist+' m':(Number(v.dist)/1000).toFixed(1)+' km')+' del local':''}${v.irr?' · ⚠️ irregularidades':''}</small></div><span>${esc(hora(v.ts))}</span></div>`).join(''):'<div class="vacio">Todavía no hay visitas hoy.</div>'}</div>
-  </main>`;
-  setTimeout(dibujarMapa,50);
+    `<div class="vacio">Todavía no hay verificadores.<br>Mandales la invitación (botón de arriba) o el código <b>${esc(D.codigo)}</b>.</div>`}</div>`;
+
+  $('#mapaLeyenda').innerHTML=`${m.map(x=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colDe(x.id)};margin-right:4px"></i>${esc(x.nombre)} (pendientes)</span>`).join('')}<span>⭕ posición actual · ┈ recorrido de hoy</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px"></i>hecha</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></i>cerrada</span>`;
+  $('#mapaGeoBtn').innerHTML=m.some(x=>x.puntos.some(p=>p.lat==null))?`<button class="s" id="btnGeo" onclick="ubicarTodos()" style="margin-bottom:8px">📍 Ubicar en el mapa los puntos sin ubicación</button>`:'';
+
+  const nombresUnicos=[...new Set((D.visitas||[]).map(v=>v.miembro).filter(Boolean))];
+  $('#panelBot').innerHTML=`<div class="card">
+    <h2>Visitas del día <small style="color:var(--mut);font-weight:600">(${(D.visitas||[]).length})</small></h2>
+    <div class="filtros">
+      <select id="fMiembro" onchange="FILTROS.miembro=this.value;MOSTRAR_TODAS=false;renderListaVisitas()">
+        <option value="">Todos los verificadores</option>
+        ${nombresUnicos.map(n=>`<option value="${esc(n)}"${FILTROS.miembro===n?' selected':''}>${esc(n)}</option>`).join('')}
+      </select>
+      <select id="fEstado" onchange="FILTROS.estado=this.value;MOSTRAR_TODAS=false;renderListaVisitas()">
+        <option value=""${FILTROS.estado===''?' selected':''}>Todas</option>
+        <option value="ok"${FILTROS.estado==='ok'?' selected':''}>Hechas</option>
+        <option value="cerrado"${FILTROS.estado==='cerrado'?' selected':''}>Cerradas</option>
+        <option value="irr"${FILTROS.estado==='irr'?' selected':''}>Con irregularidades</option>
+      </select>
+      <input id="fBuscar" placeholder="Buscar local, ID, observación…" value="${esc(FILTROS.q)}" oninput="FILTROS.q=this.value;MOSTRAR_TODAS=false;renderListaVisitas()">
+    </div>
+    <div id="panelVisitasLista"></div>
+  </div>`;
+  renderListaVisitas();
+  setTimeout(dibujarMapa,30);
 }
+
+function verVisita(idx){
+  const v=(D&&D.visitas||[])[idx];if(!v) return;
+  const distHtml=v.dist==null
+    ?'<span class="tag gr">Sin verificación GPS de distancia</span>'
+    :(v.dist<=160
+      ?`<span class="tag ok">📍 En el local (${esc(v.dist)} m)</span>`
+      :`<span class="tag am">⚠️ Lejos del local (${esc(v.dist<1000?v.dist+' m':(Number(v.dist)/1000).toFixed(1)+' km')})</span>`);
+  const irregs=Array.isArray(v.irregs)?v.irregs:[];
+  $('#dlgc').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+      <div><h2 style="margin:0">${esc(v.nombre||v.punto_id)}</h2><small style="color:var(--mut)">ID: ${esc(v.punto_id)}${v.localidad?' · '+esc(v.localidad):''}</small></div>
+      <span class="tag ${v.estado==='ok'?'ok':'rj'}">${v.estado==='ok'?'Hecha':'Cerrada'}</span>
+    </div>
+    <p style="font-size:13px;margin:10px 0"><b>Verificador:</b> ${esc(v.miembro)}${v.dupla_con?' · 👥 en dupla con '+esc(v.dupla_con):''}<br><b>Hora:</b> ${esc(hora(v.ts))}</p>
+    <div style="margin-bottom:10px">${distHtml}</div>
+    ${irregs.length?`<div style="margin-bottom:10px"><b style="font-size:13px">Irregularidades informadas:</b><ul style="margin:6px 0 0 18px;font-size:13px">${irregs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+    ${v.obs?`<div style="background:#f8fafc;border:1px solid var(--ln);border-radius:10px;padding:10px;font-size:13px"><b>Observaciones:</b><br>${esc(v.obs)}</div>`:'<div style="color:var(--mut);font-size:12px">Sin observaciones adicionales.</div>'}
+    <div style="margin-top:14px;text-align:right"><button class="s" onclick="cerrarDlg()">Cerrar</button></div>`;
+  $('#dlg').classList.add('on');
+}
+
+function repartirPorZona(pts,n){
+  if(!n||n<=0) return [];
+  if(n===1) return [pts.slice()];
+  const con=pts.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lng));
+  if(con.length*2<pts.length) return Array.from({length:n},(_,i)=>pts.filter((_,j)=>j%n===i));
+  const cLat=con.reduce((s,p)=>s+ +p.lat,0)/con.length,cLng=con.reduce((s,p)=>s+ +p.lng,0)/con.length;
+  con.sort((a,b)=>Math.atan2(+a.lat-cLat,+a.lng-cLng)-Math.atan2(+b.lat-cLat,+b.lng-cLng));
+  const g=Array.from({length:n},()=>[]);
+  con.forEach((p,i)=>g[Math.min(n-1,Math.floor(i*n/con.length))].push(p));
+  pts.filter(p=>!Number.isFinite(+p.lat)||!Number.isFinite(+p.lng)).forEach((p,i)=>g[i%n].push(p));
+  return g;
+}
+
 const COLS=['#2563eb','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#ea580c','#65a30d','#0891b2'];
 const colDe=id=>COLS[Math.max(0,D.miembros.findIndex(m=>m.id===id))%COLS.length];
 function dibujarMapa(){
   const el=$('#mapa');if(!el||!window.L) return;
-  mapa=L.map(el);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapa);
-  const pts=[],add=(lat,lng,col,tx)=>{if(lat==null||lng==null) return;pts.push([lat,lng]);L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).bindPopup(tx).addTo(mapa);};
+  if(!mapa){
+    mapa=L.map(el);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapa);
+    capa=L.layerGroup().addTo(mapa);
+  }
+  capa.clearLayers();
+  const pts=[],add=(lat,lng,col,tx)=>{if(lat==null||lng==null) return;pts.push([lat,lng]);L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).bindPopup(tx).addTo(capa);};
   D.miembros.forEach(m=>m.puntos.forEach(p=>{if(!D.visitas.some(v=>v.punto_id===String(p.id)&&v.miembro_id===m.id)) add(p.lat,p.lng,colDe(m.id),esc(p.nombre)+'<br>'+esc(m.nombre)+' · pendiente');}));
   D.visitas.forEach(v=>add(v.lat,v.lng,v.estado==='ok'?'#10b981':'#ef4444',esc(v.nombre)+'<br>'+esc(v.miembro)));
-  D.miembros.forEach(m=>{if(m.traza&&m.traza.length>1) L.polyline(m.traza.map(x=>[x[0],x[1]]),{color:colDe(m.id),weight:4,opacity:.7,dashArray:'2 7'}).addTo(mapa);});
-  D.miembros.forEach(m=>{if(m.pos){pts.push([m.pos.lat,m.pos.lng]);L.circleMarker([m.pos.lat,m.pos.lng],{radius:11,color:'#fff',weight:3,fillColor:colDe(m.id),fillOpacity:1}).bindTooltip(esc(m.nombre),{permanent:true,direction:'top',offset:[0,-8]}).addTo(mapa);}});
-  pts.length?mapa.fitBounds(pts,{padding:[30,30],maxZoom:15}):mapa.setView([-32.95,-60.65],11);
+  D.miembros.forEach(m=>{if(m.traza&&m.traza.length>1) L.polyline(m.traza.map(x=>[x[0],x[1]]),{color:colDe(m.id),weight:4,opacity:.7,dashArray:'2 7'}).addTo(capa);});
+  D.miembros.forEach(m=>{if(m.pos){pts.push([m.pos.lat,m.pos.lng]);L.circleMarker([m.pos.lat,m.pos.lng],{radius:11,color:'#fff',weight:3,fillColor:colDe(m.id),fillOpacity:1}).bindTooltip(esc(m.nombre),{permanent:true,direction:'top',offset:[0,-8]}).addTo(capa);}});
+  if(mapa._fitFecha!==D.fecha){
+    pts.length?mapa.fitBounds(pts,{padding:[30,30],maxZoom:15}):mapa.setView([-32.95,-60.65],11);
+    mapa._fitFecha=D.fecha;
+  }
 }
-function copiar(t){navigator.clipboard.writeText(t).then(()=>alert('Invitación copiada. Mandala por WhatsApp a tu equipo.'),()=>prompt('Copiá esta invitación:',t));}
-async function quitar(id,n){if(confirm('¿Sacar a '+n+' del equipo?')){await api('DELETE','/api/miembro/'+id);cargar();}}
+function copiar(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast('Enlace copiado al portapapeles ✓'),()=>mostrarEnlaceManual(t));
+  }else mostrarEnlaceManual(t);
+}
+function mostrarEnlaceManual(t){
+  $('#dlgc').innerHTML=`<h2>Copiar enlace</h2><input readonly id="cpMan" value="${esc(t)}" style="margin-bottom:10px"><button class="s" onclick="cerrarDlg()">Cerrar</button>`;
+  $('#dlg').classList.add('on');$('#cpMan').select();
+}
+function quitar(id,n){
+  confirmar('¿Sacar a '+n+' del equipo?',async()=>{
+    try{await api('DELETE','/api/miembro/'+id);toast(n+' quitado del equipo');cargar();}catch(e){toast(e.message,true);}
+  });
+}
 function dlgAsignar(id){
-  $('#dlgc').innerHTML=`<h2>${id?'Asignar ruta':'Repartir ruta entre todos'}</h2>
-  <p style="color:var(--mut);font-size:13px;margin-top:0">Subí tu <b>Excel</b> o pegá la lista. Columnas: <b>ID, Nombre, Dirección, Localidad</b>. Si no tenés ID, alcanza con la dirección.</p>
+  $('#dlgc').innerHTML=`<h2>${id?'Asignar ruta':'Repartir ruta entre todos (por zona geográfica)'}</h2>
+  <p style="color:var(--mut);font-size:13px;margin-top:0">Subí tu <b>Excel</b> o pegá la lista. Columnas: <b>ID, Nombre, Dirección, Localidad</b>. Si repartís entre varios con mapa, agrupa por zona cercana.</p>
   <label class="s" style="display:block;text-align:center;padding:12px;border-radius:12px;cursor:pointer;margin-bottom:8px;border:1px dashed var(--mut)">📂 Subir Excel o CSV<input type="file" id="arch" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="leerArchivo(this)"></label>
   <textarea id="pega" placeholder="1001	Kiosco Don Pepe	Córdoba 1500	Rosario" oninput="vistaRuta()"></textarea>
   <div id="vistaR" style="font-size:13px;color:var(--mut);margin-top:6px;min-height:18px"></div>
-  <div style="display:flex;gap:8px;margin-top:10px"><button data-mid="${dataJson(id)}" onclick="enviarRuta(JSON.parse(this.dataset.mid))" style="flex:1">Asignar para hoy</button><button class="s" onclick="$('#dlg').classList.remove('on')">Cancelar</button></div>`;
+  <div style="display:flex;gap:8px;margin-top:10px"><button id="btnEnviarRuta" data-mid="${dataJson(id)}" onclick="enviarRuta(JSON.parse(this.dataset.mid))" style="flex:1">Asignar para hoy</button><button class="s" onclick="cerrarDlg()">Cancelar</button></div>`;
   $('#dlg').classList.add('on');
 }
-
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 async function geoPunto(p){
   if(p.lat!=null&&p.lng!=null&&isFinite(p.lat)&&isFinite(p.lng)) return true;
@@ -139,25 +311,25 @@ async function geoLista(pts,estado){
   return n;
 }
 async function ubicarTodos(){
-  const b=$('#btnGeo');let tot=0,ok=0;
+  const b=$('#btnGeo');
   for(const m of D.miembros){
     if(!m.puntos.some(p=>p.lat==null)) continue;
     const pts=m.puntos.map(p=>({...p}));
-    ok+=await geoLista(pts,(i,n)=>{if(b) b.textContent='📍 Ubicando '+m.nombre+': '+i+'/'+n+'…';});tot+=pts.length;
+    await geoLista(pts,(i,n)=>{if(b) b.textContent='📍 Ubicando '+m.nombre+': '+i+'/'+n+'…';});
     await api('POST','/api/asignar',{reparto:[{miembro_id:m.id,puntos:pts}]});
   }
   cargar();
 }
 function leerArchivo(inp){
   const f=inp.files[0];if(!f) return;
-  if(!window.XLSX) return alert('No pude cargar el lector de Excel (sin internet). Pegá la lista en el cuadro.');
+  if(!window.XLSX) return toast('No pude cargar el lector de Excel (sin internet). Pegá la lista en el cuadro.',true);
   const r=new FileReader();
   r.onload=()=>{try{
     const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]];
     const filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
     $('#pega').value=filas.filter(x=>x.some(c=>String(c).trim())).map(x=>x.map(c=>String(c).replace(/[\t\r\n]+/g,' ').trim()).join('\t')).join('\n');
     vistaRuta();
-  }catch(e){alert('No pude leer ese archivo: '+e.message);}};
+  }catch(e){toast('No pude leer ese archivo: '+e.message,true);}};
   r.readAsArrayBuffer(f);
 }
 function vistaRuta(){
@@ -173,23 +345,45 @@ function leerFilas(t){
     L.shift();const f=rx=>cab.findIndex(x=>rx.test(x));
     col={id:f(/^(ubicaci[oó]n\s*id|id|c[oó]digo|n[°º]?)$/),nombre:f(/^(ubicaci[oó]n|nombre|local|comercio)$/),dir:f(/direcci|domicilio|calle/),localidad:f(/localidad|ciudad/),tipo:f(/tipo/),lat:f(/^lat/),lng:f(/^(lng|lon)/)};
     sinId=col.id<0;
-  }else if(L[0].length<=2||!/^\w{1,12}$/.test(L[0][0])){ // lista simple sin encabezado: "dirección" o "nombre, dirección"
+  }else if(L[0].length<=2||!/^\w{1,12}$/.test(L[0][0])){
     col=L[0].length===1?{id:-1,nombre:-1,dir:0,localidad:-1,tipo:-1,lat:-1,lng:-1}:{id:-1,nombre:0,dir:1,localidad:2,tipo:-1,lat:-1,lng:-1};sinId=true;
   }
   const g=(r,k)=>col[k]>=0?(r[col[k]]||''):'';
   return L.map((r,i)=>({id:sinId||col.id<0?'P'+(i+1):g(r,'id'),nombre:g(r,'nombre'),dir:g(r,'dir'),localidad:g(r,'localidad'),tipo:g(r,'tipo'),lat:parseFloat(String(g(r,'lat')).replace(',','.')),lng:parseFloat(String(g(r,'lng')).replace(',','.'))})).filter(p=>p.id&&p.dir);
 }
 async function enviarRuta(id){
-  const pts=leerFilas($('#pega').value);if(!pts.length) return alert('No encontré filas con dirección. Subí el Excel o pegá la lista con la columna Dirección.');
+  const pts=leerFilas($('#pega').value);if(!pts.length) return toast('No encontré filas con dirección. Subí el Excel o pegá la lista.',true);
   const ms=D.miembros;
-  const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:pts.slice(Math.floor(i*pts.length/ms.length),Math.floor((i+1)*pts.length/ms.length))}));
+  if(!id&&!ms.length) return toast('Primero sumá al menos un verificador al equipo',true);
+  const zonas=id?[]:repartirPorZona(pts,ms.length);
+  const reparto=id?[{miembro_id:id,puntos:pts}]:ms.map((m,i)=>({miembro_id:m.id,puntos:zonas[i]||[]}));
   try{
-    const b=$('#dlgc button'),todos=reparto.flatMap(r=>r.puntos);
-    if(todos.some(p=>!(p.lat>-90))){ // ubicar en el mapa las direcciones sin coordenadas
-      const bt=document.querySelector('#dlgc button[onclick^=enviarRuta]');
+    const todos=reparto.flatMap(r=>r.puntos);
+    if(todos.some(p=>!(p.lat>-90))){
+      const bt=$('#btnEnviarRuta');
       await geoLista(todos,(i,n)=>{if(bt){bt.disabled=true;bt.textContent='📍 Ubicando '+i+'/'+n+'…';}});
+      if(!id){
+        const z2=repartirPorZona(todos,ms.length);
+        ms.forEach((m,i)=>{reparto[i]={miembro_id:m.id,puntos:z2[i]||[]};});
+      }
     }
-    const r=await api('POST','/api/asignar',{reparto});$('#dlg').classList.remove('on');alert(r.asignados+' puntos asignados ✓\nA tu equipo le aparece un aviso al abrir la app (o en Perfil → Traer mi ruta de hoy).');cargar();}catch(e){alert(e.message);}
+    const r=await api('POST','/api/asignar',{reparto});cerrarDlg();
+    toast(r.asignados+' puntos asignados ✓');cargar();
+  }catch(e){toast(e.message,true);}
+}
+async function subirPlantilla(inp){
+  const f=inp.files[0];inp.value='';if(!f) return;
+  if(!/\.pdf$/i.test(f.name)||f.size>2097152) return toast('Elegí un PDF de hasta 2 MB',true);
+  try{
+    const b64=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=no;r.readAsDataURL(f);});
+    await api('POST','/api/equipo/plantilla',{nombre:f.name,b64});
+    toast('Plantilla oficial cargada ✓');cargar();
+  }catch(e){toast(e.message,true);}
+}
+function quitarPlantilla(){
+  confirmar('¿Quitar la plantilla PDF oficial del equipo?',async()=>{
+    try{await api('POST','/api/equipo/plantilla',{borrar:true});toast('Plantilla quitada');cargar();}catch(e){toast(e.message,true);}
+  });
 }
 let es=null,pend=null;
 function enVivo(){
@@ -199,8 +393,8 @@ function enVivo(){
     try{const r=await api('POST','/api/eventos/ticket',{});if(!r.ticket)throw new Error('Sin ticket');url='/api/eventos?ticket='+encodeURIComponent(r.ticket);}
     catch(e){url='/api/eventos?t='+encodeURIComponent(T);}
     if(es)return;es=new EventSource(url);
-  es.onmessage=()=>{clearTimeout(pend);pend=setTimeout(()=>{if(!$('#dlg').classList.contains('on')) cargar();},400);};
-  es.onerror=()=>{if(es){es.close();es=null;setTimeout(enVivo,5000);}};
+    es.onmessage=()=>{clearTimeout(pend);pend=setTimeout(()=>{if(!$('#dlg').classList.contains('on')) cargar();},400);};
+    es.onerror=()=>{if(es){es.close();es=null;setTimeout(enVivo,5000);}};
   })();
 }
 cargar().then(enVivo);setInterval(()=>{if(T&&!$('#dlg').classList.contains('on')) cargar();},30000);
