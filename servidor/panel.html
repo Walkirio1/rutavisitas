@@ -44,9 +44,9 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:12px}
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dataJson=v=>esc(JSON.stringify(v));
-let APP='https://walkirio1.github.io/rutavisitas/';
+let APP='https://app.logimap.app/app/';
 fetch('/app/manifest.webmanifest').then(r=>{if(r.ok){APP=location.origin+'/app/';if(D)pintar();}}).catch(()=>{});
-let T=localStorage.getItem('vf_admin')||'',D=null,mapa=null,capa=null,FECHA='',MOSTRAR_TODAS=false;
+let T=localStorage.getItem('vf_admin')||'',SES=localStorage.getItem('vf_ses')||'',D=null,mapa=null,capa=null,FECHA='',MOSTRAR_TODAS=false;
 let FILTROS={miembro:'',estado:'',q:''};
 const h=location.hash.match(/t=([a-f0-9]+)/);if(h){T=h[1];localStorage.setItem('vf_admin',T);history.replaceState(null,'',location.pathname);}
 async function api(m,p,b){
@@ -81,15 +81,58 @@ function resetShell(){mapa=null;capa=null;$('#app').innerHTML='';}
 function entrada(){
   resetShell();
   $('#app').innerHTML=`<header><h1>LogiMap<small>Panel del equipo</small></h1></header><main>
-  <div class="card" style="max-width:460px;margin:24px auto 14px">
-    <h2>Creá tu equipo</h2><p style="color:var(--mut);font-size:14px;margin-top:0">Después invitás a tus verificadores con un código y les asignás sus rutas.</p>
-    <input id="nom" placeholder="Nombre del equipo (ej: Visitas Centro)"><div style="height:10px"></div><button onclick="crear()">Crear equipo</button>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;max-width:960px;margin:18px auto">
+    <div class="card" style="margin:0">
+      <h2>Iniciar sesión</h2>
+      <p style="color:var(--mut);font-size:13px;margin-top:0">Ingresá con tu cuenta para administrar tu equipo y tus rutas.</p>
+      <input id="lEmail" type="email" placeholder="tu@email.com" style="margin-bottom:8px">
+      <input id="lPass" type="password" placeholder="Contraseña" style="margin-bottom:10px">
+      <button onclick="entrarCuenta()" style="width:100%">Entrar</button>
+    </div>
+    <div class="card" style="margin:0">
+      <h2>Crear cuenta nueva (14 días gratis)</h2>
+      <p style="color:var(--mut);font-size:13px;margin-top:0">Creá tu usuario y tu equipo en un paso para empezar hoy.</p>
+      <input id="rNom" placeholder="Tu nombre" style="margin-bottom:8px">
+      <input id="rEmail" type="email" placeholder="tu@email.com" style="margin-bottom:8px">
+      <input id="rPass" type="password" placeholder="Contraseña (mín. 8 caracteres)" style="margin-bottom:8px">
+      <input id="rEq" placeholder="Nombre de tu equipo (ej: Pedidos Centro)" style="margin-bottom:10px">
+      <button class="s" onclick="crearCuenta()" style="width:100%">Crear cuenta y equipo</button>
+    </div>
   </div>
-  <div class="card" style="max-width:460px;margin:0 auto">
-    <h2>Ya tengo llave o enlace de panel</h2>
-    <p style="color:var(--mut);font-size:13px;margin-top:0">Pegá el enlace que guardaste al crear tu equipo (o solo el código de llave):</p>
-    <input id="llaveIn" placeholder="https://.../#t=..." style="margin-bottom:10px"><button class="s" onclick="entrarLlave()">Entrar con mi llave</button>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;max-width:960px;margin:0 auto">
+    <div class="card" style="margin:0">
+      <h2>Ya tengo llave o enlace de panel</h2>
+      <p style="color:var(--mut);font-size:13px;margin-top:0">Pegá el enlace que guardaste antes (o solo la llave):</p>
+      <input id="llaveIn" placeholder="https://.../#t=..." style="margin-bottom:10px"><button class="s" onclick="entrarLlave()">Entrar con mi llave</button>
+    </div>
+    <div class="card" style="margin:0">
+      <h2>Equipo rápido sin registro</h2>
+      <p style="color:var(--mut);font-size:13px;margin-top:0">Creá un equipo con llave única sin usar email:</p>
+      <input id="nom" placeholder="Nombre del equipo" style="margin-bottom:10px"><button class="s" onclick="crear()">Crear equipo rápido</button>
+    </div>
   </div></main>`;
+}
+async function entrarCuenta(){
+  try{
+    const r=await api('POST','/api/auth/login',{email:$('#lEmail').value,password:$('#lPass').value});
+    SES=r.token;localStorage.setItem('vf_ses',SES);
+    if(r.adminToken){T=r.adminToken;localStorage.setItem('vf_admin',T);cargar().then(enVivo);}
+    else toast('Cuenta verificada, pero no tiene equipo vinculado aún. Creá uno o vinculá tu llave abajo.',true);
+  }catch(e){toast(e.message,true);}
+}
+async function crearCuenta(){
+  try{
+    const r=await api('POST','/api/auth/registro',{nombre:$('#rNom').value,email:$('#rEmail').value,password:$('#rPass').value,nombreEquipo:$('#rEq').value});
+    SES=r.token;localStorage.setItem('vf_ses',SES);
+    if(r.adminToken){T=r.adminToken;localStorage.setItem('vf_admin',T);toast('Cuenta y equipo creados ✓');cargar().then(enVivo);}
+    else toast('Cuenta creada ✓ Ahora ingresá un nombre de equipo para vincular.');
+  }catch(e){toast(e.message,true);}
+}
+async function salir(){
+  if(SES){try{await fetch('/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+SES}});}catch(e){}}
+  if(es){es.close();es=null;}
+  SES='';T='';D=null;localStorage.removeItem('vf_ses');localStorage.removeItem('vf_admin');
+  entrada();
 }
 async function crear(){
   try{
@@ -171,8 +214,10 @@ function pintar(){
   const inv=`${APP}?e=${D.codigo}&s=${encodeURIComponent(location.origin)}`;
   $('#panelHdr').innerHTML=`<h1>${esc(D.equipo)}<small>Hoy · ${esc(D.fecha)}</small></h1>
     ${D.envLabel?`<span class="badge-env">${esc(D.envLabel)}</span>`:''}
+    ${D.plan?`<span class="cod" style="font-size:11px;letter-spacing:.04em">Plan ${esc(String(D.plan).toUpperCase())}</span>`:''}
     <span class="cod">${esc(D.codigo)}</span>
-    <button class="s" data-inv="${esc(inv)}" onclick="copiar(this.dataset.inv)">🔗 Copiar invitación</button>`;
+    <button class="s" data-inv="${esc(inv)}" onclick="copiar(this.dataset.inv)">🔗 Copiar invitación</button>
+    <button class="r" onclick="salir()" style="padding:8px 12px">Salir</button>`;
 
   const pm=D.plantillaMeta;
   $('#panelTop').innerHTML=`
