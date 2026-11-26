@@ -162,6 +162,7 @@ function renderMapa(noFit){
       <a href="${gmUrl}" target="_blank" rel="noopener" class="popup-btn gm"><svg class="ico" style="vertical-align:-2px"><use href="#i-nav"/></svg> Ir con ${NAV_APPS[appNav()].nombre}</a>
       <button class="popup-btn" style="margin-top:5px;background:${esInicio?'#f97316':''};color:${esInicio?'#fff':''}" onclick="fijarInicio('${p.id}')">${IC('flag')} ${esInicio?'Arrancás acá (quitar)':'Arrancar desde acá'}</button>
       <button class="popup-btn" style="margin-top:5px" onclick="toggleSelFromMap('${p.id}')">${enRuta?'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> En ruta':'<svg class="ico" style="vertical-align:-2px"><use href="#i-plus"/></svg> Agregar a ruta'}</button>
+      <button class="popup-btn" style="margin-top:5px;${est==='ok'?'':'background:#10b981;color:#fff'}" onclick="toggleHechaFromMap('${p.id}')">${est==='ok'?'↩ Desmarcar hecha':'<svg class="ico" style="vertical-align:-2px"><use href="#i-check"/></svg> Marcar como hecha'}</button>
     `;
     if(modoInicio){
       marker.on('click',()=>fijarInicio(p.id));

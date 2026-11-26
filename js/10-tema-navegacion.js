@@ -184,6 +184,23 @@ function toggleSelFromMap(id){
   renderMapa(true); // refresca colores de pin sin mover el mapa
 }
 
+function toggleHechaFromMap(id){
+  if(estadoVisita(id)==='ok'){
+    const tienePl=visits[id]&&visits[id].planilla&&!visits[id].remoto;
+    const hacer=()=>{if(mapa&&mapa.closePopup) mapa.closePopup();desmarcarHecha(id);};
+    if(tienePl) confirm2('¿Dejar este punto como NO visitado? Se borra la planilla y la foto guardadas en la app (lo que ya se envió a tu Drive no se borra).',hacer);
+    else hacer();
+    return;
+  }
+  if(!sel.has(id)){sel.add(id);lsSet(SK.sel,[...sel]);renderP();}
+  if(visits[id]){
+    delete visits[id].noVisitado;
+    if(visits[id].planilla&&visits[id].planilla.cierra) visits[id].planilla.cierra=false;
+  }
+  if(mapa&&mapa.closePopup) mapa.closePopup();
+  markDone(id);
+}
+
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
