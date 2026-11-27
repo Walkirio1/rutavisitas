@@ -3,8 +3,11 @@ const LISTA_ICONOS=['🏛️','🏫','⚽','🏪','🏥','🏢','📍','⭐'];
 const LISTA_COLORES=['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4'];
 const LISTA_MAX=30;
 
-function clonarPuntosLista(arr){
+function clonarPuntosLista(arr, meta){
   if(!Array.isArray(arr)) return [];
+  const ic=(meta&&meta.icono)?String(meta.icono):'';
+  const col=(meta&&meta.color)?String(meta.color):'';
+  const nom=(meta&&meta.nombre)?String(meta.nombre):'';
   return arr.map(p=>({
     id:String(p&&p.id!==undefined?p.id:''),
     nombre:String((p&&p.nombre)||''),
@@ -16,8 +19,30 @@ function clonarPuntosLista(arr){
     lat:typeof(p&&p.lat)==='number'&&Number.isFinite(p.lat)?p.lat:null,
     lng:typeof(p&&p.lng)==='number'&&Number.isFinite(p.lng)?p.lng:null,
     geoUsada:p&&p.geoUsada?String(p.geoUsada):null,
-    geoErr:p&&p.geoErr?String(p.geoErr):null
+    geoErr:p&&p.geoErr?String(p.geoErr):null,
+    listaIcono:ic||(p&&p.listaIcono?String(p.listaIcono):''),
+    listaColor:col||(p&&p.listaColor?String(p.listaColor):''),
+    listaNombre:nom||(p&&p.listaNombre?String(p.listaNombre):'')
   }));
+}
+
+function aplicarMetaListaAPuntos(lista){
+  if(!lista||!Array.isArray(puntos)||!puntos.length) return;
+  const ids=new Set((lista.puntos||[]).map(p=>p.id));
+  const coincideActiva=listaActivaId===lista.id;
+  let tocado=false;
+  puntos.forEach(p=>{
+    if(coincideActiva||ids.has(p.id)){
+      p.listaIcono=lista.icono||'';
+      p.listaColor=lista.color||'';
+      p.listaNombre=lista.nombre||'';
+      tocado=true;
+    }
+  });
+  if(tocado){
+    lsSet(SK.puntos,puntos);
+    if(typeof mapa!=='undefined'&&mapa&&typeof renderMapa==='function') renderMapa(true);
+  }
 }
 
 function guardarListasStorage(){
@@ -125,7 +150,7 @@ function puntosSonDeListaActiva(){
 function cargarListaGuardada(id, opts){
   const l=listasGuardadas.find(x=>x.id===id);
   if(!l) return false;
-  const nuevos=clonarPuntosLista(l.puntos);
+  const nuevos=clonarPuntosLista(l.puntos,{icono:l.icono,color:l.color,nombre:l.nombre});
   const aplicar=(modo)=>{
     if(modo==='reemplazar'){
       if(typeof reiniciarEstadoLocal==='function') reiniciarEstadoLocal({conservarExcel:false});
@@ -203,16 +228,19 @@ function guardarListaComo(nombre, icono, color, idActualizar){
     const idx=listasGuardadas.findIndex(x=>x.id===idActualizar);
     if(idx<0) return null;
     const prev=listasGuardadas[idx];
+    const meta={icono:ic,color:col,nombre:nm};
+    const basePts=(listaActivaId===idActualizar&&puntos&&puntos.length)?puntos:prev.puntos;
     listasGuardadas[idx]={
       ...prev,
       nombre:nm,
       icono:ic,
       color:col,
       actualizada:fecha,
-      puntos:puntos&&puntos.length?clonarPuntosLista(puntos):clonarPuntosLista(prev.puntos)
+      puntos:clonarPuntosLista(basePts,meta)
     };
     if(listaActivaId===idActualizar||!listaActivaId) listaActivaId=idActualizar;
     guardarListasStorage();
+    aplicarMetaListaAPuntos(listasGuardadas[idx]);
     renderListas();renderListasMapa();
     showToast(`Lista «${nm}» actualizada ✓`);
     return listasGuardadas[idx];
@@ -226,6 +254,7 @@ function guardarListaComo(nombre, icono, color, idActualizar){
     showToast('Primero cargá los puntos que querés guardar',true);
     return null;
   }
+  const meta={icono:ic,color:col,nombre:nm};
   const nueva={
     id:'lst_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
     nombre:nm,
@@ -233,11 +262,12 @@ function guardarListaComo(nombre, icono, color, idActualizar){
     color:col,
     creada:fecha,
     actualizada:fecha,
-    puntos:clonarPuntosLista(puntos)
+    puntos:clonarPuntosLista(puntos,meta)
   };
   listasGuardadas=[nueva,...listasGuardadas];
   listaActivaId=nueva.id;
   guardarListasStorage();
+  aplicarMetaListaAPuntos(nueva);
   renderListas();renderListasMapa();
   showToast(`Lista «${nm}» guardada (${nueva.puntos.length} lugares) ✓`);
   return nueva;
@@ -247,10 +277,11 @@ function actualizarListaConActuales(id){
   const l=listasGuardadas.find(x=>x.id===id);
   if(!l) return false;
   if(!puntos||!puntos.length){showToast('No hay puntos cargados para actualizar esta lista',true);return false;}
-  l.puntos=clonarPuntosLista(puntos);
+  l.puntos=clonarPuntosLista(puntos,{icono:l.icono,color:l.color,nombre:l.nombre});
   l.actualizada=typeof hoy==='function'?hoy():new Date().toLocaleDateString('es-AR');
   listaActivaId=l.id;
   guardarListasStorage();
+  aplicarMetaListaAPuntos(l);
   renderListas();renderListasMapa();
   showToast(`«${l.nombre}» actualizada con ${l.puntos.length} lugares ✓`);
   return true;

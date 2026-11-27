@@ -1,6 +1,6 @@
 // Versión, ajuste de pantalla iPhone, instalar como app, modo sin señal
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-11-27 · 110';
+const APP_VERSION='2026-11-27 · 111';
 const esAppNativa=()=>!!(typeof window!=='undefined'&&window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 /* (se ejecuta al final, en js/99-arranque.js) */
 

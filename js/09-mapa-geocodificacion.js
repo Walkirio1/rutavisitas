@@ -12,31 +12,40 @@ let manualQ = {};          // texto escrito en el buscador manual, por índice d
 let manualRes = {};        // resultados de la búsqueda manual, por índice de punto
 let geocodingInProgress = false;
 
-// Iconos SVG para los pins
-function makeIcon(color){
-  const svg=`<svg width="34" height="48" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+// Iconos SVG para los pins (con ícono opcional de la lista guardada)
+function makeIcon(color, icono){
+  const hayIc=Boolean(icono);
+  const w=hayIc?36:34,h=hayIc?50:48;
+  const circ=hayIc?'<circle cx="15" cy="14.5" r="10.2" fill="#fff"/>':'<circle cx="15" cy="15" r="6" fill="#fff"/>';
+  const svg=`<svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
     <path d="M15 0 C6.7 0 0 6.7 0 15 c0 11 15 27 15 27 s15-16 15-27 C30 6.7 23.3 0 15 0 z" fill="${color}"/>
-    <circle cx="15" cy="15" r="6" fill="#fff"/>
+    ${circ}
   </svg>`;
+  const emo=hayIc?`<span class="pin-emo" style="position:absolute;top:5px;left:0;right:0;text-align:center;font-size:15px;line-height:20px;pointer-events:none">${escapeHtml(icono)}</span>`:'';
   return L.divIcon({
-    html:`<div class="pin-marker">${svg}</div>`,
+    html:`<div class="pin-marker" style="position:relative">${svg}${emo}</div>`,
     className:'',
-    iconSize:[34,48],
-    iconAnchor:[17,48],
-    popupAnchor:[0,-44]
+    iconSize:[w,h],
+    iconAnchor:[Math.round(w/2),h],
+    popupAnchor:[0,4-h]
   });
 }
-const ICON_SEL = () => makeIcon('#3b82f6');   // azul: voy a visitarlo
-const ICON_DEF = () => makeIcon('#94a3b8');   // gris: no en ruta
-const ICON_DONE = () => makeIcon('#10b981');  // verde: visitado
-const ICON_CERRADO = () => makeIcon('#ef4444'); // rojo: cerrado o no se visitó
+const ICON_SEL = (ic) => makeIcon('#3b82f6', ic);     // azul: voy a visitarlo
+const ICON_DEF = (ic) => makeIcon('#94a3b8', ic);     // gris: no en ruta
+const ICON_DONE = (ic) => makeIcon('#10b981', ic);    // verde: visitado
+const ICON_CERRADO = (ic) => makeIcon('#ef4444', ic); // rojo: cerrado o no se visitó
 // punto de partida: pin naranja con una banderita
 let inicioId = lsGet('sube:inicio') || null;   // id del punto donde arranco (vacío = desde mi ubicación)
 let modoInicio = false;                          // true: el próximo pin que se toca es el de partida
-const ICON_INICIO = () => L.divIcon({
-  html:`<div class="pin-marker" style="position:relative">${makeIcon('#f97316').options.html.replace('<div class="pin-marker">','').replace(/<\/div>$/,'')}<span style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1">🚩</span></div>`,
-  className:'',iconSize:[34,48],iconAnchor:[17,48],popupAnchor:[0,-50]
-});
+const ICON_INICIO = (ic) => {
+  const base=makeIcon('#f97316',ic).options.html;
+  const inner=base.replace(/^<div class="pin-marker"[^>]*>/,'').replace(/<\/div>$/,'');
+  const w=ic?36:34,h=ic?50:48;
+  return L.divIcon({
+    html:`<div class="pin-marker" style="position:relative">${inner}<span style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1">🚩</span></div>`,
+    className:'',iconSize:[w,h],iconAnchor:[Math.round(w/2),h],popupAnchor:[0,-50]
+  });
+};
 
 // Estado de una visita: 'ok' (visitado), 'cerrado' (comercio cerrado / domicilio inexistente),
 // 'no' (marcado como no visitado) o null (sin visitar)
@@ -149,7 +158,8 @@ function renderMapa(noFit){
     const enRuta = sel.has(p.id);
     const est = estadoVisita(p.id);
     const esInicio = inicioId===p.id && !est;
-    const icon = est==='ok'?ICON_DONE():(est?ICON_CERRADO():(esInicio?ICON_INICIO():(enRuta?ICON_SEL():ICON_DEF())));
+    const ico = p.listaIcono || (typeof listaActivaId!=='undefined'&&listaActivaId&&Array.isArray(listasGuardadas)?((listasGuardadas.find(x=>x.id===listaActivaId)||{}).icono||''):'');
+    const icon = est==='ok'?ICON_DONE(ico):(est?ICON_CERRADO(ico):(esInicio?ICON_INICIO(ico):(enRuta?ICON_SEL(ico):ICON_DEF(ico))));
     // los colores (voy / visitado / cerrado) quedan por encima de los grises
     const prio = (est||enRuta||esInicio)?1:0;
     const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:prio*1000}).addTo(markersLayer);
@@ -158,6 +168,7 @@ function renderMapa(noFit){
     const rub = typeof rubroDePunto==='function'?rubroDePunto(p):(p.tipo||'');
     const popup = `
       <div class="popup-title">${escapeHtml(p.nombre)}</div>
+      ${p.listaNombre?`<div class="popup-id" style="color:var(--text-soft);font-weight:700">${escapeHtml(p.listaIcono||'📁')} ${escapeHtml(p.listaNombre)}</div>`:''}
       ${rub?`<div class="popup-id" style="color:var(--text-soft);font-weight:600">🏪 ${escapeHtml(rub)}</div>`:''}
       <div class="popup-dir">${escapeHtml(p.dir)}</div>
       <div class="popup-id">ID: ${escapeHtml(p.id)}${p.localidad?' · '+escapeHtml(p.localidad):''}</div>
