@@ -12,37 +12,47 @@ let manualQ = {};          // texto escrito en el buscador manual, por índice d
 let manualRes = {};        // resultados de la búsqueda manual, por índice de punto
 let geocodingInProgress = false;
 
-// Iconos SVG para los pins (con ícono opcional de la lista guardada)
+// Iconos SVG vectoriales nítidos dentro de cada pin (evita fallos de fuentes emoji en mapas)
+const PIN_SVG_ICONS={
+  '🏛️':'<g><polygon points="8.5,11.5 15,7.8 21.5,11.5" fill="#1e293b"/><rect x="8.5" y="11.8" width="13" height="1.3" fill="#1e293b"/><rect x="8.5" y="18.2" width="13" height="1.6" fill="#1e293b"/><rect x="9.6" y="13.1" width="1.6" height="5.1" fill="#1e293b"/><rect x="14.2" y="13.1" width="1.6" height="5.1" fill="#1e293b"/><rect x="18.8" y="13.1" width="1.6" height="5.1" fill="#1e293b"/></g>',
+  '🏫':'<g><path d="M8.5 13 L15 8.2 L21.5 13 V19.8 H8.5 Z" fill="#1e293b"/><rect x="13.5" y="15.2" width="3" height="4.6" fill="#fff"/><circle cx="15" cy="12.2" r="1.2" fill="#fff"/></g>',
+  '⚽':'<g><circle cx="15" cy="14.5" r="6.2" fill="#fff" stroke="#1e293b" stroke-width="1.3"/><polygon points="15,12 17.4,13.8 16.5,16.6 13.5,16.6 12.6,13.8" fill="#1e293b"/><path d="M15 8.5V12 M20.5 12.5L17.4 13.8 M18.5 19.5L16.5 16.6 M11.5 19.5L13.5 16.6 M9.5 12.5L12.6 13.8" stroke="#1e293b" stroke-width="1.1"/></g>',
+  '🏪':'<g><rect x="9" y="12.5" width="12" height="7" rx="0.8" fill="#1e293b"/><path d="M8.2 12.5 L9.4 9.2 H20.6 L21.8 12.5 Z" fill="#0f172a"/><rect x="11" y="14.2" width="3.5" height="3" fill="#fff"/><rect x="16" y="14.2" width="3" height="5.3" fill="#fff"/></g>',
+  '🏥':'<g><path d="M13.2 8.8 H16.8 V12.7 H20.7 V16.3 H16.8 V20.2 H13.2 V16.3 H9.3 V12.7 H13.2 Z" fill="#dc2626"/></g>',
+  '🏢':'<g><rect x="10.2" y="8.2" width="9.6" height="11.8" rx="0.8" fill="#1e293b"/><rect x="11.8" y="9.8" width="2" height="2" fill="#fff"/><rect x="16.2" y="9.8" width="2" height="2" fill="#fff"/><rect x="11.8" y="13.2" width="2" height="2" fill="#fff"/><rect x="16.2" y="13.2" width="2" height="2" fill="#fff"/><rect x="14" y="16.6" width="2" height="3.4" fill="#fff"/></g>',
+  '📍':'<g><circle cx="15" cy="14.5" r="4.8" fill="none" stroke="#1e293b" stroke-width="2"/><circle cx="15" cy="14.5" r="2" fill="#1e293b"/></g>',
+  '⭐':'<g><polygon points="15,7.8 17.1,12.1 21.8,12.8 18.4,16.1 19.2,20.8 15,18.6 10.8,20.8 11.6,16.1 8.2,12.8 12.9,12.1" fill="#f59e0b" stroke="#b45309" stroke-width="1"/></g>'
+};
 function makeIcon(color, icono){
   const hayIc=Boolean(icono);
-  const w=hayIc?36:34,h=hayIc?50:48;
-  const circ=hayIc?'<circle cx="15" cy="14.5" r="10.2" fill="#fff"/>':'<circle cx="15" cy="15" r="6" fill="#fff"/>';
+  const w=hayIc?38:34,h=hayIc?52:48;
+  const circ=hayIc?'<circle cx="15" cy="14.5" r="10.5" fill="#fff"/>':'<circle cx="15" cy="15" r="6" fill="#fff"/>';
+  const glifo=hayIc?(PIN_SVG_ICONS[icono]||`<text x="15" y="19" text-anchor="middle" font-size="13" fill="#1e293b">${escapeHtml(icono)}</text>`):'';
   const svg=`<svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
     <path d="M15 0 C6.7 0 0 6.7 0 15 c0 11 15 27 15 27 s15-16 15-27 C30 6.7 23.3 0 15 0 z" fill="${color}"/>
-    ${circ}
+    ${circ}${glifo}
   </svg>`;
-  const emo=hayIc?`<span class="pin-emo" style="position:absolute;top:5px;left:0;right:0;text-align:center;font-size:15px;line-height:20px;pointer-events:none">${escapeHtml(icono)}</span>`:'';
   return L.divIcon({
-    html:`<div class="pin-marker" style="position:relative">${svg}${emo}</div>`,
+    html:`<div class="pin-marker" style="position:relative;width:${w}px;height:${h}px">${svg}</div>`,
     className:'',
     iconSize:[w,h],
     iconAnchor:[Math.round(w/2),h],
     popupAnchor:[0,4-h]
   });
 }
-const ICON_SEL = (ic) => makeIcon('#3b82f6', ic);     // azul: voy a visitarlo
-const ICON_DEF = (ic) => makeIcon('#94a3b8', ic);     // gris: no en ruta
-const ICON_DONE = (ic) => makeIcon('#10b981', ic);    // verde: visitado
-const ICON_CERRADO = (ic) => makeIcon('#ef4444', ic); // rojo: cerrado o no se visitó
+const ICON_SEL = (ic) => makeIcon('#3b82f6', ic);                  // azul: voy a visitarlo
+const ICON_DEF = (ic, col) => makeIcon(col || '#94a3b8', ic);     // gris o color de lista: no en ruta
+const ICON_DONE = (ic) => makeIcon('#10b981', ic);                 // verde: visitado
+const ICON_CERRADO = (ic) => makeIcon('#ef4444', ic);              // rojo: cerrado o no se visitó
 // punto de partida: pin naranja con una banderita
 let inicioId = lsGet('sube:inicio') || null;   // id del punto donde arranco (vacío = desde mi ubicación)
 let modoInicio = false;                          // true: el próximo pin que se toca es el de partida
 const ICON_INICIO = (ic) => {
   const base=makeIcon('#f97316',ic).options.html;
   const inner=base.replace(/^<div class="pin-marker"[^>]*>/,'').replace(/<\/div>$/,'');
-  const w=ic?36:34,h=ic?50:48;
+  const w=ic?38:34,h=ic?52:48;
   return L.divIcon({
-    html:`<div class="pin-marker" style="position:relative">${inner}<span style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1">🚩</span></div>`,
+    html:`<div class="pin-marker" style="position:relative;width:${w}px;height:${h}px">${inner}<span style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1">🚩</span></div>`,
     className:'',iconSize:[w,h],iconAnchor:[Math.round(w/2),h],popupAnchor:[0,-50]
   });
 };
@@ -158,8 +168,10 @@ function renderMapa(noFit){
     const enRuta = sel.has(p.id);
     const est = estadoVisita(p.id);
     const esInicio = inicioId===p.id && !est;
-    const ico = p.listaIcono || (typeof listaActivaId!=='undefined'&&listaActivaId&&Array.isArray(listasGuardadas)?((listasGuardadas.find(x=>x.id===listaActivaId)||{}).icono||''):'');
-    const icon = est==='ok'?ICON_DONE(ico):(est?ICON_CERRADO(ico):(esInicio?ICON_INICIO(ico):(enRuta?ICON_SEL(ico):ICON_DEF(ico))));
+    const listaAct = (typeof listaActivaId!=='undefined'&&listaActivaId&&Array.isArray(listasGuardadas))?listasGuardadas.find(x=>x.id===listaActivaId):null;
+    const ico = p.listaIcono || (listaAct && listaAct.icono) || '';
+    const colLista = p.listaColor || (listaAct && listaAct.color) || '';
+    const icon = est==='ok'?ICON_DONE(ico):(est?ICON_CERRADO(ico):(esInicio?ICON_INICIO(ico):(enRuta?ICON_SEL(ico):ICON_DEF(ico, colLista))));
     // los colores (voy / visitado / cerrado) quedan por encima de los grises
     const prio = (est||enRuta||esInicio)?1:0;
     const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:prio*1000}).addTo(markersLayer);
