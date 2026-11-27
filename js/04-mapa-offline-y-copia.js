@@ -60,6 +60,7 @@ async function exportarCopia(){
     }
     datos[SK.planillas]=JSON.stringify(planillas||[]);
     datos[SK.historial]=JSON.stringify(historial||[]);
+    datos[SK.listas]=JSON.stringify(listasGuardadas||[]);
     const fotos={};
     for(const id of Object.keys(visits||{})){
       const f=await fotoGet(id);if(f) fotos[id]=f;
@@ -76,7 +77,7 @@ async function exportarCopia(){
 }
 const COPIA_CLAVES_PERMITIDAS=new Set([
   'sube:puntos','sube:sel','sube:visits','sube:historial','sube:emails','sube:orden','sube:inicio','sube:tema','sube:nav','sube:ubi','sube:sello','sube:prox','sube:notif',
-  'sube:planillas','sube:autosave','sube:pldef','sube:excel','sube:errores','sube:tut','sube:instdismiss2','sube:dszoomvisto',
+  'sube:planillas','sube:listas','sube:listaactiva','sube:autosave','sube:pldef','sube:excel','sube:errores','sube:tut','sube:instdismiss2','sube:dszoomvisto',
   'sube:borrador','sube:foldername','sube:plantilla','sube:plmodo'
 ]);
 const COPIA_CLAVES_BLOQUEADAS=new Set(['sube:pro','sube:srv','sube:equipo','sube:dupla','sube:perfil','sube:modo','sube:drvuser','sube:drvon','sube:iakey','sube:clientid','sube:cid','sube:eq','sube:eqcola','sube:eqdupla','sube:eqperfil','sube:eqpos','sube:eqvisto','sube:rootfolderid','sube:compartidos','sube:cping','sube:contar','sube:dpactual','sube:dpquitar','sube:lastsync','sube:mkpulso','sube:proxok','sube:limpiadots']);
@@ -92,7 +93,7 @@ function restaurarCopia(input){
     confirm2('¿Restaurar la copia del '+(c.fecha||'').slice(0,10)+'? Reemplaza lo que hay ahora en este celular.',async function(){
       try{
         for(const [k,v] of Object.entries(c.datos)) if(esClaveCopiaPermitida(k)&&typeof v==='string'){
-          if(k===SK.planillas||k===SK.historial){
+          if(k===SK.planillas||k===SK.historial||k===SK.listas){
             let valor;try{valor=JSON.parse(v);}catch(e){continue;}
             if(v.length<600000){try{localStorage.setItem(k,v);}catch(e){try{localStorage.removeItem(k);}catch{}}}else{try{localStorage.removeItem(k);}catch{}}
             if(typeof datoPut==='function')await datoPut(k,valor);

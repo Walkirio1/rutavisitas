@@ -17,6 +17,7 @@ let ordenRuta=(function(){try{return JSON.parse(localStorage.getItem('sube:orden
 const SK={
   puntos:'sube:puntos',sel:'sube:sel',visits:'sube:visits',
   historial:'sube:historial',emails:'sube:emails',planillas:'sube:planillas',
+  listas:'sube:listas',listaActiva:'sube:listaactiva',
   clientId:'sube:clientid',
   folderName:'sube:foldername',
   rootFolderId:'sube:rootfolderid',
@@ -26,12 +27,12 @@ const SK={
 };
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsSet(k,v){
-  let s;try{s=JSON.stringify(v);}catch(e){if(k===SK.planillas||k===SK.historial)void datoPut(k,v).catch(()=>{});return;}
-  if(k===SK.planillas||k===SK.historial) void datoPut(k,v).catch(()=>{});
+  let s;try{s=JSON.stringify(v);}catch(e){if(k===SK.planillas||k===SK.historial||k===SK.listas)void datoPut(k,v).catch(()=>{});return;}
+  if(k===SK.planillas||k===SK.historial||k===SK.listas) void datoPut(k,v).catch(()=>{});
   try{if(s.length<600000)localStorage.setItem(k,s);else localStorage.removeItem(k);}
-  catch(e){try{localStorage.removeItem(k);}catch{}if(k!==SK.planillas&&k!==SK.historial)showToast('Storage lleno: borrar historial viejo',true);}
+  catch(e){try{localStorage.removeItem(k);}catch{}if(k!==SK.planillas&&k!==SK.historial&&k!==SK.listas)showToast('Storage lleno: borrar historial viejo',true);}
 }
-function lsDel(k){try{localStorage.removeItem(k);}catch{}if(k===SK.planillas||k===SK.historial)void datoDel(k).catch(()=>{});}
+function lsDel(k){try{localStorage.removeItem(k);}catch{}if(k===SK.planillas||k===SK.historial||k===SK.listas)void datoDel(k).catch(()=>{});}
 
 // Datos pesados separados de las fotos para no competir por espacio en localStorage.
 let _datosDB=null;
@@ -57,12 +58,14 @@ const datoDel=k=>datoOp('readwrite','delete',String(k));
 async function hidratarDatosPesados(){
   if(typeof indexedDB==='undefined')return;
   try{
-    const [p,h]=await Promise.all([datoGet(SK.planillas),datoGet(SK.historial)]);
-    let cambioP=false,cambioH=false;
+    const [p,h,l]=await Promise.all([datoGet(SK.planillas),datoGet(SK.historial),datoGet(SK.listas)]);
+    let cambioP=false,cambioH=false,cambioL=false;
     if(p!==null&&p!==undefined){planillas=p;cambioP=true;}else if(planillas&&planillas.length)await datoPut(SK.planillas,planillas);
     if(h!==null&&h!==undefined){historial=h;cambioH=true;}else if(historial&&historial.length)await datoPut(SK.historial,historial);
+    if(l!==null&&l!==undefined){listasGuardadas=l;cambioL=true;}else if(listasGuardadas&&listasGuardadas.length)await datoPut(SK.listas,listasGuardadas);
     if(cambioP){if(typeof renderPlanillas==='function')renderPlanillas();if(typeof aplicarPlantilla==='function')aplicarPlantilla();}
     if(cambioH&&typeof renderH==='function')renderH();
+    if(cambioL){if(typeof renderListas==='function')renderListas();if(typeof renderListasMapa==='function')renderListasMapa();}
   }catch(e){}
 }
 
@@ -171,6 +174,8 @@ let historial= lsGet(SK.historial) || [];
 let emails   = lsGet(SK.emails)    || [];
 let planillas= lsGet(SK.planillas) || [];
 let plDefId  = lsGet(SK.plDef) || null; // null = planilla oficial incluida
+let listasGuardadas = lsGet(SK.listas) || [];
+let listaActivaId   = lsGet(SK.listaActiva) || null;
 
 // modal state
 let curId=null, plC={}, fotoData=null;

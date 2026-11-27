@@ -137,6 +137,7 @@ function reiniciarEstadoLocal(opts){
   fotosClear();fotosEnIDB.clear();
   if(!conservarExcel) lsDel('sube:excel');
   ordenRuta=[];lsDel(SK_ORDEN);
+  if(typeof listaActivaId!=='undefined'){listaActivaId=null;lsDel(SK.listaActiva);}
   inicioId=null;lsDel('sube:inicio');
   if(typeof borradorBorrar==='function') borradorBorrar();
   if(typeof _saltados!=='undefined') _saltados=new Set();

@@ -9,6 +9,7 @@ document.getElementById('fechaHdr').textContent=hoy();
 
 // de 02-puntos.js
 renderP();
+if(typeof renderListas==='function') renderListas();
 
 // de 02-puntos.js
 renderH();

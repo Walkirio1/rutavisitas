@@ -222,6 +222,7 @@
       <div style="font-size:12px;color:var(--text-mute)">O sacale foto a una lista de direcciones</div>
     </label>
     <button class="sm smh" style="width:100%;margin-top:8px;padding:12px" onclick="ocrEscribir()"><svg class="ico" style="vertical-align:-3px;"><use href="#i-edit"/></svg> Escribir o pegar una lista</button>
+    <div id="listasWrap"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span class="stit" style="margin:0">Lista de puntos</span>
       <div style="display:flex;gap:6px;align-items:center">
@@ -273,6 +274,7 @@
       <button class="sm smh" onclick="finalizarJornada()">🏁 Finalizar jornada</button>
     </div>
 
+    <div id="mapaListasBar"></div>
     <div id="mapaLeyenda" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text-soft)"></div>
 
     <div id="geoPendList"></div>
@@ -490,6 +492,7 @@
 <script src="js/27-dupla.js"></script>
 <script src="js/28-contador.js"></script>
 <script src="js/29-tutorial.js"></script>
+<script src="js/30-listas.js"></script>
 <script src="js/99-arranque.js"></script>
 
 <script>(function(){var g=document.getElementById('gate');function go(){if(g&&!g.classList.contains('go'))g.classList.add('go');}

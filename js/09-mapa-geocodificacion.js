@@ -68,6 +68,7 @@ function initMapa(){
     if(!pt) return;
     pt.lat=e.latlng.lat;pt.lng=e.latlng.lng;pt.geoErr=null;pt.geoProbadas=null;
     lsSet(SK.puntos,puntos);
+    if(typeof listasSincronizarGeo==='function') listasSincronizarGeo();
     showToast('✓ Ubicado: '+(pt.nombre||pt.dir));
     renderMapa();
   });
@@ -90,6 +91,7 @@ function repararMapa(intento){
 
 // Renderizar markers en el mapa + lista de pendientes
 function renderMapa(noFit){
+  if(typeof renderListasMapa==='function') renderListasMapa();
   if(!mapa)return;
   markersLayer.clearLayers();
 
@@ -327,6 +329,7 @@ function elegirResultado(i,j){
   pt.lat=x.lat;pt.lng=x.lng;pt.geoErr=null;pt.geoProbadas=null;pt.geoUsada='manual: '+x.label;
   delete manualRes[i];delete manualQ[i];
   lsSet(SK.puntos,puntos);
+  if(typeof listasSincronizarGeo==='function') listasSincronizarGeo();
   renderMapa();
   mapa.setView([pt.lat,pt.lng],17);
   showToast('✓ Ubicado en el mapa: '+(pt.nombre||pt.dir));

@@ -189,6 +189,7 @@ async function geocodificarTodos(silent){
     console.error('geocodificar:',e);cortado=true;
   }finally{
     lsSet(SK.puntos,puntos);
+    if(typeof listasSincronizarGeo==='function') listasSincronizarGeo();
     if(prog)prog.classList.remove('show');
     geocodingInProgress=false;
     mantenerPantalla(false);

@@ -68,6 +68,7 @@ function coincideBusqueda(p,q){
   return _bn(q).split(/\s+/).filter(Boolean).every(w=>texto.includes(w)||(w.length>=5&&pals.some(x=>x.length>=4&&_dist1(w,x.slice(0,w.length+1))||_dist1(w,x))));
 }
 function renderP(){
+  if(typeof renderListas==='function') renderListas();
   const q=(document.getElementById('qin')||{value:''}).value;
   let list = q.trim() ? puntos.filter(p=>coincideBusqueda(p,q)) : puntos;
   if(filtroGeoP) list = list.filter(p=>p.geoErr || (!p.lat && !p.geoErr)); // sin ubicación
