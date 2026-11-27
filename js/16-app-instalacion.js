@@ -1,6 +1,7 @@
 // Versión, ajuste de pantalla iPhone, instalar como app, modo sin señal
 // ── VERSIÓN (se ve en Configuración para saber qué versión está cargada)
-const APP_VERSION='2026-11-26 · 107';
+const APP_VERSION='2026-11-26 · 108';
+const esAppNativa=()=>!!(typeof window!=='undefined'&&window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 /* (se ejecuta al final, en js/99-arranque.js) */
 
 // ── iPhone (app instalada): la altura automática a veces no llega al borde inferior
@@ -71,7 +72,7 @@ function mostrarCartelActualizacion(ver){
   if(dlg) dlg.classList.add('show');
 }
 async function revisarActualizacion(){
-  if(_updChecking||navigator.onLine===false) return;
+  if((typeof esAppNativa==='function'&&esAppNativa())||_updChecking||navigator.onLine===false) return;
   _updChecking=true;
   const ctl=typeof AbortController!=='undefined'?new AbortController():null;
   const t=ctl?setTimeout(()=>ctl.abort(),8000):null;

@@ -91,13 +91,13 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_instalarEv
 window.addEventListener('appinstalled',()=>{_instalarEvt=null;const b=document.getElementById('btnInstalar');if(b)b.style.display='none';showToast('App instalada ✓');});
 
 // de 16-app-instalacion.js
-if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){
+if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone||(typeof esAppNativa==='function'&&esAppNativa())){
   setTimeout(()=>{const b=document.getElementById('btnInstalar');if(b)b.style.display='none';},0);
 }
 
 // de 16-app-instalacion.js
 setTimeout(()=>{
-  const ya=navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  const ya=navigator.standalone||window.matchMedia('(display-mode: standalone)').matches||(typeof esAppNativa==='function'&&esAppNativa());
   const forzar=new URLSearchParams(location.search).get('instalar')==='1'; // abrir la app con ?instalar=1 muestra siempre el aviso
   const cerrado=lsGet('sube:instdismiss2'); // clave nueva: ignora los cierres viejos
   if(ya||(!forzar&&cerrado&&Date.now()-cerrado<864e5)) return;
@@ -105,7 +105,7 @@ setTimeout(()=>{
 },2500);
 
 // de 16-app-instalacion.js
-if('serviceWorker' in navigator && location.protocol==='https:'){
+if('serviceWorker' in navigator && location.protocol==='https:' && !(typeof esAppNativa==='function'&&esAppNativa())){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw:',e)));
 }
 

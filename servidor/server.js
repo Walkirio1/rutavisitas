@@ -309,7 +309,7 @@ http.createServer(async(req,res)=>{
       let rel=decodeURIComponent(url.pathname.slice(5))||'index.html';if(rel.endsWith('/')) rel+='index.html';
       const f=path.normalize(path.join(APP_DIR,rel));
       const ext=path.extname(f).toLowerCase();
-      if(!f.startsWith(APP_DIR+path.sep)||/(^|[\\/])(servidor|\.git|node_modules)([\\/]|$)/.test(path.relative(APP_DIR,f))||!MIME[ext]||!fs.existsSync(f)||!fs.statSync(f).isFile()){res.writeHead(404);return res.end('No existe');}
+      if(!f.startsWith(APP_DIR+path.sep)||/(^|[\\/])(servidor|mobile|\.github|\.git|node_modules)([\\/]|$)/.test(path.relative(APP_DIR,f))||!MIME[ext]||!fs.existsSync(f)||!fs.statSync(f).isFile()){res.writeHead(404);return res.end('No existe');}
       res.writeHead(200,{'Content-Type':MIME[ext],'Cache-Control':'no-cache'});return fs.createReadStream(f).pipe(res);
     }
     if(!url.pathname.startsWith('/api/')){ // el panel web

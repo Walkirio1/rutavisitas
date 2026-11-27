@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+      - 'index.html'
+      - 'js/**'
+      - 'css/**'
+      - 'icons/**'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Capacitor & sync web assets
+        working-directory: mobile
+        run: |
+          npm install --no-audit --no-fund
+          npm run sync-web
+          npx cap add android
+          npm run prepare:android
+          npx cap sync android
+
+      - name: Build Debug APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Rename and upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LogiMap-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 90

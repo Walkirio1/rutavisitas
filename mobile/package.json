@@ -1,0 +1,17 @@
+{
+  "name": "logimap-mobile",
+  "version": "1.0.8",
+  "private": true,
+  "description": "Empaquetado nativo Capacitor (Android / iOS) para LogiMap",
+  "scripts": {
+    "sync-web": "node sync-web.js",
+    "prepare:android": "node prepare-android.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}

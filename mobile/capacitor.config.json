@@ -1,0 +1,20 @@
+{
+  "appId": "app.logimap.mobile",
+  "appName": "LogiMap",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "app.logimap.app",
+    "allowNavigation": [
+      "app.logimap.app",
+      "beta.logimap.app",
+      "accounts.google.com",
+      "*.google.com",
+      "*.googleapis.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#070d1b"
+  }
+}
