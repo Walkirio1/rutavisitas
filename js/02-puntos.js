@@ -183,40 +183,185 @@ function toggleSel(id){
   triggerAutosave();
 }
 
-// ── IMPORTAR EXCEL
+// ── IMPORTAR EXCEL / CSV FLEXIBLE
+function _normCol(s){
+  return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+function parsearFilasExcel(aoa, idsExistentes){
+  const raw=(aoa||[]).filter(r=>Array.isArray(r)&&r.some(c=>String(c==null?'':c).trim()!==''));
+  if(!raw.length) return {nuevos:[],aoaConId:[]};
+
+  const H_ID=new Set(['ubicacion id','id','codigo','cod','legajo','#']);
+  const H_NOM=new Set(['ubicacion','nombre','lugar','institucion','escuela','club','comercio','local','cliente','entidad','establecimiento','razon social','descripcion','titulo']);
+  const H_DIR=new Set(['direccion','domicilio','domicilio real','domicilio legal','calle','dir','address']);
+  const H_NUM=new Set(['numero','altura','nro','num','puerta']);
+  const H_LOC=new Set(['localidad','ciudad','barrio','municipio','partido','zona','distrito']);
+  const H_TIPO=new Set(['tipo centro','tipo','categoria','clase','nivel']);
+  const H_RUBRO=new Set(['rubro','actividad','subrubro','giro','ramo','especialidad']);
+  const H_OBS=new Set(['observaciones','obs','notas','nota','comentarios','comentario','detalle','detalles','referencia']);
+  const H_EXTRA=new Set(['provincia','telefono','tel','celular','contacto','horario','responsable','email','mail']);
+  const ALL_H=new Set([...H_ID,...H_NOM,...H_DIR,...H_NUM,...H_LOC,...H_TIPO,...H_RUBRO,...H_OBS,...H_EXTRA]);
+
+  const esDir=v=>{
+    const s=String(v==null?'':v).trim();
+    return s.length>=4&&(/[a-záéíóúñ]{3,}.*\d+/i.test(s)||/\b(av|bv|blvd|calle|pasaje|pje|ruta|esq)\b/i.test(s));
+  };
+
+  const ncols=Math.max(...raw.map(r=>r.length));
+  const norm0=raw[0].map(_normCol);
+  const tieneEnc=norm0.some(h=>ALL_H.has(h));
+  const datos=tieneEnc?raw.slice(1):raw;
+  if(!datos.length) return {nuevos:[],aoaConId:[]};
+
+  let iId=-1,iNom=-1,iDir=-1,iNum=-1,iLoc=-1,iTipo=-1,iRubro=-1,iObs=-1;
+  const extraCols=[];
+
+  if(tieneEnc){
+    const find=(set,skip)=>norm0.findIndex((h,idx)=>(!skip||!skip.has(idx))&&set.has(h));
+    iId=find(H_ID);
+    iNom=find(H_NOM,new Set([iId].filter(x=>x>=0)));
+    iDir=find(H_DIR,new Set([iId].filter(x=>x>=0)));
+    iNum=find(H_NUM,new Set([iId,iDir].filter(x=>x>=0)));
+    iLoc=find(H_LOC,new Set([iId].filter(x=>x>=0)));
+    iTipo=find(H_TIPO,new Set([iId].filter(x=>x>=0)));
+    iRubro=find(H_RUBRO,new Set([iId].filter(x=>x>=0)));
+    iObs=find(H_OBS,new Set([iId].filter(x=>x>=0)));
+
+    const usadosCol=new Set([iId,iNom,iDir,iNum,iLoc,iTipo,iRubro,iObs].filter(x=>x>=0));
+    if(iDir<0){
+      let bestCol=-1,bestScore=0;
+      for(let c=0;c<ncols;c++){
+        if(usadosCol.has(c)) continue;
+        const sc=datos.reduce((a,r)=>a+(esDir(r[c])?1:0),0);
+        if(sc>bestScore){bestScore=sc;bestCol=c;}
+      }
+      if(bestCol<0){
+        for(let c=0;c<ncols;c++){
+          if(c===iId||c===iNum||c===iLoc||c===iTipo||c===iRubro||c===iObs) continue;
+          const sc=datos.reduce((a,r)=>a+(esDir(r[c])?1:0),0);
+          if(sc>bestScore){bestScore=sc;bestCol=c;}
+        }
+      }
+      if(bestCol>=0){
+        iDir=bestCol;
+        usadosCol.add(iDir);
+      }else if(iNom<0){
+        const disp=[];
+        for(let c=0;c<ncols;c++) if(!usadosCol.has(c)&&datos.some(r=>String(r[c]??'').trim()!=='')) disp.push(c);
+        if(disp.length){iNom=disp[0];usadosCol.add(iNom);}
+        if(disp.length>1){iDir=disp[1];usadosCol.add(iDir);}
+      }
+    }
+    if(iNom<0){
+      for(let c=0;c<ncols;c++){
+        if(!usadosCol.has(c)&&datos.some(r=>String(r[c]??'').trim()!=='')){iNom=c;usadosCol.add(c);break;}
+      }
+    }
+    for(let c=0;c<ncols;c++){
+      const tit=String(raw[0][c]??'').trim();
+      if(tit&&!usadosCol.has(c)) extraCols.push({c,tit});
+    }
+  }else{
+    if(ncols===1){
+      iNom=0;iDir=0;
+    }else{
+      let bestCol=-1,bestScore=0;
+      for(let c=0;c<ncols;c++){
+        const sc=datos.reduce((a,r)=>a+(esDir(r[c])?1:0),0);
+        if(sc>bestScore){bestScore=sc;bestCol=c;}
+      }
+      if(bestScore>0){
+        iDir=bestCol;
+        for(let c=0;c<ncols;c++) if(c!==iDir){iNom=c;break;}
+      }else{
+        iNom=0;iDir=1;
+      }
+      for(let c=0;c<ncols;c++){
+        if(c===iNom||c===iDir) continue;
+        if(iLoc<0) iLoc=c;
+        else extraCols.push({c,tit:''});
+      }
+    }
+  }
+
+  const idsUsados=new Set(Array.from(idsExistentes||[]).map(x=>String(x)));
+  let autoN=1;
+  const sigAutoId=()=>{while(idsUsados.has('P'+autoN))autoN++;const v='P'+autoN++;idsUsados.add(v);return v;};
+
+  const origTieneColId=tieneEnc&&iId>=0;
+  const hdrAoa=tieneEnc
+    ? Array.from({length:ncols},(_,c)=>String(raw[0][c]??''))
+    : Array.from({length:ncols},(_,c)=>{
+        if(ncols===1) return 'Dirección';
+        if(c===iNom) return 'Ubicación';
+        if(c===iDir) return 'Dirección';
+        if(c===iLoc) return 'Localidad';
+        return 'Dato '+(c+1);
+      });
+
+  const nuevos=[];
+  const filasOut=[];
+
+  for(const row of datos){
+    const g=idx=>idx>=0?String(row[idx]??'').trim():'';
+    const rawNom=g(iNom);
+    const dirBase=g(iDir);
+    const num=g(iNum);
+    const rawDir=(dirBase+(num?' '+num:'')).trim();
+    if(!rawDir&&!rawNom) continue;
+
+    let id=g(iId);
+    if(!id||idsUsados.has(id)) id=sigAutoId();
+    else idsUsados.add(id);
+
+    const nombre=rawNom||rawDir;
+    const dir=rawDir||rawNom;
+    const localidad=g(iLoc);
+    const tipo=g(iTipo);
+    const rubro=g(iRubro);
+    const extras=extraCols.map(({c,tit})=>{
+      const val=g(c);if(!val) return '';
+      return tit?(tit+': '+val):val;
+    }).filter(Boolean);
+    const obs=[g(iObs),...extras].filter(Boolean).join(' · ');
+
+    nuevos.push({id,nombre,dir,localidad,tipo,rubro,obs,lat:null,lng:null,geoErr:null});
+
+    const rowPad=Array.from({length:ncols},(_,c)=>row[c]??'');
+    if(origTieneColId){
+      rowPad[iId]=id;
+      filasOut.push(rowPad);
+    }else{
+      filasOut.push([id,...rowPad]);
+    }
+  }
+
+  if(!nuevos.length) return {nuevos:[],aoaConId:[]};
+  const aoaConId=origTieneColId?[hdrAoa,...filasOut]:[['ID',...hdrAoa],...filasOut];
+  return {nuevos,aoaConId};
+}
+
 function importXL(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
       const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws);
-      const colsExcel=Object.keys(rows[0]||{});
-      const kRubro=colsExcel.find(k=>/^(rubro|actividad|subrubro|giro|categor[ií]a|ramo|clase|tipo\s*(de\s*)?(negocio|comercio|local|establecimiento))$/i.test(k.trim()));
-      // se guarda el Excel tal cual vino (todas las filas y columnas) para devolverlo actualizado
-      const nuevos=rows.map(r=>({
-        id:String(r['Ubicación ID']||r['ID']||''),
-        nombre:String(r['Ubicación']||r['Nombre']||''),
-        dir:(String(r['Dirección']||'')+' '+String(r['Numero']||'')).trim(),
-        localidad:String(r['Localidad']||''),
-        tipo:String(r['Tipo Centro']||''),
-        rubro:kRubro?String(r[kRubro]||'').trim():'',
-        obs:String(r['Observaciones']||''),
-        lat:null,lng:null,geoErr:null,
-      })).filter(r=>r.dir&&r.id);
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const prevIds=new Set(puntos.map(p=>String(p.id)));
+      const {nuevos,aoaConId}=parsearFilasExcel(aoa,prevIds);
       if(!nuevos.length){
-        const cols=Object.keys(rows[0]||{});
-        showToast(!rows.length?'El Excel no tiene filas: no se importó nada':'No encontré las columnas «Ubicación ID» y «Dirección»'+(cols.length?' (el archivo tiene: '+cols.slice(0,4).join(', ')+')':''),true);
+        showToast('El archivo no tiene datos o direcciones para importar',true);
         return;
       }
-      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       const conGeoDe=(prev,n)=>{
         const ex=prev.find(p=>p.id===n.id)||prev.find(p=>p.dir&&n.dir&&p.dir.toLowerCase()===n.dir.toLowerCase()&&(p.localidad||'').toLowerCase()===(n.localidad||'').toLowerCase());
         return ex&&ex.lat&&ex.lng?{...n,lat:ex.lat,lng:ex.lng,geoUsada:ex.geoUsada||null}:n;
       };
       const aplicarImport=(modo)=>{
-        try{lsSet('sube:excel',{name:file.name,aoa,ts:Date.now()});}catch(e){}
+        try{lsSet('sube:excel',{name:file.name,aoa:aoaConId,ts:Date.now()});}catch(e){}
         const prev=puntos.slice();
         if(modo==='reemplazar'){
           const nuevosGeo=nuevos.map(n=>conGeoDe(prev,n));
@@ -225,7 +370,7 @@ function importXL(input){
           lsSet(SK.puntos,puntos);
           renderP();renderV();updStats();
           if(typeof renderMapa==='function'&&mapa) renderMapa();
-          showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' (lista nueva) ✓');
+          showToast(nuevos.length+(nuevos.length===1?' lugar importado':' lugares importados')+' (lista nueva) ✓');
         }else{
           const antes=puntos.length,repetidos=nuevos.filter(n=>puntos.some(p=>p.id===n.id)).length;
           // mantener lat/lng de puntos existentes si coincide ID o dirección
@@ -235,7 +380,7 @@ function importXL(input){
           renderP();renderV();updStats();
           if(typeof renderMapa==='function'&&mapa) renderMapa(true);
           const nv=nuevos.length-repetidos;
-          showToast(nuevos.length+(nuevos.length===1?' punto importado':' puntos importados')+' ✓'+(antes&&nv>0?' · se sumaron a los '+antes+' que ya tenías':(repetidos?' · '+repetidos+' ya estaban y se actualizaron':'')));
+          showToast(nuevos.length+(nuevos.length===1?' lugar importado':' lugares importados')+' ✓'+(antes&&nv>0?' · se sumaron a los '+antes+' que ya tenías':(repetidos?' · '+repetidos+' ya estaban y se actualizaron':'')));
         }
         // arrancar geocodificación automática
         setTimeout(()=>geocodificarTodos(true),400);
@@ -245,7 +390,7 @@ function importXL(input){
       if(puntos.length>0 && typeof mostrarDlgEnvio==='function'){
         const nVis=Object.keys(visits).length;
         mostrarDlgEnvio(
-          `Tenés ${puntos.length} punto${puntos.length===1?'':'s'} cargado${puntos.length===1?'':'s'}${nVis?` y ${nVis} visita${nVis===1?'':'s'} registrada${nVis===1?'':'s'}`:''}.\n\n¿Cómo querés cargar este Excel (${nuevos.length} punto${nuevos.length===1?'':'s'})?`,
+          `Tenés ${puntos.length} punto${puntos.length===1?'':'s'} cargado${puntos.length===1?'':'s'}${nVis?` y ${nVis} visita${nVis===1?'':'s'} registrada${nVis===1?'':'s'}`:''}.\n\n¿Cómo querés cargar este archivo (${nuevos.length} lugar${nuevos.length===1?'':'es'})?`,
           [
             {txt:'Empezar lista nueva (limpiar anteriores)',cls:'ba',fn:()=>aplicarImport('reemplazar')},
             {txt:'Sumar a la lista actual',cls:'bd',fn:()=>aplicarImport('sumar')},
@@ -259,7 +404,7 @@ function importXL(input){
         limpiarVisitasHuerfanas();
       }
       aplicarImport('sumar');
-    }catch(err){showToast('Error al leer el Excel',true);}
+    }catch(err){showToast('Error al leer el archivo',true);}
   };
   reader.readAsArrayBuffer(file);
   input.value='';
